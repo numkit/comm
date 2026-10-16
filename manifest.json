@@ -1,0 +1,42 @@
+{
+  "name": "comm",
+  "library": "numkit_comm",
+  "version": "0.1.0",
+  "description": "Communications Toolbox for NumKit",
+  "author": "NumKit",
+  "license": "0BSD",
+  "exports": [
+    "pskmod", "pskdemod", "dpskmod", "dpskdemod",
+    "pammod", "pamdemod", "qammod", "qamdemod", "modnorm",
+    "fskmod", "fskdemod", "ofdmmod", "ofdmdemod",
+    "pmmod", "ammod", "fmmod", "pmdemod", "fmdemod", "amdemod", "ssbdemod", "ssbmod", "mskmod", "mskdemod",
+    "genqammod", "genqamdemod", "apskmod", "apskdemod", "mil188qammod", "mil188qamdemod",
+    "awgn", "wgn", "bsc", "qfunc", "qfuncinv", "marcumq", "berawgn", "berconfint", "noisebw", "convertSNR",
+    "rayleighchan", "ricianchan",
+    "rcosdesign", "gaussdesign", "rectpulse", "intdump", "scrambler", "descrambler", "biterr", "symerr", "compand",
+    "randsrc", "randerr",
+    "huffmandict", "huffmanenco", "huffmandeco",
+    "dpcmenco", "dpcmdeco", "quantiz", "lloyds", "dpcmopt",
+    "arithenco", "arithdeco",
+    "bit2int", "int2bit", "bi2de", "de2bi", "vec2mat",
+    "poly2trellis", "convenc", "vitdec", "istrellis",
+    "gen2par", "syndtable", "hammgen", "cyclpoly", "cyclgen", "encode", "decode"
+  ],
+  "functions": [
+    "pskmod", "pskdemod", "dpskmod", "dpskdemod",
+    "pammod", "pamdemod", "qammod", "qamdemod", "modnorm",
+    "fskmod", "fskdemod", "ofdmmod", "ofdmdemod",
+    "pmmod", "ammod", "fmmod", "pmdemod", "fmdemod", "amdemod", "ssbdemod", "ssbmod", "mskmod", "mskdemod",
+    "genqammod", "genqamdemod", "apskmod", "apskdemod", "mil188qammod", "mil188qamdemod",
+    "awgn", "wgn", "bsc", "qfunc", "qfuncinv", "marcumq", "berawgn", "berconfint", "noisebw", "convertSNR",
+    "rayleighchan", "ricianchan",
+    "rcosdesign", "gaussdesign", "rectpulse", "intdump", "scrambler", "descrambler", "biterr", "symerr", "compand",
+    "randsrc", "randerr",
+    "huffmandict", "huffmanenco", "huffmandeco",
+    "dpcmenco", "dpcmdeco", "quantiz", "lloyds", "dpcmopt",
+    "arithenco", "arithdeco",
+    "bit2int", "int2bit", "bi2de", "de2bi", "vec2mat",
+    "poly2trellis", "convenc", "vitdec", "istrellis",
+    "gen2par", "syndtable", "hammgen", "cyclpoly", "cyclgen", "encode", "decode"
+  ]
+}
