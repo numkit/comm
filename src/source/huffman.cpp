@@ -56,10 +56,10 @@ huffmandict(const Value &symbols, const Value &probs,
     const size_t K = symbols.numel();
     if (K == 0)
         throw Error("huffmandict: symbols must be non-empty",
-                    0, 0, "huffmandict", "", "nk:huffmandict:Empty");
+                    0, 0, "huffmandict", "", "numkit:huffmandict:Empty");
     if (probs.numel() != K)
         throw Error("huffmandict: probs must match length of symbols",
-                    0, 0, "huffmandict", "", "nk:huffmandict:LenMismatch");
+                    0, 0, "huffmandict", "", "numkit:huffmandict:LenMismatch");
 
     // Validate probs.
     double sum = 0.0;
@@ -68,13 +68,13 @@ huffmandict(const Value &symbols, const Value &probs,
         if (!(p >= 0.0 && p <= 1.0))
             throw Error("huffmandict: probabilities must lie in [0, 1]",
                         0, 0, "huffmandict", "",
-                        "nk:huffmandict:InvalidProb");
+                        "numkit:huffmandict:InvalidProb");
         sum += p;
     }
     if (std::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
         throw Error("huffmandict: probabilities must sum to 1",
                     0, 0, "huffmandict", "",
-                    "nk:huffmandict:InvalidProbSum");
+                    "numkit:huffmandict:InvalidProbSum");
 
     // Edge case: a single symbol gets a single-bit "0" code.
     if (K == 1) {
@@ -150,7 +150,7 @@ DictView readDict(const Value &dict)
 {
     if (dict.dims().cols() != 2)
         throw Error("huffman codec: dict must be K-by-2 cell",
-                    0, 0, "huffman", "", "nk:huffman:DictShape");
+                    0, 0, "huffman", "", "numkit:huffman:DictShape");
     const size_t K = dict.dims().rows();
     DictView dv;
     dv.K = K;
@@ -167,7 +167,7 @@ DictView readDict(const Value &dict)
             const double v = codeV.elemAsDouble(b);
             if (v != 0.0 && v != 1.0)
                 throw Error("huffman codec: dict codes must contain 0/1",
-                            0, 0, "huffman", "", "nk:huffman:DictBits");
+                            0, 0, "huffman", "", "numkit:huffman:DictBits");
             dv.codes[k][b] = static_cast<uint8_t>(v);
         }
     }
@@ -234,7 +234,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
         if (k < 0)
             throw Error("huffmanenco: symbol not in dict",
                         0, 0, "huffmanenco", "",
-                        "nk:huffmanenco:UnknownSym");
+                        "numkit:huffmanenco:UnknownSym");
         total_bits += dv.codes[k].size();
     }
 
@@ -272,13 +272,13 @@ Value huffmandeco(const Value &bits, const Value &dict,
         if (v != 0.0 && v != 1.0)
             throw Error("huffmandeco: input bits must be 0 or 1",
                         0, 0, "huffmandeco", "",
-                        "nk:huffmandeco:NonBit");
+                        "numkit:huffmandeco:NonBit");
         const int next = (v == 0.0) ? tree.nodes[cur].left
                                     : tree.nodes[cur].right;
         if (next < 0)
             throw Error("huffmandeco: bit pattern does not match dict",
                         0, 0, "huffmandeco", "",
-                        "nk:huffmandeco:NoMatch");
+                        "numkit:huffmandeco:NoMatch");
         cur = next;
         if (tree.nodes[cur].sym >= 0) {
             emitted.push_back(dv.syms[tree.nodes[cur].sym]);
@@ -288,7 +288,7 @@ Value huffmandeco(const Value &bits, const Value &dict,
     if (cur != 0)
         throw Error("huffmandeco: trailing bits not a complete code",
                     0, 0, "huffmandeco", "",
-                    "nk:huffmandeco:Incomplete");
+                    "numkit:huffmandeco:Incomplete");
 
     const bool row = isRowOriented(bits);
     const size_t M = emitted.size();

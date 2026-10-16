@@ -85,7 +85,7 @@ std::vector<int> invertMapping(const std::vector<int> &mapping)
     for (size_t i = 0; i < N; ++i) {
         if (mapping[i] < 0 || static_cast<size_t>(mapping[i]) >= N)
             throw Error("apsk: SymbolMapping out of range",
-                        0, 0, "apsk", "", "nk:apsk:Mapping");
+                        0, 0, "apsk", "", "numkit:apsk:Mapping");
         inv[static_cast<size_t>(mapping[i])] = static_cast<int>(i);
     }
     return inv;
@@ -99,7 +99,7 @@ Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
 {
     if (M.empty() || M.size() != radii.size())
         throw Error("apskmod: M and radii must be vectors of same length",
-                    0, 0, "apskmod", "", "nk:apskmod:DimMismatch");
+                    0, 0, "apskmod", "", "numkit:apskmod:DimMismatch");
     std::vector<double> phaseoffset(M.size());
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
@@ -109,7 +109,7 @@ Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
             phaseoffset.assign(M.size(), v);
         } else if (phaseoffset.size() != M.size()) {
             throw Error("apskmod: phaseoffset length must match M",
-                        0, 0, "apskmod", "", "nk:apskmod:PhaseLen");
+                        0, 0, "apskmod", "", "numkit:apskmod:PhaseLen");
         }
     } else {
         for (size_t r = 0; r < M.size(); ++r)
@@ -128,7 +128,7 @@ Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
         readVecInt(mapping_v, mapping);
         if (mapping.size() != Ntot)
             throw Error("apskmod: SymbolMapping length must equal sum(M)",
-                        0, 0, "apskmod", "", "nk:apskmod:MappingLen");
+                        0, 0, "apskmod", "", "numkit:apskmod:MappingLen");
         invmap = invertMapping(mapping);
     } else {
         invmap.resize(Ntot);
@@ -143,7 +143,7 @@ Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
         const long xi = static_cast<long>(x.elemAsDouble(i));
         if (xi < 0 || static_cast<size_t>(xi) >= Ntot)
             throw Error("apskmod: input index out of range [0, sum(M)-1]",
-                        0, 0, "apskmod", "", "nk:apskmod:OutOfRange");
+                        0, 0, "apskmod", "", "numkit:apskmod:OutOfRange");
         o[i] = C[static_cast<size_t>(invmap[static_cast<size_t>(xi)])];
     }
     return out;
@@ -155,7 +155,7 @@ Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
 {
     if (M.empty() || M.size() != radii.size())
         throw Error("apskdemod: M and radii must be vectors of same length",
-                    0, 0, "apskdemod", "", "nk:apskdemod:DimMismatch");
+                    0, 0, "apskdemod", "", "numkit:apskdemod:DimMismatch");
     std::vector<double> phaseoffset(M.size());
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
@@ -164,7 +164,7 @@ Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
             phaseoffset.assign(M.size(), v);
         } else if (phaseoffset.size() != M.size()) {
             throw Error("apskdemod: phaseoffset length must match M",
-                        0, 0, "apskdemod", "", "nk:apskdemod:PhaseLen");
+                        0, 0, "apskdemod", "", "numkit:apskdemod:PhaseLen");
         }
     } else {
         for (size_t r = 0; r < M.size(); ++r)
@@ -180,7 +180,7 @@ Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
         readVecInt(mapping_v, mapping);
         if (mapping.size() != Ntot)
             throw Error("apskdemod: SymbolMapping length must equal sum(M)",
-                        0, 0, "apskdemod", "", "nk:apskdemod:MappingLen");
+                        0, 0, "apskdemod", "", "numkit:apskdemod:MappingLen");
     } else {
         mapping.resize(Ntot);
         for (size_t i = 0; i < Ntot; ++i) mapping[i] = static_cast<int>(i);

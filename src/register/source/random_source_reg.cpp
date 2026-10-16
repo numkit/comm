@@ -47,7 +47,7 @@ void randsrc_reg(Span<const Value> args, size_t /*nargout*/,
         const double s = args[3].toScalar();
         if (s < 0.0)
             throw Error("randsrc: state must be a non-negative integer",
-                        0, 0, "randsrc", "", "nk:randsrc:InvalidState");
+                        0, 0, "randsrc", "", "numkit:randsrc:InvalidState");
         state = static_cast<uint32_t>(s);
     }
 
@@ -80,7 +80,7 @@ void randerr_reg(Span<const Value> args, size_t /*nargout*/,
         const double s = args[3].toScalar();
         if (s < 0.0)
             throw Error("randerr: state must be a non-negative integer",
-                        0, 0, "randerr", "", "nk:randerr:InvalidState");
+                        0, 0, "randerr", "", "numkit:randerr:InvalidState");
         state = static_cast<uint32_t>(s);
     }
 

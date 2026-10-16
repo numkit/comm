@@ -27,7 +27,7 @@ void compand_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 4 && !args[3].isEmpty()) {
         if (!args[3].isChar() && !args[3].isString())
             throw Error("compand: method must be a string",
-                        0, 0, "compand", "", "nk:compand:method");
+                        0, 0, "compand", "", "numkit:compand:method");
         method = args[3].toString();
     }
     const double param = args[1].toScalar();

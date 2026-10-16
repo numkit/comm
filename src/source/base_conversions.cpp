@@ -47,11 +47,11 @@ Value bit2int(const Value &b, int n, bool msbfirst,
 {
     if (n <= 0 || n > 64)
         throw Error("bit2int: n must be in 1..64",
-                    0, 0, "bit2int", "", "nk:bit2int:BadN");
+                    0, 0, "bit2int", "", "numkit:bit2int:BadN");
     const size_t L = b.numel();
     if (L % static_cast<size_t>(n) != 0)
         throw Error("bit2int: numel(b) must be divisible by n",
-                    0, 0, "bit2int", "", "nk:bit2int:BadLen");
+                    0, 0, "bit2int", "", "numkit:bit2int:BadLen");
     const size_t M = L / static_cast<size_t>(n);
     Value out = Value::matrix(M, 1, ValueType::DOUBLE, mr);
     if (M == 0) return out;
@@ -75,7 +75,7 @@ Value int2bit(const Value &d, int n, bool msbfirst,
 {
     if (n <= 0 || n > 64)
         throw Error("int2bit: n must be in 1..64",
-                    0, 0, "int2bit", "", "nk:int2bit:BadN");
+                    0, 0, "int2bit", "", "numkit:int2bit:BadN");
     const size_t M = d.numel();
     Value out = Value::matrix(static_cast<size_t>(n), M, ValueType::DOUBLE, mr);
     if (M == 0) return out;
@@ -103,10 +103,10 @@ void bi2de_argcheck(const Value &b, int base)
 {
     if (base < 2)
         throw Error("bi2de: base must be >= 2",
-                    0, 0, "bi2de", "", "nk:bi2de:BadBase");
+                    0, 0, "bi2de", "", "numkit:bi2de:BadBase");
     if (b.dims().is3D())
         throw Error("bi2de: input must be 2D",
-                    0, 0, "bi2de", "", "nk:bi2de:Not2D");
+                    0, 0, "bi2de", "", "numkit:bi2de:Not2D");
 }
 
 } // namespace
@@ -143,7 +143,7 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
 {
     if (base < 2)
         throw Error("de2bi: base must be >= 2",
-                    0, 0, "de2bi", "", "nk:de2bi:BadBase");
+                    0, 0, "de2bi", "", "numkit:de2bi:BadBase");
     const size_t R = d.numel();
     // Auto-width: ceil(log_base(max(d)+1)).
     int n = n_user;
@@ -182,7 +182,7 @@ vec2mat(const Value &v, int n, double padval, std::pmr::memory_resource *mr)
 {
     if (n <= 0)
         throw Error("vec2mat: n must be positive",
-                    0, 0, "vec2mat", "", "nk:vec2mat:BadN");
+                    0, 0, "vec2mat", "", "numkit:vec2mat:BadN");
     const size_t L = v.numel();
     const size_t cols = static_cast<size_t>(n);
     const size_t rows = (L + cols - 1) / cols;

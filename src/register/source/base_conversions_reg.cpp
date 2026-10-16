@@ -29,12 +29,12 @@ bool parseMsbFlag(const Value &v, const char *who)
 {
     if (!v.isChar() && !v.isString())
         throw Error(std::string(who) + ": flag must be 'left-msb' or 'right-msb'",
-                    0, 0, who, "", std::string("nk:") + who + ":BadFlag");
+                    0, 0, who, "", std::string("numkit:") + who + ":BadFlag");
     std::string s = v.toString();
     if (s == "left-msb")  return true;
     if (s == "right-msb") return false;
     throw Error(std::string(who) + ": unknown flag '" + s + "'",
-                0, 0, who, "", std::string("nk:") + who + ":BadFlag");
+                0, 0, who, "", std::string("numkit:") + who + ":BadFlag");
 }
 
 } // namespace

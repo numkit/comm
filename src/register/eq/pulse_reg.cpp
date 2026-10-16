@@ -32,7 +32,7 @@ void rcosdesign_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 4 && !args[3].isEmpty()) {
         if (!args[3].isChar() && !args[3].isString())
             throw Error("rcosdesign: shape must be a string",
-                        0, 0, "rcosdesign", "", "nk:rcosdesign:shape");
+                        0, 0, "rcosdesign", "", "numkit:rcosdesign:shape");
         shape = args[3].toString();
     }
     outs[0] = rcosdesign(beta, span, sps, shape, ctx.engine->resource());

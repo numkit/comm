@@ -128,7 +128,7 @@ Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::str
 Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, std::pmr::memory_resource *mr) {
     if (p < 0.0 || p > 1.0)
         throw Error("bsc: p must be in [0, 1]", 0, 0, "bsc", "",
-                    "nk:bsc:badp");
+                    "numkit:bsc:badp");
     auto &gen = rng;
     std::uniform_real_distribution<double> ud(0.0, 1.0);
 
@@ -365,13 +365,13 @@ berconfint(double numErrs, double numBits, double level,
 {
     if (!(numBits > 0.0))
         throw Error("berconfint: numBits must be positive",
-                    0, 0, "berconfint", "", "nk:berconfint:nbits");
+                    0, 0, "berconfint", "", "numkit:berconfint:nbits");
     if (numErrs < 0.0 || numErrs > numBits)
         throw Error("berconfint: numErrs must satisfy 0 ≤ numErrs ≤ numBits",
-                    0, 0, "berconfint", "", "nk:berconfint:nerrs");
+                    0, 0, "berconfint", "", "numkit:berconfint:nerrs");
     if (!(level > 0.0 && level < 1.0))
         throw Error("berconfint: level must lie in (0, 1)",
-                    0, 0, "berconfint", "", "nk:berconfint:level");
+                    0, 0, "berconfint", "", "numkit:berconfint:level");
 
     const double k = numErrs;
     const double n = numBits;

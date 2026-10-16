@@ -25,7 +25,7 @@ void genqammod_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() > 2)
         throw Error("genqammod: name-value options not yet supported "
                     "(bit-input mode deferred)",
-                    0, 0, "genqammod", "", "nk:genqammod:NotSupported");
+                    0, 0, "genqammod", "", "numkit:genqammod:NotSupported");
     outs[0] = genqammod(args[0], args[1], ctx.engine->resource());
 }
 
@@ -36,7 +36,7 @@ void genqamdemod_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() > 2)
         throw Error("genqamdemod: name-value options not yet supported "
                     "(bit-output mode deferred)",
-                    0, 0, "genqamdemod", "", "nk:genqamdemod:NotSupported");
+                    0, 0, "genqamdemod", "", "numkit:genqamdemod:NotSupported");
     outs[0] = genqamdemod(args[0], args[1], ctx.engine->resource());
 }
 

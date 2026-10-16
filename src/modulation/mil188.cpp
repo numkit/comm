@@ -435,7 +435,7 @@ const Cd *constellationFor(int M, size_t &len_out)
             // through them (kept as defense in depth for other callers).
             throw Error("mil188qam: M must be one of {16, 32, 64, 256}",
                         0, 0, "mil188qam", "",
-                        "nk:mil188qam:UnsupportedM");
+                        "numkit:mil188qam:UnsupportedM");
     }
 }
 
@@ -465,7 +465,7 @@ Value mil188qammod(const Value &x, int M, std::pmr::memory_resource *mr)
         if (xi < 0.0 || xi >= static_cast<double>(N))
             throw Error("mil188qammod: input out of range [0, M-1]",
                         0, 0, "mil188qammod", "",
-                        "nk:mil188qammod:OutOfRange");
+                        "numkit:mil188qammod:OutOfRange");
         o[i] = C[static_cast<size_t>(xi)];
     }
     return out;

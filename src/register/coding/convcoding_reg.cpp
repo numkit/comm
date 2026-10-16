@@ -26,7 +26,7 @@ void poly2trellis_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 3 && !args[2].isEmpty())
         throw Error("poly2trellis: FeedbackConnection (feedback codes) is not "
                     "supported in this revision",
-                    0, 0, "poly2trellis", "", "nk:poly2trellis:feedback");
+                    0, 0, "poly2trellis", "", "numkit:poly2trellis:feedback");
     outs[0] = poly2trellis(args[0], args[1], ctx.engine->resource());
 }
 
@@ -37,7 +37,7 @@ void convenc_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 3 && !args[2].isEmpty())
         throw Error("convenc: puncture pattern / initial state are not "
                     "supported in this revision",
-                    0, 0, "convenc", "", "nk:convenc:opts");
+                    0, 0, "convenc", "", "numkit:convenc:opts");
     outs[0] = convenc(args[0], args[1], ctx.engine->resource());
 }
 

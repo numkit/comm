@@ -46,11 +46,11 @@ void validatePoly(const std::vector<int> &poly, const char *name) {
     if (poly.size() < 2)
         throw Error(std::string(name) +
                     ": polynomial must have at least 2 coefficients (degree ≥ 1)",
-                    0, 0, name, "", "nk:scrambler:poly");
+                    0, 0, name, "", "numkit:scrambler:poly");
     if (poly[0] == 0)
         throw Error(std::string(name) +
                     ": polynomial constant term g_0 must be non-zero",
-                    0, 0, name, "", "nk:scrambler:poly");
+                    0, 0, name, "", "numkit:scrambler:poly");
 }
 
 Value packDoubles(std::pmr::memory_resource *mr,
@@ -77,7 +77,7 @@ Value scrambler(const Value &x, const Value &poly,
     const size_t n = polyVec.size() - 1;
     if (state.size() != n)
         throw Error("scrambler: initState length must equal polynomial order",
-                    0, 0, "scrambler", "", "nk:scrambler:state");
+                    0, 0, "scrambler", "", "numkit:scrambler:state");
 
     std::vector<int> y(xBits.size(), 0);
     for (size_t k = 0; k < xBits.size(); ++k) {
@@ -103,7 +103,7 @@ Value descrambler(const Value &y, const Value &poly,
     const size_t n = polyVec.size() - 1;
     if (state.size() != n)
         throw Error("descrambler: initState length must equal polynomial order",
-                    0, 0, "descrambler", "", "nk:descrambler:state");
+                    0, 0, "descrambler", "", "numkit:descrambler:state");
 
     std::vector<int> x(yBits.size(), 0);
     for (size_t k = 0; k < yBits.size(); ++k) {

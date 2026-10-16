@@ -31,7 +31,7 @@ void dpcmopt_reg(Span<const Value> args, size_t nargout,
                           ? args[2] : Value::Empty;
     if (ini.isEmpty() && nargout > 1)
         throw Error("dpcmopt: ini_codebook required for codebook/partition outputs",
-                    0, 0, "dpcmopt", "", "nk:dpcmopt:NeedIniCodebook");
+                    0, 0, "dpcmopt", "", "numkit:dpcmopt:NeedIniCodebook");
 
     auto res = dpcmopt(args[0], ord, ini, mr);
     outs[0] = std::move(res.predictor);

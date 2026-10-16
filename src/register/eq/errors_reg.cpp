@@ -43,7 +43,7 @@ void symerr_reg(Span<const Value> args, size_t nargout,
     // element-wise default only — the flag branch is deferred.
     if (args.size() >= 3 && !args[2].isEmpty())
         throw Error("symerr: the row/column/overall flag is not supported yet",
-                    0, 0, "symerr", "", "nk:symerr:flg");
+                    0, 0, "symerr", "", "numkit:symerr:flg");
     auto [count, ratio] = symerr(args[0], args[1], ctx.engine->resource());
     outs[0] = std::move(count);
     if (nargout > 1) outs[1] = std::move(ratio);

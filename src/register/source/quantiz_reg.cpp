@@ -31,7 +31,7 @@ void quantiz_reg(Span<const Value> args, size_t nargout,
     }
     if (args.size() < 3)
         throw Error("quantiz: codebook required for quantv/distor outputs",
-                    0, 0, "quantiz", "", "nk:quantiz:fewInputs");
+                    0, 0, "quantiz", "", "numkit:quantiz:fewInputs");
     auto r = quantiz(args[0], args[1], args[2], mr);
     outs[0] = std::move(r.indx);
     if (nargout > 1) outs[1] = std::move(r.quantv);

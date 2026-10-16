@@ -34,10 +34,10 @@ Value compand(const Value &x, double param, double V,
 {
     if (param <= 0.0)
         throw Error("compand: param (μ or A) must be positive",
-                    0, 0, "compand", "", "nk:compand:param");
+                    0, 0, "compand", "", "numkit:compand:param");
     if (V <= 0.0)
         throw Error("compand: V (peak magnitude) must be positive",
-                    0, 0, "compand", "", "nk:compand:V");
+                    0, 0, "compand", "", "numkit:compand:V");
 
     const bool isMu = (method.size() >= 2
                        && (method[0] == 'm' || method[0] == 'M')
@@ -46,7 +46,7 @@ Value compand(const Value &x, double param, double V,
                        && (method[0] == 'a' || method[0] == 'A'));
     if (!isMu && !isA)
         throw Error("compand: method must start with 'mu/' or 'A/'",
-                    0, 0, "compand", "", "nk:compand:method");
+                    0, 0, "compand", "", "numkit:compand:method");
     const bool isCompress =
         method.find("compressor") != std::string::npos;
     const bool isExpand =
@@ -54,7 +54,7 @@ Value compand(const Value &x, double param, double V,
     if (!isCompress && !isExpand)
         throw Error("compand: method must end with '/compressor' or "
                     "'/expander'",
-                    0, 0, "compand", "", "nk:compand:method");
+                    0, 0, "compand", "", "numkit:compand:method");
 
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
                               ValueType::DOUBLE, mr);

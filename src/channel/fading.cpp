@@ -64,7 +64,7 @@ Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, double K, std::
 {
     if (K < 0.0)
         throw Error("ricianchan: K-factor must be ≥ 0",
-                    0, 0, "ricianchan", "", "nk:ricianchan:K");
+                    0, 0, "ricianchan", "", "numkit:ricianchan:K");
     const size_t N = x.numel();
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);

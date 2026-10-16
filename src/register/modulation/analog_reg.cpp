@@ -136,10 +136,10 @@ void mskdemod_reg(Span<const Value> args, size_t nargout,
         if (elo == "nondiff")
             throw Error("mskdemod: 'nondiff' encoding is not supported "
                         "(differential 'diff' only — matches the mskmod gap)",
-                        0, 0, "mskdemod", "", "nk:mskdemod:nondiff");
+                        0, 0, "mskdemod", "", "numkit:mskdemod:nondiff");
         if (elo != "diff")
             throw Error("mskdemod: dataenc must be 'diff' or 'nondiff'",
-                        0, 0, "mskdemod", "", "nk:mskdemod:dataenc");
+                        0, 0, "mskdemod", "", "numkit:mskdemod:dataenc");
         ++i;
     }
     if (i < args.size() && !args[i].isEmpty())
@@ -166,14 +166,14 @@ void ssbmod_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 5 && !args[4].isEmpty()) {
         if (!args[4].isChar() && !args[4].isString())
             throw Error("ssbmod: method must be a string ('upper')",
-                        0, 0, "ssbmod", "", "nk:ssbmod:InvStr");
+                        0, 0, "ssbmod", "", "numkit:ssbmod:InvStr");
         std::string m = args[4].toString();
         // Match MATLAB behaviour: any string containing 'up' selects USB.
         for (auto &c : m) c = static_cast<char>(std::tolower(c));
         upper = (m.find("up") != std::string::npos);
         if (!upper && !m.empty())
             throw Error("ssbmod: method must be 'upper'",
-                        0, 0, "ssbmod", "", "nk:ssbmod:InvStr");
+                        0, 0, "ssbmod", "", "numkit:ssbmod:InvStr");
     }
     outs[0] = ssbmod(args[0], fc, fs, ini_phase, upper,
                      ctx.engine->resource());

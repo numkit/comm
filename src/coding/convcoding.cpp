@@ -37,7 +37,7 @@ std::uint64_t octalToDecimal(std::uint64_t oct, const char *who)
         if (digit > 7)
             throw Error(std::string(who) + ": CodeGenerator entries must be "
                         "octal numbers (digits 0-7)",
-                        0, 0, who, "", std::string("nk:") + who + ":octal");
+                        0, 0, who, "", std::string("numkit:") + who + ":octal");
         result += digit * mult;
         mult *= 8;
         oct /= 10;
@@ -67,13 +67,13 @@ TrellisView readTrellis(const Value &t, const char *who)
 {
     if (!t.isStruct() || t.numel() != 1)
         throw Error(std::string(who) + ": trellis must be a 1x1 struct",
-                    0, 0, who, "", std::string("nk:") + who + ":trellis");
+                    0, 0, who, "", std::string("numkit:") + who + ":trellis");
     const auto &el = t.structArrayElem(0);
     auto field = [&](const char *f) -> const Value & {
         auto it = el.find(f);
         if (it == el.end())
             throw Error(std::string(who) + ": trellis is missing field '" + f + "'",
-                        0, 0, who, "", std::string("nk:") + who + ":trellis");
+                        0, 0, who, "", std::string("numkit:") + who + ":trellis");
         return it->second;
     };
     TrellisView tv;
@@ -94,16 +94,16 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
     if (constraintLength.numel() != 1)
         throw Error("poly2trellis: only a scalar ConstraintLength (rate 1/n) "
                     "is supported in this revision (rate k/n deferred)",
-                    0, 0, "poly2trellis", "", "nk:poly2trellis:rate");
+                    0, 0, "poly2trellis", "", "numkit:poly2trellis:rate");
     const long long K = static_cast<long long>(constraintLength.toScalar());
     if (K < 1)
         throw Error("poly2trellis: ConstraintLength must be >= 1",
-                    0, 0, "poly2trellis", "", "nk:poly2trellis:K");
+                    0, 0, "poly2trellis", "", "numkit:poly2trellis:K");
 
     const std::size_t n = codeGenerator.numel();
     if (n == 0)
         throw Error("poly2trellis: CodeGenerator must be non-empty",
-                    0, 0, "poly2trellis", "", "nk:poly2trellis:gen");
+                    0, 0, "poly2trellis", "", "numkit:poly2trellis:gen");
 
     // Parse octal generators into K-bit binary masks.
     std::vector<std::uint64_t> g(n);
@@ -200,12 +200,12 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
     if (dt != "hard")
         throw Error("vitdec: only hard-decision decoding is supported in this "
                     "revision (soft/unquant deferred)",
-                    0, 0, "vitdec", "", "nk:vitdec:dectype");
+                    0, 0, "vitdec", "", "numkit:vitdec:dectype");
     const std::string mode = lower(opmode);
     if (mode != "trunc" && mode != "term")
         throw Error("vitdec: opmode must be 'trunc' or 'term' in this revision "
                     "('cont' deferred)",
-                    0, 0, "vitdec", "", "nk:vitdec:opmode");
+                    0, 0, "vitdec", "", "numkit:vitdec:opmode");
 
     const TrellisView tv = readTrellis(trellis, "vitdec");
     const int n = tv.n;
@@ -213,7 +213,7 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
     if (n <= 0 || (total % static_cast<std::size_t>(n)) != 0)
         throw Error("vitdec: code length must be a multiple of "
                     "log2(numOutputSymbols)",
-                    0, 0, "vitdec", "", "nk:vitdec:len");
+                    0, 0, "vitdec", "", "numkit:vitdec:len");
     return {tv, n, total / static_cast<std::size_t>(n), tv.numStates, mode};
 }
 

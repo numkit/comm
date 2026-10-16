@@ -42,16 +42,16 @@ Value pmmod(const Value &x, double fc, double fs, double phasedev,
 {
     if (!(fs > 0.0))
         throw Error("pmmod: Fs must be positive",
-                    0, 0, "pmmod", "", "nk:pmmod:Fs");
+                    0, 0, "pmmod", "", "numkit:pmmod:Fs");
     if (!(fc > 0.0))
         throw Error("pmmod: Fc must be positive",
-                    0, 0, "pmmod", "", "nk:pmmod:Fc");
+                    0, 0, "pmmod", "", "numkit:pmmod:Fc");
     if (fs < 2.0 * fc)
         throw Error("pmmod: Fs must be >= 2*Fc",
-                    0, 0, "pmmod", "", "nk:pmmod:FsLessThan2Fc");
+                    0, 0, "pmmod", "", "numkit:pmmod:FsLessThan2Fc");
     if (!(phasedev > 0.0))
         throw Error("pmmod: phasedev must be positive",
-                    0, 0, "pmmod", "", "nk:pmmod:InvalidPhaseDev");
+                    0, 0, "pmmod", "", "numkit:pmmod:InvalidPhaseDev");
 
     const auto &d = x.dims();
     size_t H = d.rows();
@@ -103,13 +103,13 @@ Value ammod(const Value &x, double fc, double fs, double ini_phase,
 {
     if (!(fs > 0.0))
         throw Error("ammod: Fs must be positive",
-                    0, 0, "ammod", "", "nk:ammod:Fs");
+                    0, 0, "ammod", "", "numkit:ammod:Fs");
     if (!(fc > 0.0))
         throw Error("ammod: Fc must be positive",
-                    0, 0, "ammod", "", "nk:ammod:Fc");
+                    0, 0, "ammod", "", "numkit:ammod:Fc");
     if (fs < 2.0 * fc)
         throw Error("ammod: Fs must be >= 2*Fc",
-                    0, 0, "ammod", "", "nk:ammod:FsLessThan2Fc");
+                    0, 0, "ammod", "", "numkit:ammod:FsLessThan2Fc");
 
     const auto &d = x.dims();
     size_t H = d.rows();
@@ -156,16 +156,16 @@ Value fmmod(const Value &x, double fc, double fs, double freqdev,
 {
     if (!(fs > 0.0))
         throw Error("fmmod: Fs must be positive",
-                    0, 0, "fmmod", "", "nk:fmmod:Fs");
+                    0, 0, "fmmod", "", "numkit:fmmod:Fs");
     if (fc < 0.0)
         throw Error("fmmod: Fc must be non-negative",
-                    0, 0, "fmmod", "", "nk:fmmod:Fc");
+                    0, 0, "fmmod", "", "numkit:fmmod:Fc");
     if (fs < 2.0 * fc)
         throw Error("fmmod: Fs must be >= 2*Fc",
-                    0, 0, "fmmod", "", "nk:fmmod:FsLessThan2Fc");
+                    0, 0, "fmmod", "", "numkit:fmmod:FsLessThan2Fc");
     if (!(freqdev > 0.0))
         throw Error("fmmod: freqdev must be positive",
-                    0, 0, "fmmod", "", "nk:fmmod:InvalidFreqdev");
+                    0, 0, "fmmod", "", "numkit:fmmod:InvalidFreqdev");
 
     const auto &d = x.dims();
     size_t H = d.rows();
@@ -228,7 +228,7 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
 {
     if (nSamp <= 0)
         throw Error("mskmod: nSamp must be a positive integer",
-                    0, 0, "mskmod", "", "nk:mskmod:nSamp");
+                    0, 0, "mskmod", "", "numkit:mskmod:nSamp");
 
     const auto &d = x.dims();
     size_t H = d.rows();
@@ -252,7 +252,7 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
             // Validate {0, 1}.
             if (xi != 0.0 && xi != 1.0)
                 throw Error("mskmod: input must be binary (0 or 1)",
-                            0, 0, "mskmod", "", "nk:mskmod:NotBinary");
+                            0, 0, "mskmod", "", "numkit:mskmod:NotBinary");
             xCum[r + 1] = xCum[r] + (2.0 * xi - 1.0);
         }
 
@@ -292,7 +292,7 @@ Value mskdemod(const Value &y, int nSamp, double ini_phase,
 {
     if (nSamp <= 0)
         throw Error("mskdemod: nSamp must be a positive integer",
-                    0, 0, "mskdemod", "", "nk:mskdemod:nSamp");
+                    0, 0, "mskdemod", "", "numkit:mskdemod:nSamp");
 
     const auto &d = y.dims();
     size_t H = d.rows();
@@ -302,7 +302,7 @@ Value mskdemod(const Value &y, int nSamp, double ini_phase,
 
     if (H == 0 || H % static_cast<size_t>(nSamp) != 0)
         throw Error("mskdemod: signal length must be a positive multiple of nSamp",
-                    0, 0, "mskdemod", "", "nk:mskdemod:length");
+                    0, 0, "mskdemod", "", "numkit:mskdemod:length");
     const size_t N = H / static_cast<size_t>(nSamp);   // symbols per channel
     const bool cplx = y.isComplex();
 
@@ -358,13 +358,13 @@ Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
 {
     if (!(fs > 0.0))
         throw Error("ssbmod: Fs must be positive",
-                    0, 0, "ssbmod", "", "nk:ssbmod:Fs");
+                    0, 0, "ssbmod", "", "numkit:ssbmod:Fs");
     if (!(fc > 0.0))
         throw Error("ssbmod: Fc must be positive",
-                    0, 0, "ssbmod", "", "nk:ssbmod:Fc");
+                    0, 0, "ssbmod", "", "numkit:ssbmod:Fc");
     if (fs <= 2.0 * fc)
         throw Error("ssbmod: Fs must be > 2*Fc",
-                    0, 0, "ssbmod", "", "nk:ssbmod:Fs2Fc");
+                    0, 0, "ssbmod", "", "numkit:ssbmod:Fs2Fc");
 
     const auto &d = x.dims();
     size_t H = d.rows();
@@ -415,13 +415,13 @@ Value pmdemod(const Value &y, double fc, double fs, double phasedev,
               double ini_phase, std::pmr::memory_resource *mr)
 {
     if (!(fs > 0.0))
-        throw Error("pmdemod: Fs must be positive", 0, 0, "pmdemod", "", "nk:pmdemod:Fs");
+        throw Error("pmdemod: Fs must be positive", 0, 0, "pmdemod", "", "numkit:pmdemod:Fs");
     if (!(fc > 0.0))
-        throw Error("pmdemod: Fc must be positive", 0, 0, "pmdemod", "", "nk:pmdemod:Fc");
+        throw Error("pmdemod: Fc must be positive", 0, 0, "pmdemod", "", "numkit:pmdemod:Fc");
     if (fs < 2.0 * fc)
-        throw Error("pmdemod: Fs must be >= 2*Fc", 0, 0, "pmdemod", "", "nk:pmdemod:FsLessThan2Fc");
+        throw Error("pmdemod: Fs must be >= 2*Fc", 0, 0, "pmdemod", "", "numkit:pmdemod:FsLessThan2Fc");
     if (!(phasedev > 0.0))
-        throw Error("pmdemod: phasedev must be positive", 0, 0, "pmdemod", "", "nk:pmdemod:InvalidPhaseDev");
+        throw Error("pmdemod: phasedev must be positive", 0, 0, "pmdemod", "", "numkit:pmdemod:InvalidPhaseDev");
 
     const auto &d = y.dims();
     size_t H = d.rows(), W = d.cols();
@@ -460,13 +460,13 @@ Value fmdemod(const Value &y, double fc, double fs, double freqdev,
               double ini_phase, std::pmr::memory_resource *mr)
 {
     if (!(fs > 0.0))
-        throw Error("fmdemod: Fs must be positive", 0, 0, "fmdemod", "", "nk:fmdemod:Fs");
+        throw Error("fmdemod: Fs must be positive", 0, 0, "fmdemod", "", "numkit:fmdemod:Fs");
     if (!(fc > 0.0))
-        throw Error("fmdemod: Fc must be positive", 0, 0, "fmdemod", "", "nk:fmdemod:Fc");
+        throw Error("fmdemod: Fc must be positive", 0, 0, "fmdemod", "", "numkit:fmdemod:Fc");
     if (fs < 2.0 * fc)
-        throw Error("fmdemod: Fs must be >= 2*Fc", 0, 0, "fmdemod", "", "nk:fmdemod:FsLessThan2Fc");
+        throw Error("fmdemod: Fs must be >= 2*Fc", 0, 0, "fmdemod", "", "numkit:fmdemod:FsLessThan2Fc");
     if (!(freqdev > 0.0))
-        throw Error("fmdemod: freqdev must be positive", 0, 0, "fmdemod", "", "nk:fmdemod:InvalidFreqDev");
+        throw Error("fmdemod: freqdev must be positive", 0, 0, "fmdemod", "", "numkit:fmdemod:InvalidFreqDev");
 
     const auto &d = y.dims();
     size_t H = d.rows(), W = d.cols();
@@ -537,11 +537,11 @@ Value coherentDetect(const Value &y, double fc, double fs, double ini_phase,
 void checkCarrier(double fc, double fs, const char *fn)
 {
     if (!(fs > 0.0))
-        throw Error(std::string(fn) + ": Fs must be positive", 0, 0, fn, "", "nk:demod:Fs");
+        throw Error(std::string(fn) + ": Fs must be positive", 0, 0, fn, "", "numkit:demod:Fs");
     if (!(fc > 0.0))
-        throw Error(std::string(fn) + ": Fc must be positive", 0, 0, fn, "", "nk:demod:Fc");
+        throw Error(std::string(fn) + ": Fc must be positive", 0, 0, fn, "", "numkit:demod:Fc");
     if (fs < 2.0 * fc)
-        throw Error(std::string(fn) + ": Fs must be >= 2*Fc", 0, 0, fn, "", "nk:demod:FsLessThan2Fc");
+        throw Error(std::string(fn) + ": Fs must be >= 2*Fc", 0, 0, fn, "", "numkit:demod:FsLessThan2Fc");
 }
 } // anonymous
 

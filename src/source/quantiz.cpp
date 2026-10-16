@@ -57,7 +57,7 @@ quantiz(const Value &sig, const Value &partition, const Value &codebook,
     if (codebook.numel() != partition.numel() + 1)
         throw Error("quantiz: length(codebook) must equal "
                     "length(partition) + 1",
-                    0, 0, "quantiz", "", "nk:quantiz:invalidCodebook");
+                    0, 0, "quantiz", "", "numkit:quantiz:invalidCodebook");
 
     Value indx = quantiz_indx(sig, partition, mr);
     const double *idx = indx.doubleData();

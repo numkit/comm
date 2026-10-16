@@ -97,7 +97,7 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
     if (ord < 1)
         throw numkit::Error("The predictor order must be a positive "
                             "integer.",
-                            0, 0, "dpcmopt", "", "nk:dpcmopt:InvalidOrd");
+                            0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidOrd");
 
     const std::size_t N = training_set.numel();
     // N must be at least ord + 3 so the smallest autocorrelation
@@ -105,7 +105,7 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
     if (N < static_cast<std::size_t>(ord) + 3)
         throw numkit::Error("The size of the training set is not large "
                             "enough for the given predictor order.",
-                            0, 0, "dpcmopt", "", "nk:dpcmopt:InvalidInput");
+                            0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidInput");
 
     numkit::ScratchArena arena(mr);
 
