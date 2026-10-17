@@ -46,6 +46,6 @@ ber16 = berawgn(10, 'qam', 16);
 fprintf('berawgn(Eb/No=10, QAM-16) = %.6e (expect ~ 1.8e-3)\n\n', ber16);
 
 % convertSNR
-es_no = convertSNR(10, 'From', 'ebno', 'To', 'esno', 'BitsPerSymbol', 4);
+es_no = convertSNR(10, 'ebno', 'esno', 'BitsPerSymbol', 4);
 fprintf('--- convertSNR(10 dB Eb/No → Es/No, k=4) = %.4f dB ---\n', es_no);
 fprintf('  expect: 10 + 10·log10(4) = 16.0206 dB\n');

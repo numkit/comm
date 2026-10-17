@@ -36,6 +36,11 @@ void awgn_reg(Span<const Value> args, size_t /*nargout*/,
             sp = argcheck::expectedReal(args[2], 3, "sigpower", "awgn");
         }
     }
+    if (args.size() >= 4 && (args[3].isChar() || args[3].isString())) {
+        if (args.size() >= 5)
+            throw Error("awgn: powertype must be the last input argument",
+                        0, 0, "awgn", "", "numkit:awgn:powerTypeMustBeLast");
+    }
     outs[0] = awgn(ctx.engine->rng(), args[0], snr, sp, ctx.engine->resource());
 }
 
@@ -124,15 +129,58 @@ void convertSNR_reg(Span<const Value> args, size_t /*nargout*/,
                     Span<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, "convertSNR");  // no max: mode/name-value tail in the reference (no count wall to 12 args)
-    std::string in_type = "ebno", out_type = "esno";
+    auto toLower = [](std::string s) {
+        for (char &c : s)
+            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32);
+        return s;
+    };
+    auto isValidMode = [](const std::string &m) {
+        return m == "ebno" || m == "esno" || m == "snr";
+    };
+
+    if (!(args[1].isChar() || args[1].isString()))
+        throw Error("convertSNR: input 2 (inputmode) must be a string ('ebno', 'esno', or 'snr')",
+                    0, 0, "convertSNR", "", "numkit:convertSNR:badInputMode");
+    std::string in_type = toLower(args[1].toString());
+    if (!isValidMode(in_type))
+        throw Error("convertSNR: input 2 (inputmode) must be 'ebno', 'esno', or 'snr' (got '" +
+                        args[1].toString() + "')",
+                    0, 0, "convertSNR", "", "numkit:convertSNR:badInputMode");
+
+    std::string out_type = "snr";
+    size_t nvStart = 2;
+    if (args.size() >= 3 && (args[2].isChar() || args[2].isString())) {
+        std::string cand = toLower(args[2].toString());
+        if (isValidMode(cand)) {
+            out_type = cand;
+            nvStart = 3;
+        } else if (args.size() == 3) {
+            throw Error("convertSNR: input 3 (outputmode) must be 'ebno', 'esno', or 'snr' (got '" +
+                            args[2].toString() + "')",
+                        0, 0, "convertSNR", "", "numkit:convertSNR:badOutputMode");
+        }
+    }
+
+    if ((args.size() - nvStart) % 2 != 0)
+        throw Error("convertSNR: Name-Value arguments must occur in pairs",
+                    0, 0, "convertSNR", "", "numkit:convertSNR:unpairedNameValue");
+
     int k = 1;
-    // Parse keyword pairs.
-    for (size_t i = 1; i + 1 < args.size(); ++i) {
-        if (args[i].isChar() || args[i].isString()) {
-            const auto key = args[i].toString();
-            if (key == "BitsPerSymbol") k = (int)args[i + 1].toScalar();
-            else if (key == "From")     in_type = args[i + 1].toString();
-            else if (key == "To")       out_type = args[i + 1].toString();
+    for (size_t i = nvStart; i + 1 < args.size(); i += 2) {
+        if (!(args[i].isChar() || args[i].isString()))
+            throw Error("convertSNR: parameter name must be a string",
+                        0, 0, "convertSNR", "", "numkit:convertSNR:badParamName");
+        const std::string key = toLower(args[i].toString());
+        if (key == "bitspersymbol") {
+            k = static_cast<int>(argcheck::expectedPositiveInteger(
+                argcheck::expectedReal(args[i + 1], int(i + 2), "BitsPerSymbol", "convertSNR"),
+                int(i + 2), "BitsPerSymbol", "convertSNR"));
+        } else if (key == "codingrate" || key == "samplespersymbol" ||
+                   key == "bandwidth" || key == "symbolrate") {
+            (void)argcheck::expectedReal(args[i + 1], int(i + 2), args[i].toString(), "convertSNR");
+        } else {
+            throw Error("convertSNR: unknown parameter '" + args[i].toString() + "'",
+                        0, 0, "convertSNR", "", "numkit:convertSNR:badParamName");
         }
     }
     outs[0] = convertSNR(args[0], in_type, out_type, k, ctx.engine->resource());

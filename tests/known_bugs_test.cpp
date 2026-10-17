@@ -72,9 +72,9 @@ TEST_F(CommKnownBug, DISABLED_SymerrOverallFlag)
     EXPECT_EQ(static_cast<int>(evalScalar("numel(n)")), 1);
 }
 
-// bugs/opened/comm/convertSNR-arg-semantics.md — positional mode values:
+// bugs/closed/comm/convertSNR-arg-semantics.md — positional mode values:
 // esno->snr is the identity pair, k never enters it.
-TEST_F(CommKnownBug, DISABLED_ConvertSNRPositionalModes)
+TEST_F(CommKnownBug, ConvertSNRPositionalModes)
 {
     EXPECT_DOUBLE_EQ(evalScalar("convertSNR(10, 'esno', 'snr', 'BitsPerSymbol', 2)"),
                      10.0);
@@ -83,9 +83,9 @@ TEST_F(CommKnownBug, DISABLED_ConvertSNRPositionalModes)
     EXPECT_ANY_THROW(eval("convertSNR(1, 'InputMode', 'ebno');"));
 }
 
-// bugs/opened/comm/ignored-option-tails.md — powertype must be the LAST
+// bugs/closed/comm/ignored-option-tails.md — powertype must be the LAST
 // input; anything after it errors in the reference.
-TEST_F(CommKnownBug, DISABLED_AwgnPowerTypeMustBeLast)
+TEST_F(CommKnownBug, AwgnPowerTypeMustBeLast)
 {
     EXPECT_ANY_THROW(eval("awgn(ones(1, 4), 10, 1, 'db', 5);"));
 }
