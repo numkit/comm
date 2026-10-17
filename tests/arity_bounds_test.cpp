@@ -188,7 +188,7 @@ TEST_F(CommArityFormsTest, FskFsOptional)
 
 TEST_F(CommArityFormsTest, SymerrFlagDeferred)
 {
-    expectError("symerr([1 0; 0 1], [0 1; 1 0], 'overall');",
+    expectError("symerr([1 0; 0 1], [0 1; 1 0], 'invalid');",
                 "numkit:symerr:flg");
 }
 

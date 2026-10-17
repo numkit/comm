@@ -63,13 +63,25 @@ TEST_F(CommKnownBug, Syndtable)
 
 // ─── argcheck migration findings (2026-09-17), bugs/opened/comm/*.md ──
 
-// bugs/opened/comm/symerr-flag.md — 'overall' aggregates to scalars.
-TEST_F(CommKnownBug, DISABLED_SymerrOverallFlag)
+// bugs/closed/comm/symerr-flag.md — 'overall', 'column-wise', 'row-wise' flags.
+TEST_F(CommKnownBug, SymerrOverallFlag)
 {
     eval("[n, r] = symerr([1 0; 0 1], [0 1; 1 0], 'overall');");
     EXPECT_DOUBLE_EQ(evalScalar("n"), 4.0);   // scalar total, not 1x2
     EXPECT_DOUBLE_EQ(evalScalar("r"), 1.0);
     EXPECT_EQ(static_cast<int>(evalScalar("numel(n)")), 1);
+
+    eval("[nc, rc] = symerr([1 0; 0 0], [0 0; 1 0], 'column-wise');");
+    EXPECT_DOUBLE_EQ(evalScalar("nc(1)"), 2.0);
+    EXPECT_DOUBLE_EQ(evalScalar("nc(2)"), 0.0);
+    EXPECT_DOUBLE_EQ(evalScalar("rc(1)"), 1.0);
+    EXPECT_DOUBLE_EQ(evalScalar("rc(2)"), 0.0);
+
+    eval("[nr, rr] = symerr([1 0; 0 0], [0 0; 1 0], 'row-wise');");
+    EXPECT_DOUBLE_EQ(evalScalar("nr(1)"), 1.0);
+    EXPECT_DOUBLE_EQ(evalScalar("nr(2)"), 1.0);
+    EXPECT_DOUBLE_EQ(evalScalar("rr(1)"), 0.5);
+    EXPECT_DOUBLE_EQ(evalScalar("rr(2)"), 0.5);
 }
 
 // bugs/closed/comm/convertSNR-arg-semantics.md — positional mode values:

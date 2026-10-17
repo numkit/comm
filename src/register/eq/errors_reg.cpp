@@ -39,12 +39,14 @@ void symerr_reg(Span<const Value> args, size_t nargout,
                 Span<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "symerr");
-    // R2025b accepts 'row-wise'/'column-wise'/'overall'; nk computes the
-    // element-wise default only — the flag branch is deferred.
-    if (args.size() >= 3 && !args[2].isEmpty())
-        throw Error("symerr: the row/column/overall flag is not supported yet",
-                    0, 0, "symerr", "", "numkit:symerr:flg");
-    auto [count, ratio] = symerr(args[0], args[1], ctx.engine->resource());
+    std::string flg = "overall";
+    if (args.size() >= 3 && !args[2].isEmpty()) {
+        if (!args[2].isChar() && !args[2].isString())
+            throw Error("symerr: flg must be 'overall', 'column-wise', or 'row-wise'",
+                        0, 0, "symerr", "", "numkit:symerr:flg");
+        flg = args[2].toString();
+    }
+    auto [count, ratio] = symerr(args[0], args[1], flg, ctx.engine->resource());
     outs[0] = std::move(count);
     if (nargout > 1) outs[1] = std::move(ratio);
 }

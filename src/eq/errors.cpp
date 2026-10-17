@@ -76,24 +76,87 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
 }
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
+                               std::string_view flg,
                                std::pmr::memory_resource *mr)
 {
-    const std::size_t n = x.numel();
-    if (y.numel() != n)
-        throw Error("symerr: x and y must have the same number of elements",
-                    0, 0, "symerr", "", "numkit:symerr:size");
+    std::string mode(flg);
+    for (char &ch : mode) {
+        if (ch >= 'A' && ch <= 'Z') ch = static_cast<char>(ch - 'A' + 'a');
+    }
 
-    const double *xd = x.doubleData();
-    const double *yd = y.doubleData();
-    std::uint64_t count = 0;
-    for (std::size_t i = 0; i < n; ++i)
-        if (xd[i] != yd[i]) ++count;
+    if (mode.empty() || mode == "overall") {
+        const std::size_t n = x.numel();
+        if (y.numel() != n)
+            throw Error("symerr: x and y must have the same number of elements",
+                        0, 0, "symerr", "", "numkit:symerr:size");
 
-    const double ratio = (n > 0)
-        ? static_cast<double>(count) / static_cast<double>(n)
-        : 0.0;
-    return {Value::scalar(static_cast<double>(count), mr),
-            Value::scalar(ratio, mr)};
+        const double *xd = x.doubleData();
+        const double *yd = y.doubleData();
+        std::uint64_t count = 0;
+        for (std::size_t i = 0; i < n; ++i)
+            if (xd[i] != yd[i]) ++count;
+
+        const double ratio = (n > 0)
+            ? static_cast<double>(count) / static_cast<double>(n)
+            : 0.0;
+        return {Value::scalar(static_cast<double>(count), mr),
+                Value::scalar(ratio, mr)};
+    }
+
+    if (mode == "column-wise") {
+        const std::size_t r = x.dims().rows();
+        const std::size_t c = x.dims().cols();
+        if (y.dims().rows() != r || y.dims().cols() != c)
+            throw Error("symerr: x and y must have the same dimensions for 'column-wise'",
+                        0, 0, "symerr", "", "numkit:symerr:size");
+        const double *xd = x.doubleData();
+        const double *yd = y.doubleData();
+        Value counts = Value::matrix(1, c, ValueType::DOUBLE, mr);
+        Value ratios = Value::matrix(1, c, ValueType::DOUBLE, mr);
+        double *cd = counts.doubleDataMut();
+        double *rd = ratios.doubleDataMut();
+        for (std::size_t j = 0; j < c; ++j) {
+            std::uint64_t cnt = 0;
+            for (std::size_t i = 0; i < r; ++i) {
+                if (xd[j * r + i] != yd[j * r + i]) ++cnt;
+            }
+            cd[j] = static_cast<double>(cnt);
+            rd[j] = (r > 0) ? static_cast<double>(cnt) / static_cast<double>(r) : 0.0;
+        }
+        return {std::move(counts), std::move(ratios)};
+    }
+
+    if (mode == "row-wise") {
+        const std::size_t r = x.dims().rows();
+        const std::size_t c = x.dims().cols();
+        if (y.dims().rows() != r || y.dims().cols() != c)
+            throw Error("symerr: x and y must have the same dimensions for 'row-wise'",
+                        0, 0, "symerr", "", "numkit:symerr:size");
+        const double *xd = x.doubleData();
+        const double *yd = y.doubleData();
+        Value counts = Value::matrix(r, 1, ValueType::DOUBLE, mr);
+        Value ratios = Value::matrix(r, 1, ValueType::DOUBLE, mr);
+        double *cd = counts.doubleDataMut();
+        double *rd = ratios.doubleDataMut();
+        for (std::size_t i = 0; i < r; ++i) {
+            std::uint64_t cnt = 0;
+            for (std::size_t j = 0; j < c; ++j) {
+                if (xd[j * r + i] != yd[j * r + i]) ++cnt;
+            }
+            cd[i] = static_cast<double>(cnt);
+            rd[i] = (c > 0) ? static_cast<double>(cnt) / static_cast<double>(c) : 0.0;
+        }
+        return {std::move(counts), std::move(ratios)};
+    }
+
+    throw Error("symerr: flg must be 'overall', 'column-wise', or 'row-wise'",
+                0, 0, "symerr", "", "numkit:symerr:flg");
+}
+
+std::pair<Value, Value> symerr(const Value &x, const Value &y,
+                               std::pmr::memory_resource *mr)
+{
+    return symerr(x, y, "overall", mr);
 }
 
 } // namespace numkit::comm

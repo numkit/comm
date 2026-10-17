@@ -46,6 +46,10 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k = 0,
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
                                std::pmr::memory_resource *mr = nullptr);
 
+std::pair<Value, Value> symerr(const Value &x, const Value &y,
+                               std::string_view flg,
+                               std::pmr::memory_resource *mr = nullptr);
+
 
 /// @}
 } // namespace numkit::comm
