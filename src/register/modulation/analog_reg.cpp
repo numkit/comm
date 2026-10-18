@@ -109,16 +109,93 @@ void ssbdemod_reg(Span<const Value> args, size_t /*nargout*/,
                        ini_phase, ctx.engine->resource());
 }
 
-void mskmod_reg(Span<const Value> args, size_t /*nargout*/,
+namespace {
+
+Value nondiffEncodeBits(const Value &x, std::pmr::memory_resource *mr)
+{
+    const auto &d = x.dims();
+    size_t H = d.rows();
+    size_t W = d.cols();
+    const bool was_row = (H == 1 && W >= 1);
+    if (was_row) std::swap(H, W);
+
+    Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
+                        : Value::matrix(H, W, ValueType::DOUBLE, mr);
+    double *o = out.doubleDataMut();
+    for (size_t c = 0; c < W; ++c) {
+        int prevA = 1; // initial I-rail state +1
+        for (size_t r = 0; r < H; ++r) {
+            const size_t idx = was_row ? r : (c * H + r);
+            const double xi = x.elemAsDouble(idx);
+            if (xi != 0.0 && xi != 1.0)
+                throw Error("mskmod: input must be binary (0 or 1)",
+                            0, 0, "mskmod", "", "numkit:mskmod:NotBinary");
+            const int ak = (xi != 0.0) ? 1 : -1;
+            const int dk = ((r % 2) == 0) ? (prevA * ak) : (-prevA * ak);
+            o[idx] = (dk > 0) ? 1.0 : 0.0;
+            prevA = ak;
+        }
+    }
+    return out;
+}
+
+Value nondiffDecodeBits(const Value &diffBits, std::pmr::memory_resource *mr)
+{
+    const auto &d = diffBits.dims();
+    size_t H = d.rows();
+    size_t W = d.cols();
+    const bool was_row = (H == 1 && W >= 1);
+    if (was_row) std::swap(H, W);
+
+    Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
+                        : Value::matrix(H, W, ValueType::DOUBLE, mr);
+    double *o = out.doubleDataMut();
+    for (size_t c = 0; c < W; ++c) {
+        int prevA = 1;
+        for (size_t r = 0; r < H; ++r) {
+            const size_t idx = was_row ? r : (c * H + r);
+            const int dk = (diffBits.elemAsDouble(idx) != 0.0) ? 1 : -1;
+            const int ak = ((r % 2) == 0) ? (prevA * dk) : (-prevA * dk);
+            o[idx] = (ak > 0) ? 1.0 : 0.0;
+            prevA = ak;
+        }
+    }
+    return out;
+}
+
+} // namespace
+
+void mskmod_reg(Span<const Value> args, size_t nargout,
                 Span<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "mskmod");
     const int nSamp = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "nSamp", "mskmod"), 2, "nSamp", "mskmod");
+    auto *mr = ctx.engine->resource();
+    bool nondiff = false;
     double ini_phase = 0.0;
-    if (args.size() >= 3 && !args[2].isEmpty())
-        ini_phase = args[2].toScalar();
-    outs[0] = mskmod(args[0], nSamp, ini_phase, ctx.engine->resource());
+    size_t i = 2;
+    if (i < args.size() && (args[i].isChar() || args[i].isString())) {
+        std::string enc = args[i].toString();
+        std::string elo;
+        for (char ch : enc) elo += static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        if (elo == "nondiff") nondiff = true;
+        else if (elo == "diff") nondiff = false;
+        else
+            throw Error("mskmod: dataenc must be 'diff' or 'nondiff'",
+                        0, 0, "mskmod", "", "numkit:mskmod:dataenc");
+        ++i;
+    }
+    if (i < args.size() && !args[i].isEmpty())
+        ini_phase = args[i].toScalar();
+
+    Value xEff = nondiff ? nondiffEncodeBits(args[0], mr) : args[0];
+    outs[0] = mskmod(xEff, nSamp, ini_phase, mr);
+    if (nargout >= 2 && outs.size() >= 2) {
+        double phaseOut = 0.0;
+        (void)mskdemod(outs[0], nSamp, ini_phase, &phaseOut, mr);
+        outs[1] = Value::scalar(phaseOut, mr);
+    }
 }
 
 void mskdemod_reg(Span<const Value> args, size_t nargout,
@@ -127,17 +204,17 @@ void mskdemod_reg(Span<const Value> args, size_t nargout,
     argcheck::checkNargin(args.size(), 2, 5, "mskdemod");
     const int nSamp = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "nSamp", "mskdemod"), 2, "nSamp", "mskdemod");
+    auto *mr = ctx.engine->resource();
+    bool nondiff = false;
     double ini_phase = 0.0;
     size_t i = 2;
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
         std::string enc = args[i].toString();
         std::string elo;
         for (char ch : enc) elo += static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-        if (elo == "nondiff")
-            throw Error("mskdemod: 'nondiff' encoding is not supported "
-                        "(differential 'diff' only — matches the mskmod gap)",
-                        0, 0, "mskdemod", "", "numkit:mskdemod:nondiff");
-        if (elo != "diff")
+        if (elo == "nondiff") nondiff = true;
+        else if (elo == "diff") nondiff = false;
+        else
             throw Error("mskdemod: dataenc must be 'diff' or 'nondiff'",
                         0, 0, "mskdemod", "", "numkit:mskdemod:dataenc");
         ++i;
@@ -146,11 +223,13 @@ void mskdemod_reg(Span<const Value> args, size_t nargout,
         ini_phase = args[i].toScalar();
 
     double phaseOut = 0.0;
-    outs[0] = mskdemod(args[0], nSamp, ini_phase,
-                       nargout >= 2 ? &phaseOut : nullptr,
-                       ctx.engine->resource());
+    Value bits = mskdemod(args[0], nSamp, ini_phase,
+                          nargout >= 2 ? &phaseOut : nullptr, mr);
+    if (nondiff)
+        bits = nondiffDecodeBits(bits, mr);
+    outs[0] = std::move(bits);
     if (outs.size() >= 2)
-        outs[1] = Value::scalar(phaseOut, ctx.engine->resource());
+        outs[1] = Value::scalar(phaseOut, mr);
 }
 
 void ssbmod_reg(Span<const Value> args, size_t /*nargout*/,

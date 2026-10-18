@@ -100,3 +100,13 @@ TEST_F(GenqamTest, DemodRealConstellationFromComplexInput)
     EXPECT_DOUBLE_EQ(evalScalar("z(3)"), 2.0);
     EXPECT_DOUBLE_EQ(evalScalar("z(4)"), 3.0);
 }
+
+TEST_F(GenqamTest, BitModeAndUnitAveragePower)
+{
+    eval("c = [1+1i, -1+1i, -1-1i, 1-1i];"
+         "bits = [0; 1; 1; 0; 1; 1; 0; 0];"
+         "y = genqammod(bits, c, 'InputType', 'bit', 'UnitAveragePower', true);"
+         "z = genqamdemod(y, c, 'OutputType', 'bit', 'UnitAveragePower', true);");
+    EXPECT_EQ(static_cast<int>(evalScalar("sum(z == bits)")), 8);
+    EXPECT_NEAR(evalScalar("abs(y(1))"), 1.0, 1e-12);
+}

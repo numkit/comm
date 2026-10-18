@@ -101,3 +101,11 @@ TEST_F(ApskTest, ScalarPhaseOffsetBroadcasts)
     eval("y = apskmod((0:7)', [4 4], [1 2], 0, (0:7));");
     EXPECT_EQ(static_cast<int>(evalScalar("numel(y)")), 8);
 }
+
+TEST_F(ApskTest, GrayMappingAndBitMode)
+{
+    eval("bits = [0; 1; 1; 0; 1; 1; 0; 0; 1; 0; 1; 0];"
+         "y = apskmod(bits, [4 4], [1 2], 'SymbolMapping', 'gray', 'InputType', 'bit');"
+         "z = apskdemod(y, [4 4], [1 2], 'SymbolMapping', 'gray', 'OutputType', 'bit');");
+    EXPECT_EQ(static_cast<int>(evalScalar("sum(z == bits)")), 12);
+}

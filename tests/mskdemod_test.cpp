@@ -57,7 +57,9 @@ TEST_F(MskdemodTest, ColumnOrientation) {
     EXPECT_EQ((int)evalScalar("size(z,2)"), 1);
 }
 
-// The non-differential path is deferred (matching the mskmod gap).
-TEST_F(MskdemodTest, NonDiffRejected) {
-    EXPECT_THROW(eval("mskdemod(mskmod([1 0 1],8), 8, 'nondiff');"), std::exception);
+// Non-differential ('nondiff') round-trip on mskmod / mskdemod.
+TEST_F(MskdemodTest, NonDiffRoundTrip) {
+    eval("d = [1 0 1 1 0 0 1 0]; y = mskmod(d, 8, 'nondiff'); z = mskdemod(y, 8, 'nondiff');");
+    EXPECT_EQ((int)evalScalar("numel(z)"), 8);
+    EXPECT_EQ((int)evalScalar("sum(z(:) == d(:))"), 8);
 }
