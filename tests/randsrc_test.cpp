@@ -94,3 +94,12 @@ TEST_F(RandsrcTest, RejectsNegativeProbability)
     } catch (...) { threw = true; }
     EXPECT_TRUE(threw);
 }
+
+TEST_F(RandsrcTest, ComplexAlphabetPreserved)
+{
+    eval("c = [1+1i, 1-1i, -1+1i, -1-1i];"
+         "y = randsrc(4, 5, c, 42);");
+    EXPECT_DOUBLE_EQ(evalScalar("~isreal(y)"), 1.0);
+    EXPECT_DOUBLE_EQ(evalScalar("all(abs(imag(y(:))) == 1)"), 1.0);
+    EXPECT_DOUBLE_EQ(evalScalar("all(abs(real(y(:))) == 1)"), 1.0);
+}

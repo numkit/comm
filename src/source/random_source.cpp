@@ -28,45 +28,55 @@ namespace {
 // Returns the symbol count K via len_out.
 void parseAlphabet(const Value &a,
                    std::pmr::memory_resource *mr,
-                   double **alpha_out, double **prob_out, size_t *len_out)
+                   Complex **alpha_out, double **prob_out, size_t *len_out,
+                   bool *is_complex_out)
 {
     const size_t R = a.dims().rows();
     const size_t C = a.dims().cols();
+    const bool a_cplx = a.isComplex();
 
     if (R == 1 && C >= 1) {
         // Plain alphabet row -> uniform probs.
         const size_t K = C;
-        auto *al = static_cast<double *>(
-            mr->allocate(K * sizeof(double), alignof(double)));
+        auto *al = static_cast<Complex *>(
+            mr->allocate(K * sizeof(Complex), alignof(Complex)));
         auto *pr = static_cast<double *>(
             mr->allocate(K * sizeof(double), alignof(double)));
+        bool any_imag = false;
         for (size_t k = 0; k < K; ++k) {
-            al[k] = a.elemAsDouble(k);
+            al[k] = a_cplx ? a.complexElem(k) : Complex(a.elemAsDouble(k), 0.0);
+            if (al[k].imag() != 0.0) any_imag = true;
             pr[k] = static_cast<double>(k + 1) / static_cast<double>(K);
         }
-        *alpha_out = al;
-        *prob_out  = pr;
-        *len_out   = K;
+        *alpha_out      = al;
+        *prob_out       = pr;
+        *len_out        = K;
+        *is_complex_out = a_cplx && any_imag;
         return;
     }
 
     if (R == 2 && C >= 1) {
         const size_t K = C;
-        auto *al = static_cast<double *>(
-            mr->allocate(K * sizeof(double), alignof(double)));
+        auto *al = static_cast<Complex *>(
+            mr->allocate(K * sizeof(Complex), alignof(Complex)));
         auto *pr = static_cast<double *>(
             mr->allocate(K * sizeof(double), alignof(double)));
         // Column-major: alphabet[k] = a(0, k) at index 0 + k*R = k*2;
         // prob[k] = a(1, k) at index 1 + k*2.
         double sum = 0.0;
+        bool any_imag = false;
         for (size_t k = 0; k < K; ++k) {
-            const double sym = a.elemAsDouble(k * R + 0);
-            const double pk  = a.elemAsDouble(k * R + 1);
-            if (!(pk >= 0.0 && pk <= 1.0))
+            const Complex sym = a_cplx ? a.complexElem(k * R + 0)
+                                       : Complex(a.elemAsDouble(k * R + 0), 0.0);
+            const Complex pkc = a_cplx ? a.complexElem(k * R + 1)
+                                       : Complex(a.elemAsDouble(k * R + 1), 0.0);
+            const double pk = pkc.real();
+            if (pkc.imag() != 0.0 || !(pk >= 0.0 && pk <= 1.0))
                 throw Error("randsrc: probabilities must be in [0, 1]",
                             0, 0, "randsrc", "",
                             "numkit:randsrc:InvalidProbabilityVal");
             al[k] = sym;
+            if (sym.imag() != 0.0) any_imag = true;
             sum  += pk;
             pr[k] = sum;          // cumulative
         }
@@ -74,9 +84,10 @@ void parseAlphabet(const Value &a,
             throw Error("randsrc: probabilities must sum to 1",
                         0, 0, "randsrc", "",
                         "numkit:randsrc:InvalidProbabilitySum");
-        *alpha_out = al;
-        *prob_out  = pr;
-        *len_out   = K;
+        *alpha_out      = al;
+        *prob_out       = pr;
+        *len_out        = K;
+        *is_complex_out = a_cplx && any_imag;
         return;
     }
 
@@ -97,14 +108,39 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
     using ::numkit::ops::MatlabMT19937;
 
     // Parse alphabet → cumulative probability table.
-    double *alpha = nullptr;
-    double *prob  = nullptr;
-    size_t  K     = 0;
-    parseAlphabet(alphabet, mr, &alpha, &prob, &K);
+    Complex *alpha     = nullptr;
+    double  *prob      = nullptr;
+    size_t   K         = 0;
+    bool     is_cplx   = false;
+    parseAlphabet(alphabet, mr, &alpha, &prob, &K, &is_cplx);
+
+    const size_t N = m * n;
+    if (is_cplx) {
+        Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
+        Complex *o = out.complexDataMut();
+        if (have_state) {
+            MatlabMT19937 local;
+            local.seed(state);
+            for (size_t i = 0; i < N; ++i) {
+                const double r = local.genRes53();
+                size_t idx = 0;
+                while (idx < K - 1 && r >= prob[idx]) ++idx;
+                o[i] = alpha[idx];
+            }
+        } else {
+            auto &gen = rng;
+            for (size_t i = 0; i < N; ++i) {
+                const double r = gen.genRes53();
+                size_t idx = 0;
+                while (idx < K - 1 && r >= prob[idx]) ++idx;
+                o[i] = alpha[idx];
+            }
+        }
+        return out;
+    }
 
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    const size_t N = m * n;
 
     // Choose generator. With explicit state -> dedicated engine for
     // reproducibility (matches MATLAB's RandStream(...,'Seed',state)).
@@ -116,7 +152,7 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
             // idx = 1 + sum(r >= prob(k)) → (1-based) → 0-based = sum(r >= prob).
             size_t idx = 0;
             while (idx < K - 1 && r >= prob[idx]) ++idx;
-            o[i] = alpha[idx];
+            o[i] = alpha[idx].real();
         }
     } else {
         auto &gen = rng;
@@ -124,7 +160,7 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
             const double r = gen.genRes53();
             size_t idx = 0;
             while (idx < K - 1 && r >= prob[idx]) ++idx;
-            o[i] = alpha[idx];
+            o[i] = alpha[idx].real();
         }
     }
 
