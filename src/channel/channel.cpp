@@ -86,11 +86,11 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
     if (is_complex) {
         Cd *od = out.complexDataMut();
         const Cd *xd = x.complexData();
-        std::vector<double> re(N), im(N);
-        for (size_t i = 0; i < N; ++i) re[i] = sigma * rng.nextNormal();
-        for (size_t i = 0; i < N; ++i) im[i] = sigma * rng.nextNormal();
-        for (size_t i = 0; i < N; ++i)
-            od[i] = xd[i] + Cd(re[i], im[i]);
+        for (size_t i = 0; i < N; ++i) {
+            double re = sigma * rng.nextNormal();
+            double im = sigma * rng.nextNormal();
+            od[i] = xd[i] + Cd(re, im);
+        }
     } else {
         double *od = out.doubleDataMut();
         for (size_t i = 0; i < N; ++i)
@@ -113,10 +113,11 @@ Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::str
         Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
         Cd *od = out.complexDataMut();
         const size_t N = (size_t)m * (size_t)n;
-        std::vector<double> re(N), im(N);
-        for (size_t i = 0; i < N; ++i) re[i] = sigma * rng.nextNormal();
-        for (size_t i = 0; i < N; ++i) im[i] = sigma * rng.nextNormal();
-        for (size_t i = 0; i < N; ++i) od[i] = Cd(re[i], im[i]);
+        for (size_t i = 0; i < N; ++i) {
+            double re = sigma * rng.nextNormal();
+            double im = sigma * rng.nextNormal();
+            od[i] = Cd(re, im);
+        }
         return out;
     }
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);

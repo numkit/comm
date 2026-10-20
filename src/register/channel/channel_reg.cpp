@@ -28,7 +28,10 @@ void awgn_reg(Span<const Value> args, size_t /*nargout*/,
     // Marshal-only: voiced extraction; the 'measured' sentinel semantics
     // and the compute-side behaviour live in channel.cpp's awgn.
     const double snr = argcheck::expectedReal(args[1], 2, "snr", "awgn");
-    double sp = -1e10;  // sentinel = "measured"
+    double sp = 0.0;  // default 0 dBW (1 W linear); "measured" uses -1e10 sentinel
+    if (args.size() >= 3 && !args[2].isEmpty()) {
+        if (args[2].isChar() || args[2].isString()) sp = -1e10;
+    }
     if (args.size() >= 3 && !args[2].isEmpty()) {
         if (args[2].isChar() || args[2].isString()) {
             // "measured" or absent → keep sentinel.
