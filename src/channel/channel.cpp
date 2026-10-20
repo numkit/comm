@@ -83,17 +83,18 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
     else if (d.is3D())out = Value::matrix3d(d.rows(), d.cols(), d.pages(), ty, mr);
     else              out = Value::matrix(d.rows(), d.cols(), ty, mr);
 
-    auto &gen = rng;
-    std::normal_distribution<double> nd(0.0, sigma);
     if (is_complex) {
         Cd *od = out.complexDataMut();
         const Cd *xd = x.complexData();
+        std::vector<double> re(N), im(N);
+        for (size_t i = 0; i < N; ++i) re[i] = sigma * rng.nextNormal();
+        for (size_t i = 0; i < N; ++i) im[i] = sigma * rng.nextNormal();
         for (size_t i = 0; i < N; ++i)
-            od[i] = xd[i] + Cd(nd(gen), nd(gen));
+            od[i] = xd[i] + Cd(re[i], im[i]);
     } else {
         double *od = out.doubleDataMut();
         for (size_t i = 0; i < N; ++i)
-            od[i] = x.elemAsDouble(i) + nd(gen);
+            od[i] = x.elemAsDouble(i) + sigma * rng.nextNormal();
     }
     return out;
 }
@@ -108,20 +109,20 @@ Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::str
     if (power_lin < 0.0) power_lin = 0.0;
     const double sigma = std::sqrt(complex_out ? power_lin / 2.0 : power_lin);
 
-    auto &gen = rng;
-    std::normal_distribution<double> nd(0.0, sigma);
-
     if (complex_out) {
         Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
         Cd *od = out.complexDataMut();
         const size_t N = (size_t)m * (size_t)n;
-        for (size_t i = 0; i < N; ++i) od[i] = Cd(nd(gen), nd(gen));
+        std::vector<double> re(N), im(N);
+        for (size_t i = 0; i < N; ++i) re[i] = sigma * rng.nextNormal();
+        for (size_t i = 0; i < N; ++i) im[i] = sigma * rng.nextNormal();
+        for (size_t i = 0; i < N; ++i) od[i] = Cd(re[i], im[i]);
         return out;
     }
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
     const size_t N = (size_t)m * (size_t)n;
-    for (size_t i = 0; i < N; ++i) od[i] = nd(gen);
+    for (size_t i = 0; i < N; ++i) od[i] = sigma * rng.nextNormal();
     return out;
 }
 
@@ -129,8 +130,6 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, std::pmr::me
     if (p < 0.0 || p > 1.0)
         throw Error("bsc: p must be in [0, 1]", 0, 0, "bsc", "",
                     "numkit:bsc:badp");
-    auto &gen = rng;
-    std::uniform_real_distribution<double> ud(0.0, 1.0);
 
     const size_t N = x.numel();
     Value out;
@@ -141,7 +140,7 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, std::pmr::me
     double *od = out.doubleDataMut();
     for (size_t i = 0; i < N; ++i) {
         const int b = (int)x.elemAsDouble(i) & 1;
-        od[i] = double(ud(gen) < p ? (b ^ 1) : b);
+        od[i] = double(rng.nextUniform() < p ? (b ^ 1) : b);
     }
     return out;
 }

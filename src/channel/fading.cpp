@@ -30,13 +30,11 @@ using Cd = std::complex<double>;
 std::vector<Cd> sampleCN01(::numkit::ops::RngContext &rng, size_t N) {
     std::vector<Cd> h(N);
     if (N == 0) return h;
-    auto &gen = rng;
-    std::normal_distribution<double> nd(0.0, std::sqrt(0.5));
-    for (size_t i = 0; i < N; ++i) {
-        const double re = nd(gen);
-        const double im = nd(gen);
-        h[i] = Cd(re, im);
-    }
+    const double s = std::sqrt(0.5);
+    std::vector<double> re(N), im(N);
+    for (size_t i = 0; i < N; ++i) re[i] = s * rng.nextNormal();
+    for (size_t i = 0; i < N; ++i) im[i] = s * rng.nextNormal();
+    for (size_t i = 0; i < N; ++i) h[i] = Cd(re[i], im[i]);
     return h;
 }
 
