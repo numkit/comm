@@ -4,6 +4,7 @@
 
 #include <numkit/signal/transforms/fft.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -37,12 +38,7 @@ inline int freq_idx_to_symbol(int k, int M, const std::string &order) {
     return (order == "bin") ? k : from_gray(k);
 }
 
-} // anonymous
-
-Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
-             double fs, const std::string &phase_continuity,
-             const std::string &symbol_order,
-             std::pmr::memory_resource *mr)
+void fskmod_argcheck(int M, double freq_sep, int nsamp, double fs)
 {
     if (M < 2)
         throw Error("fskmod: M must be ≥ 2", 0, 0, "fskmod", "",
@@ -50,6 +46,47 @@ Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
     if (freq_sep <= 0.0 || nsamp <= 0 || fs <= 0.0)
         throw Error("fskmod: freq_sep / nsamp / fs must be positive",
                     0, 0, "fskmod", "", "numkit:fskmod:badparam");
+}
+
+void fskdemod_argcheck(int M, double freq_sep, int nsamp, double fs)
+{
+    if (M < 2)
+        throw Error("fskdemod: M must be ≥ 2", 0, 0, "fskdemod", "",
+                    "numkit:fskdemod:badM");
+    if (freq_sep <= 0.0 || nsamp <= 0 || fs <= 0.0)
+        throw Error("fskdemod: freq_sep / nsamp / fs must be positive",
+                    0, 0, "fskdemod", "", "numkit:fskdemod:badparam");
+}
+
+void ofdmmod_argcheck(const Value &in, int nfft, int cplen)
+{
+    if (nfft <= 0 || cplen < 0)
+        throw Error("ofdmmod: bad nfft / cplen", 0, 0, "ofdmmod", "",
+                    "numkit:ofdmmod:badparam");
+    if ((int)in.dims().rows() != nfft)
+        throw Error("ofdmmod: in must have nfft rows", 0, 0, "ofdmmod", "",
+                    "numkit:ofdmmod:size");
+}
+
+void ofdmdemod_argcheck(const Value &in, int nfft, int cplen)
+{
+    if (nfft <= 0 || cplen < 0)
+        throw Error("ofdmdemod: bad nfft / cplen", 0, 0, "ofdmdemod", "",
+                    "numkit:ofdmdemod:badparam");
+    const size_t out_per_sym = (size_t)(nfft + cplen);
+    if (in.numel() % out_per_sym != 0)
+        throw Error("ofdmdemod: input length must be a multiple of (nfft + cplen)",
+                    0, 0, "ofdmdemod", "", "numkit:ofdmdemod:size");
+}
+
+} // anonymous
+
+Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
+             double fs, const std::string &phase_continuity,
+             const std::string &symbol_order,
+             std::pmr::memory_resource *mr)
+{
+    fskmod_argcheck(M, freq_sep, nsamp, fs);
 
     const size_t Nsym = x.numel();
     const size_t Nout = Nsym * (size_t)nsamp;
@@ -83,12 +120,7 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
                double fs, const std::string &symbol_order,
                std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("fskdemod: M must be ≥ 2", 0, 0, "fskdemod", "",
-                    "numkit:fskdemod:badM");
-    if (freq_sep <= 0.0 || nsamp <= 0 || fs <= 0.0)
-        throw Error("fskdemod: freq_sep / nsamp / fs must be positive",
-                    0, 0, "fskdemod", "", "numkit:fskdemod:badparam");
+    fskdemod_argcheck(M, freq_sep, nsamp, fs);
 
     const size_t Nsamps = y.numel();
     const size_t Nsym = Nsamps / (size_t)nsamp;
@@ -137,15 +169,9 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
 Value ofdmmod(const Value &in, int nfft, int cplen,
               std::pmr::memory_resource *mr)
 {
-    if (nfft <= 0 || cplen < 0)
-        throw Error("ofdmmod: bad nfft / cplen", 0, 0, "ofdmmod", "",
-                    "numkit:ofdmmod:badparam");
+    ofdmmod_argcheck(in, nfft, cplen);
 
-    const size_t rows = in.dims().rows();
     const size_t cols = in.dims().cols();
-    if ((int)rows != nfft)
-        throw Error("ofdmmod: in must have nfft rows", 0, 0, "ofdmmod", "",
-                    "numkit:ofdmmod:size");
     const size_t Nsym = cols;
     const size_t out_per_sym = (size_t)(nfft + cplen);
     Value out = Value::matrix(out_per_sym * Nsym, 1, ValueType::COMPLEX, mr);
@@ -188,17 +214,12 @@ Value ofdmmod(const Value &in, int nfft, int cplen,
 Value ofdmdemod(const Value &in, int nfft, int cplen, int symoffset,
                 std::pmr::memory_resource *mr)
 {
-    if (nfft <= 0 || cplen < 0)
-        throw Error("ofdmdemod: bad nfft / cplen", 0, 0, "ofdmdemod", "",
-                    "numkit:ofdmdemod:badparam");
+    ofdmdemod_argcheck(in, nfft, cplen);
     if (symoffset < 0)         symoffset = cplen;
     if (symoffset > cplen)     symoffset = cplen;
 
     const size_t out_per_sym = (size_t)(nfft + cplen);
     const size_t Nsamps = in.numel();
-    if (Nsamps % out_per_sym != 0)
-        throw Error("ofdmdemod: input length must be a multiple of (nfft + cplen)",
-                    0, 0, "ofdmdemod", "", "numkit:ofdmdemod:size");
     const size_t Nsym = Nsamps / out_per_sym;
 
     Value out = Value::matrix((size_t)nfft, Nsym, ValueType::COMPLEX, mr);

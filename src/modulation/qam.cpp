@@ -2,6 +2,7 @@
 
 #include <numkit/comm/modulation/qam.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -57,15 +58,43 @@ Value alloc_complex_like(std::pmr::memory_resource *mr, const Value &x) {
     return Value::matrix(d.rows(), d.cols(), ValueType::COMPLEX, mr);
 }
 
+void pammod_argcheck(int M) {
+    if (M < 2)
+        throw Error("pammod: M must be ≥ 2", 0, 0, "pammod", "",
+                    "numkit:pammod:badM");
+}
+
+void pamdemod_argcheck(int M) {
+    if (M < 2)
+        throw Error("pamdemod: M must be ≥ 2", 0, 0, "pamdemod", "",
+                    "numkit:pamdemod:badM");
+}
+
+void qammod_argcheck(int M) {
+    if (M < 4)
+        throw Error("qammod: M must be ≥ 4", 0, 0, "qammod", "",
+                    "numkit:qammod:badM");
+}
+
+void qamdemod_argcheck(int M) {
+    if (M < 4)
+        throw Error("qamdemod: M must be ≥ 4", 0, 0, "qamdemod", "",
+                    "numkit:qamdemod:badM");
+}
+
+void modnorm_argcheck(const Value &ref, const std::string &type, double target) {
+    (void)ref;
+    (void)type;
+    (void)target;
+}
+
 } // anonymous
 
 Value pammod(const Value &x, int M, double ini_phase,
              const std::string &symbol_order,
              std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("pammod: M must be ≥ 2", 0, 0, "pammod", "",
-                    "numkit:pammod:badM");
+    pammod_argcheck(M);
     Value out = alloc_complex_like(mr, x);   // PAM is real-valued but
     // MATLAB still returns complex when ini_phase ≠ 0; for simplicity always
     // return complex.
@@ -86,9 +115,7 @@ Value pamdemod(const Value &y, int M, double ini_phase,
                const std::string &symbol_order,
                std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("pamdemod: M must be ≥ 2", 0, 0, "pamdemod", "",
-                    "numkit:pamdemod:badM");
+    pamdemod_argcheck(M);
     Value out = alloc_double_like(mr, y);
     const size_t N = y.numel();
     if (N == 0) return out;
@@ -116,9 +143,7 @@ std::pair<int, int> qam_grid(int M) {
 Value qammod(const Value &x, int M, const std::string &symbol_order,
              bool unit_power, std::pmr::memory_resource *mr)
 {
-    if (M < 4)
-        throw Error("qammod: M must be ≥ 4", 0, 0, "qammod", "",
-                    "numkit:qammod:badM");
+    qammod_argcheck(M);
     auto [KI, KQ] = qam_grid(M);
 
     // Pre-compute scaling for unit average power.
@@ -153,9 +178,7 @@ Value qammod(const Value &x, int M, const std::string &symbol_order,
 Value qamdemod(const Value &y, int M, const std::string &symbol_order,
                bool unit_power, std::pmr::memory_resource *mr)
 {
-    if (M < 4)
-        throw Error("qamdemod: M must be ≥ 4", 0, 0, "qamdemod", "",
-                    "numkit:qamdemod:badM");
+    qamdemod_argcheck(M);
     auto [KI, KQ] = qam_grid(M);
 
     double scale = 1.0;
@@ -188,6 +211,7 @@ Value qamdemod(const Value &y, int M, const std::string &symbol_order,
 Value modnorm(const Value &ref, const std::string &type, double target,
               std::pmr::memory_resource *mr)
 {
+    modnorm_argcheck(ref, type, target);
     const size_t N = ref.numel();
     if (N == 0) return Value::scalar(1.0, mr);
     if (type == "avpow") {

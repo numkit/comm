@@ -19,6 +19,7 @@
 #include <numkit/comm/source/lloyds.hpp>
 #include <numkit/comm/source/quantiz.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -47,27 +48,21 @@ Value vecToRow(std::pmr::memory_resource *mr, const std::vector<double> &v)
     return out;
 }
 
-} // namespace
-
-std::tuple<Value, Value, double, double>
-lloyds(const Value &training_set, const Value &ini_codebook,
-       double tol, std::pmr::memory_resource *mr)
+void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
+                     std::vector<double> &training,
+                     std::vector<double> &codebook,
+                     double &min_train, double &max_train)
 {
-    std::vector<double> training;
     readVector(training_set, training);
     if (training.empty())
         throw Error("lloyds: training set must be non-empty",
                     0, 0, "lloyds", "", "numkit:lloyds:EmptyTRAINING_SET");
-    const double min_train =
-        *std::min_element(training.begin(), training.end());
-    const double max_train =
-        *std::max_element(training.begin(), training.end());
+    min_train = *std::min_element(training.begin(), training.end());
+    max_train = *std::max_element(training.begin(), training.end());
     if (max_train <= min_train)
         throw Error("lloyds: training set must span a positive range",
                     0, 0, "lloyds", "", "numkit:lloyds:InvalidTRAINING_SET");
 
-    // Build initial codebook.
-    std::vector<double> codebook;
     if (ini_codebook.numel() == 1) {
         const double Kd = ini_codebook.toScalar();
         const long K = static_cast<long>(std::floor(Kd));
@@ -85,10 +80,24 @@ lloyds(const Value &training_set, const Value &ini_codebook,
         readVector(ini_codebook, codebook);
         std::sort(codebook.begin(), codebook.end());
     }
-    const size_t K = codebook.size();
-    if (K < 1)
+    if (codebook.empty())
         throw Error("lloyds: ini_codebook must have at least 1 entry",
                     0, 0, "lloyds", "", "numkit:lloyds:InvalidINI_CODEBOOK");
+}
+
+} // namespace
+
+std::tuple<Value, Value, double, double>
+lloyds(const Value &training_set, const Value &ini_codebook,
+       double tol, std::pmr::memory_resource *mr)
+{
+    std::vector<double> training;
+    std::vector<double> codebook;
+    double min_train = 0.0;
+    double max_train = 0.0;
+    lloyds_argcheck(training_set, ini_codebook, training, codebook,
+                    min_train, max_train);
+    const size_t K = codebook.size();
 
     if (tol <= 0.0) tol = 1e-7;
 

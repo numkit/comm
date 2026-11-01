@@ -12,6 +12,7 @@
 
 #include <numkit/comm/source/quantiz.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -26,11 +27,26 @@ bool isRow(const Value &v)
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
+void quantiz_indx_argcheck(const Value &sig, const Value &partition)
+{
+    (void)sig;
+    (void)partition;
+}
+
+void quantiz_argcheck(const Value &partition, const Value &codebook)
+{
+    if (codebook.numel() != partition.numel() + 1)
+        throw Error("quantiz: length(codebook) must equal "
+                    "length(partition) + 1",
+                    0, 0, "quantiz", "", "numkit:quantiz:invalidCodebook");
+}
+
 } // namespace
 
 Value quantiz_indx(const Value &sig, const Value &partition,
                    std::pmr::memory_resource *mr)
 {
+    quantiz_indx_argcheck(sig, partition);
     const size_t N = sig.numel();
     const size_t M = partition.numel();
     const bool row = isRow(sig);
@@ -53,11 +69,8 @@ QuantizResult
 quantiz(const Value &sig, const Value &partition, const Value &codebook,
         std::pmr::memory_resource *mr)
 {
+    quantiz_argcheck(partition, codebook);
     const size_t N = sig.numel();
-    if (codebook.numel() != partition.numel() + 1)
-        throw Error("quantiz: length(codebook) must equal "
-                    "length(partition) + 1",
-                    0, 0, "quantiz", "", "numkit:quantiz:invalidCodebook");
 
     Value indx = quantiz_indx(sig, partition, mr);
     const double *idx = indx.doubleData();

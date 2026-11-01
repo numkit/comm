@@ -18,6 +18,7 @@
 
 #include <numkit/comm/source/huffman.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -47,11 +48,7 @@ struct TreeNode {
     int bit     = 0;  // 0 if this is the "first/lower" child, 1 otherwise.
 };
 
-} // namespace
-
-std::pair<Value, double>
-huffmandict(const Value &symbols, const Value &probs,
-            std::pmr::memory_resource *mr)
+void huffmandict_argcheck(const Value &symbols, const Value &probs)
 {
     const size_t K = symbols.numel();
     if (K == 0)
@@ -75,6 +72,16 @@ huffmandict(const Value &symbols, const Value &probs,
         throw Error("huffmandict: probabilities must sum to 1",
                     0, 0, "huffmandict", "",
                     "numkit:huffmandict:InvalidProbSum");
+}
+
+} // namespace
+
+std::pair<Value, double>
+huffmandict(const Value &symbols, const Value &probs,
+            std::pmr::memory_resource *mr)
+{
+    huffmandict_argcheck(symbols, probs);
+    const size_t K = symbols.numel();
 
     // Edge case: a single symbol gets a single-bit "0" code.
     if (K == 1) {
@@ -218,12 +225,22 @@ bool isRowOriented(const Value &v)
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
+DictView huffmanenco_argcheck(const Value &dict)
+{
+    return readDict(dict);
+}
+
+DictView huffmandeco_argcheck(const Value &dict)
+{
+    return readDict(dict);
+}
+
 } // namespace
 
 Value huffmanenco(const Value &sig, const Value &dict,
                   std::pmr::memory_resource *mr)
 {
-    DictView dv = readDict(dict);
+    DictView dv = huffmanenco_argcheck(dict);
 
     // Walk sig once to compute output bit count.
     const size_t N = sig.numel();
@@ -256,7 +273,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
 Value huffmandeco(const Value &bits, const Value &dict,
                   std::pmr::memory_resource *mr)
 {
-    DictView dv = readDict(dict);
+    DictView dv = huffmandeco_argcheck(dict);
 
     // Build decode tree.
     DecodeTree tree;

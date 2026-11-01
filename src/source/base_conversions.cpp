@@ -18,6 +18,7 @@
 // buffers.
 
 #include <numkit/comm/source/base_conversions.hpp>
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>

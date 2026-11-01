@@ -15,6 +15,7 @@
 
 #include <numkit/comm/source/arithcoding.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -57,17 +58,27 @@ inline uint64_t maskN(uint64_t x, int N)
     return x & ((N == 64) ? ~0ULL : ((1ULL << N) - 1ULL));
 }
 
+void arithenco_argcheck(const Value &counts, std::vector<uint64_t> &cnt)
+{
+    readVecU(counts, cnt);
+    if (cnt.empty())
+        throw Error("arithenco: counts must be non-empty",
+                    0, 0, "arithenco", "", "numkit:arithenco:Counts");
+}
+
+void arithdeco_argcheck(const Value &counts, std::vector<uint64_t> &cnt)
+{
+    readVecU(counts, cnt);
+}
+
 } // namespace
 
 Value arithenco(const Value &seq, const Value &counts,
                 std::pmr::memory_resource *mr)
 {
     std::vector<uint64_t> cnt;
-    readVecU(counts, cnt);
+    arithenco_argcheck(counts, cnt);
     const size_t K = cnt.size();
-    if (K == 0)
-        throw Error("arithenco: counts must be non-empty",
-                    0, 0, "arithenco", "", "numkit:arithenco:Counts");
 
     // Cumulative counts: cum[0]=0, cum[i]=sum(cnt[0..i-1])
     std::vector<uint64_t> cum(K + 1, 0);
@@ -157,7 +168,7 @@ Value arithdeco(const Value &code, const Value &counts, size_t len,
                 std::pmr::memory_resource *mr)
 {
     std::vector<uint64_t> cnt;
-    readVecU(counts, cnt);
+    arithdeco_argcheck(counts, cnt);
     const size_t K = cnt.size();
     std::vector<uint64_t> cum(K + 1, 0);
     for (size_t i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];

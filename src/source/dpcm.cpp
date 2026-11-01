@@ -16,6 +16,7 @@
 
 #include <numkit/comm/source/dpcm.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -53,6 +54,22 @@ bool isRow(const Value &v)
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
+void dpcmenco_argcheck(const Value &codebook, const Value &partition,
+                       const Value &predictor, std::vector<double> &pred)
+{
+    if (codebook.numel() != partition.numel() + 1)
+        throw Error("dpcmenco: length(codebook) must equal "
+                    "length(partition) + 1",
+                    0, 0, "dpcmenco", "",
+                    "numkit:dpcmenco:InvalidPartitionSize");
+    readPredictor(predictor, pred);
+}
+
+void dpcmdeco_argcheck(const Value &predictor, std::vector<double> &pred)
+{
+    readPredictor(predictor, pred);
+}
+
 } // namespace
 
 std::pair<Value, Value>
@@ -60,13 +77,8 @@ dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
          std::pmr::memory_resource *mr)
 {
-    if (codebook.numel() != partition.numel() + 1)
-        throw Error("dpcmenco: length(codebook) must equal "
-                    "length(partition) + 1",
-                    0, 0, "dpcmenco", "",
-                    "numkit:dpcmenco:InvalidPartitionSize");
     std::vector<double> pred;
-    readPredictor(predictor, pred);
+    dpcmenco_argcheck(codebook, partition, predictor, pred);
     const size_t M = pred.size();
 
     const size_t N = sig.numel();
@@ -101,7 +113,7 @@ dpcmdeco(const Value &indx, const Value &codebook,
          std::pmr::memory_resource *mr)
 {
     std::vector<double> pred;
-    readPredictor(predictor, pred);
+    dpcmdeco_argcheck(predictor, pred);
     const size_t M = pred.size();
 
     const size_t K = codebook.numel();

@@ -2,6 +2,7 @@
 
 #include <numkit/comm/modulation/psk.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -62,15 +63,37 @@ Value alloc_double_like(std::pmr::memory_resource *mr, const Value &x) {
     return Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
 }
 
+void pskmod_argcheck(int M) {
+    if (M < 2)
+        throw Error("pskmod: M must be ≥ 2", 0, 0, "pskmod", "",
+                    "numkit:pskmod:badM");
+}
+
+void pskdemod_argcheck(int M) {
+    if (M < 2)
+        throw Error("pskdemod: M must be ≥ 2", 0, 0, "pskdemod", "",
+                    "numkit:pskdemod:badM");
+}
+
+void dpskmod_argcheck(int M) {
+    if (M < 2)
+        throw Error("dpskmod: M must be ≥ 2", 0, 0, "dpskmod", "",
+                    "numkit:dpskmod:badM");
+}
+
+void dpskdemod_argcheck(int M) {
+    if (M < 2)
+        throw Error("dpskdemod: M must be ≥ 2", 0, 0, "dpskdemod", "",
+                    "numkit:dpskdemod:badM");
+}
+
 } // anonymous
 
 Value pskmod(const Value &x, int M, double ini_phase,
              const std::string &symbol_order,
              std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("pskmod: M must be ≥ 2", 0, 0, "pskmod", "",
-                    "numkit:pskmod:badM");
+    pskmod_argcheck(M);
     Value out = alloc_complex_like(mr, x);
     const size_t N = x.numel();
     if (N == 0) return out;
@@ -89,9 +112,7 @@ Value pskdemod(const Value &y, int M, double ini_phase,
                const std::string &symbol_order,
                std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("pskdemod: M must be ≥ 2", 0, 0, "pskdemod", "",
-                    "numkit:pskdemod:badM");
+    pskdemod_argcheck(M);
     Value out = alloc_double_like(mr, y);
     const size_t N = y.numel();
     if (N == 0) return out;
@@ -115,9 +136,7 @@ Value dpskmod(const Value &x, int M, double phase_rot,
               const std::string &symbol_order,
               std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("dpskmod: M must be ≥ 2", 0, 0, "dpskmod", "",
-                    "numkit:dpskmod:badM");
+    dpskmod_argcheck(M);
     Value out = alloc_complex_like(mr, x);
     const size_t N = x.numel();
     if (N == 0) return out;
@@ -137,9 +156,7 @@ Value dpskdemod(const Value &y, int M, double phase_rot,
                 const std::string &symbol_order,
                 std::pmr::memory_resource *mr)
 {
-    if (M < 2)
-        throw Error("dpskdemod: M must be ≥ 2", 0, 0, "dpskdemod", "",
-                    "numkit:dpskdemod:badM");
+    dpskdemod_argcheck(M);
     Value out = alloc_double_like(mr, y);
     const size_t N = y.numel();
     if (N == 0) return out;

@@ -8,6 +8,7 @@
 #include <numkit/builtin/datafun.hpp>
 #include <numkit/ops/matlab_mt19937.hpp>
 #include <numkit/ops/rng_context.hpp>
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
@@ -99,6 +100,14 @@ void parseAlphabet(const Value &a,
                 0, 0, "randsrc", "", "numkit:randsrc:InvalidAlphabet");
 }
 
+void randsrc_argcheck(const Value &a,
+                      std::pmr::memory_resource *mr,
+                      Complex **alpha_out, double **prob_out, size_t *len_out,
+                      bool *is_complex_out)
+{
+    parseAlphabet(a, mr, alpha_out, prob_out, len_out, is_complex_out);
+}
+
 } // namespace
 
 Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &alphabet,
@@ -112,7 +121,7 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
     double  *prob      = nullptr;
     size_t   K         = 0;
     bool     is_cplx   = false;
-    parseAlphabet(alphabet, mr, &alpha, &prob, &K, &is_cplx);
+    randsrc_argcheck(alphabet, mr, &alpha, &prob, &K, &is_cplx);
 
     const size_t N = m * n;
     if (is_cplx) {
@@ -252,6 +261,13 @@ void parseErrspec(const Value &e, std::pmr::memory_resource *mr,
                 0, 0, "randerr", "", "numkit:randerr:InvalidErrorsDims");
 }
 
+void randerr_argcheck(const Value &e, std::pmr::memory_resource *mr,
+                      int **counts_out, double **prob_out, size_t *len_out,
+                      size_t n)
+{
+    parseErrspec(e, mr, counts_out, prob_out, len_out, n);
+}
+
 template <typename Rng>
 void fillOneRow(double *o_col_major, size_t i, size_t m, size_t n,
                 const int *counts, const double *prob, size_t K, Rng &rng,
@@ -287,7 +303,7 @@ Value randerr(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &e
     int    *counts = nullptr;
     double *prob   = nullptr;
     size_t  K      = 0;
-    parseErrspec(errspec, mr, &counts, &prob, &K, n);
+    randerr_argcheck(errspec, mr, &counts, &prob, &K, n);
 
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();

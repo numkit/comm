@@ -11,6 +11,7 @@
 
 #include <numkit/comm/eq/pulse.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 

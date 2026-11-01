@@ -10,6 +10,7 @@
 
 #include <numkit/comm/coding/convcoding.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>

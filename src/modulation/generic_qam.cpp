@@ -10,6 +10,7 @@
 
 #include <numkit/comm/modulation/generic_qam.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -27,13 +28,37 @@ static Cd constAt(const Value &c, size_t k) {
     return Cd(c.elemAsDouble(k), 0.0);
 }
 
-Value genqammod(const Value &x, const Value &constellation,
-                std::pmr::memory_resource *mr)
+namespace {
+
+void genqammod_argcheck(const Value &x, const Value &constellation)
 {
     const size_t M = constellation.numel();
     if (M == 0)
         throw Error("genqammod: constellation must be non-empty",
                     0, 0, "genqammod", "", "numkit:genqammod:EmptyConst");
+    const size_t N = x.numel();
+    for (size_t i = 0; i < N; ++i) {
+        const double xi = x.elemAsDouble(i);
+        if (xi < 0.0 || xi >= static_cast<double>(M))
+            throw Error("genqammod: index out of range [0, M-1]",
+                        0, 0, "genqammod", "",
+                        "numkit:genqammod:OutOfRange");
+    }
+}
+
+void genqamdemod_argcheck(const Value &constellation)
+{
+    if (constellation.numel() == 0)
+        throw Error("genqamdemod: constellation must be non-empty",
+                    0, 0, "genqamdemod", "", "numkit:genqamdemod:EmptyConst");
+}
+
+} // namespace
+
+Value genqammod(const Value &x, const Value &constellation,
+                std::pmr::memory_resource *mr)
+{
+    genqammod_argcheck(x, constellation);
 
     const auto &d = x.dims();
     const size_t H = d.rows();
@@ -50,23 +75,13 @@ Value genqammod(const Value &x, const Value &constellation,
     if (out_complex) {
         Cd *o = out.complexDataMut();
         for (size_t i = 0; i < N; ++i) {
-            const double xi = x.elemAsDouble(i);
-            if (xi < 0.0 || xi >= static_cast<double>(M))
-                throw Error("genqammod: index out of range [0, M-1]",
-                            0, 0, "genqammod", "",
-                            "numkit:genqammod:OutOfRange");
-            const size_t k = static_cast<size_t>(xi);
+            const size_t k = static_cast<size_t>(x.elemAsDouble(i));
             o[i] = constellation.complexData()[k];
         }
     } else {
         double *o = out.doubleDataMut();
         for (size_t i = 0; i < N; ++i) {
-            const double xi = x.elemAsDouble(i);
-            if (xi < 0.0 || xi >= static_cast<double>(M))
-                throw Error("genqammod: index out of range [0, M-1]",
-                            0, 0, "genqammod", "",
-                            "numkit:genqammod:OutOfRange");
-            const size_t k = static_cast<size_t>(xi);
+            const size_t k = static_cast<size_t>(x.elemAsDouble(i));
             o[i] = constellation.elemAsDouble(k);
         }
     }
@@ -76,10 +91,8 @@ Value genqammod(const Value &x, const Value &constellation,
 Value genqamdemod(const Value &y, const Value &constellation,
                   std::pmr::memory_resource *mr)
 {
+    genqamdemod_argcheck(constellation);
     const size_t M = constellation.numel();
-    if (M == 0)
-        throw Error("genqamdemod: constellation must be non-empty",
-                    0, 0, "genqamdemod", "", "numkit:genqamdemod:EmptyConst");
 
     const auto &d = y.dims();
     const size_t H = d.rows();

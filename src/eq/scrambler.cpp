@@ -20,6 +20,7 @@
 
 #include <numkit/comm/eq/scrambler.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -64,6 +65,18 @@ Value packDoubles(std::pmr::memory_resource *mr,
     return out;
 }
 
+void scrambler_argcheck(const std::vector<int> &polyVec,
+                        const std::vector<int> &state,
+                        const char *name,
+                        const char *stateErrId)
+{
+    validatePoly(polyVec, name);
+    const size_t n = polyVec.size() - 1;
+    if (state.size() != n)
+        throw Error(std::string(name) + ": initState length must equal polynomial order",
+                    0, 0, name, "", stateErrId);
+}
+
 } // anonymous
 
 Value scrambler(const Value &x, const Value &poly,
@@ -73,11 +86,8 @@ Value scrambler(const Value &x, const Value &poly,
     auto xBits   = readBitVec(x, "scrambler");
     auto polyVec = readBitVec(poly, "scrambler");
     auto state   = readBitVec(initState, "scrambler");
-    validatePoly(polyVec, "scrambler");
+    scrambler_argcheck(polyVec, state, "scrambler", "numkit:scrambler:state");
     const size_t n = polyVec.size() - 1;
-    if (state.size() != n)
-        throw Error("scrambler: initState length must equal polynomial order",
-                    0, 0, "scrambler", "", "numkit:scrambler:state");
 
     std::vector<int> y(xBits.size(), 0);
     for (size_t k = 0; k < xBits.size(); ++k) {
@@ -99,11 +109,8 @@ Value descrambler(const Value &y, const Value &poly,
     auto yBits   = readBitVec(y, "descrambler");
     auto polyVec = readBitVec(poly, "descrambler");
     auto state   = readBitVec(initState, "descrambler");
-    validatePoly(polyVec, "descrambler");
+    scrambler_argcheck(polyVec, state, "descrambler", "numkit:descrambler:state");
     const size_t n = polyVec.size() - 1;
-    if (state.size() != n)
-        throw Error("descrambler: initState length must equal polynomial order",
-                    0, 0, "descrambler", "", "numkit:descrambler:state");
 
     std::vector<int> x(yBits.size(), 0);
     for (size_t k = 0; k < yBits.size(); ++k) {

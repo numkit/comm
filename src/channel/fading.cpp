@@ -10,6 +10,7 @@
 #include <numkit/builtin/datafun.hpp>
 #include <numkit/ops/rng_context.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -44,10 +45,24 @@ Cd asComplex(const Value &x, size_t i) {
     return Cd(x.elemAsDouble(i), 0.0);
 }
 
+void rayleighchan_argcheck(const Value &x)
+{
+    (void)x;
+}
+
+void ricianchan_argcheck(const Value &x, double K)
+{
+    (void)x;
+    if (K < 0.0)
+        throw Error("ricianchan: K-factor must be ≥ 0",
+                    0, 0, "ricianchan", "", "numkit:ricianchan:K");
+}
+
 } // anonymous
 
 Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x, std::pmr::memory_resource *mr)
 {
+    rayleighchan_argcheck(x);
     const size_t N = x.numel();
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);
@@ -60,9 +75,7 @@ Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x, std::pmr::mem
 
 Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, double K, std::pmr::memory_resource *mr)
 {
-    if (K < 0.0)
-        throw Error("ricianchan: K-factor must be ≥ 0",
-                    0, 0, "ricianchan", "", "numkit:ricianchan:K");
+    ricianchan_argcheck(x, K);
     const size_t N = x.numel();
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);

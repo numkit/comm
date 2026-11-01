@@ -13,6 +13,7 @@
 #include <numkit/signal/filter_design/filter_design.hpp>     // butter
 #include <numkit/signal/digital_filtering/filter.hpp>        // filtfilt
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 

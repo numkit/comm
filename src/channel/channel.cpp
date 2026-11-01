@@ -6,6 +6,7 @@
 #include <numkit/builtin/specfun.hpp>     // betaincinv
 #include <numkit/ops/rng_context.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -61,11 +62,89 @@ Value elementwise(std::pmr::memory_resource *mr, const Value &x, Op op) {
     return out;
 }
 
+void awgn_argcheck(const Value &x, double snr_db, double sigpower_db)
+{
+    (void)x;
+    (void)snr_db;
+    (void)sigpower_db;
+}
+
+void wgn_argcheck(int m, int n, double p, const std::string &type)
+{
+    (void)m;
+    (void)n;
+    (void)p;
+    (void)type;
+}
+
+void bsc_argcheck(const Value &x, double p)
+{
+    (void)x;
+    if (p < 0.0 || p > 1.0)
+        throw Error("bsc: p must be in [0, 1]", 0, 0, "bsc", "",
+                    "numkit:bsc:badp");
+}
+
+void qfunc_argcheck(const Value &x)
+{
+    (void)x;
+}
+
+void qfuncinv_argcheck(const Value &p)
+{
+    (void)p;
+}
+
+void marcumq_argcheck(const Value &a_v, const Value &b_v, int m)
+{
+    (void)a_v;
+    (void)b_v;
+    (void)m;
+}
+
+void berawgn_argcheck(const Value &EbNo_dB, const std::string &mod, int M)
+{
+    (void)EbNo_dB;
+    (void)mod;
+    (void)M;
+}
+
+void noisebw_argcheck(const Value &num, const Value &den, int Nsamp, double fs)
+{
+    (void)num;
+    (void)den;
+    (void)Nsamp;
+    (void)fs;
+}
+
+void berconfint_argcheck(double numErrs, double numBits, double level)
+{
+    if (!(numBits > 0.0))
+        throw Error("berconfint: numBits must be positive",
+                    0, 0, "berconfint", "", "numkit:berconfint:nbits");
+    if (numErrs < 0.0 || numErrs > numBits)
+        throw Error("berconfint: numErrs must satisfy 0 ≤ numErrs ≤ numBits",
+                    0, 0, "berconfint", "", "numkit:berconfint:nerrs");
+    if (!(level > 0.0 && level < 1.0))
+        throw Error("berconfint: level must lie in (0, 1)",
+                    0, 0, "berconfint", "", "numkit:berconfint:level");
+}
+
+void convertSNR_argcheck(const Value &snr_in, const std::string &in_type,
+                         const std::string &out_type, int bits_per_symbol)
+{
+    (void)snr_in;
+    (void)in_type;
+    (void)out_type;
+    (void)bits_per_symbol;
+}
+
 } // anonymous
 
 Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double sigpower_db,
            std::pmr::memory_resource *mr)
 {
+    awgn_argcheck(x, snr_db, sigpower_db);
     const bool is_complex = (x.type() == ValueType::COMPLEX);
     double sig_pow = (sigpower_db < -1e9)  // -inf sentinel = "measured"
                      ? avg_power(x)
@@ -102,6 +181,7 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
 Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::string &type,
           bool complex_out, std::pmr::memory_resource *mr)
 {
+    wgn_argcheck(m, n, p, type);
     double power_lin = 0.0;
     if (type == "linear") power_lin = p;
     else if (type == "dBm") power_lin = std::pow(10.0, (p - 30.0) / 10.0);
@@ -128,9 +208,7 @@ Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::str
 }
 
 Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, std::pmr::memory_resource *mr) {
-    if (p < 0.0 || p > 1.0)
-        throw Error("bsc: p must be in [0, 1]", 0, 0, "bsc", "",
-                    "numkit:bsc:badp");
+    bsc_argcheck(x, p);
 
     const size_t N = x.numel();
     Value out;
@@ -147,6 +225,7 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, std::pmr::me
 }
 
 Value qfunc(const Value &x, std::pmr::memory_resource *mr) {
+    qfunc_argcheck(x);
     return elementwise(mr, x, [](double v) {
         return 0.5 * std::erfc(v / std::sqrt(2.0));
     });
@@ -189,6 +268,7 @@ double erfcinv_approx(double x) {
 } // anonymous
 
 Value qfuncinv(const Value &p, std::pmr::memory_resource *mr) {
+    qfuncinv_argcheck(p);
     return elementwise(mr, p, [](double v) {
         if (!(v > 0.0 && v < 1.0)) return std::numeric_limits<double>::quiet_NaN();
         // Q(x) = 0.5·erfc(x/√2). Inverse: x = √2·erfcinv(2v).
@@ -199,6 +279,7 @@ Value qfuncinv(const Value &p, std::pmr::memory_resource *mr) {
 Value marcumq(const Value &a_v, const Value &b_v, int m,
               std::pmr::memory_resource *mr)
 {
+    marcumq_argcheck(a_v, b_v, m);
     // Power-series approximation: Q_m(a, b) = exp(-(a²+b²)/2) · Σ_{k=0..} (a/b)^(m-1+k) · I_{m-1+k}(ab)
     // For first-cut, only m=1 (standard Marcum Q) is implemented robustly via:
     //   Q1(a, b) = exp(-(a²+b²)/2) · Σ_{k=0..∞} (a/b)^k · I_k(ab)
@@ -277,6 +358,7 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
 Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
               std::pmr::memory_resource *mr)
 {
+    berawgn_argcheck(EbNo_dB, mod, M);
     return elementwise(mr, EbNo_dB, [&](double dB) {
         const double EbNo = std::pow(10.0, dB / 10.0);
         if (mod == "psk") {
@@ -314,6 +396,7 @@ Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
 Value noisebw(const Value &num, const Value &den, int Nsamp,
               double fs, std::pmr::memory_resource *mr)
 {
+    noisebw_argcheck(num, den, Nsamp, fs);
     // MATLAB convention (noisebw):
     //   NBW = (fs / N) * sum(|H[k]|^2) / max(|H[k]|^2)
     // Discrete grid over [0, pi) -- N points spaced w_k = pi*k/N.
@@ -363,15 +446,7 @@ std::tuple<Value, Value>
 berconfint(double numErrs, double numBits, double level,
            std::pmr::memory_resource *mr)
 {
-    if (!(numBits > 0.0))
-        throw Error("berconfint: numBits must be positive",
-                    0, 0, "berconfint", "", "numkit:berconfint:nbits");
-    if (numErrs < 0.0 || numErrs > numBits)
-        throw Error("berconfint: numErrs must satisfy 0 ≤ numErrs ≤ numBits",
-                    0, 0, "berconfint", "", "numkit:berconfint:nerrs");
-    if (!(level > 0.0 && level < 1.0))
-        throw Error("berconfint: level must lie in (0, 1)",
-                    0, 0, "berconfint", "", "numkit:berconfint:level");
+    berconfint_argcheck(numErrs, numBits, level);
 
     const double k = numErrs;
     const double n = numBits;
@@ -398,6 +473,7 @@ Value convertSNR(const Value &snr_in,
                  int bits_per_symbol,
                  std::pmr::memory_resource *mr)
 {
+    convertSNR_argcheck(snr_in, in_type, out_type, bits_per_symbol);
     if (in_type == out_type) return snr_in;
     return elementwise(mr, snr_in, [&](double dB) {
         // Convert via Es/No as the pivot.

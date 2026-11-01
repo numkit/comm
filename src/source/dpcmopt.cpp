@@ -19,6 +19,7 @@
 #include <numkit/comm/source/dpcmopt.hpp>
 #include <numkit/comm/source/lloyds.hpp>
 
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
@@ -87,13 +88,8 @@ void levinson_durbin(const double *r, int ord, double *a, double *prev)
     }
 }
 
-}  // namespace
-
-DpcmOptResult dpcmopt(const Value &training_set, int ord,
-                      const Value &ini_codebook,
-                      std::pmr::memory_resource *mr)
+void dpcmopt_argcheck(const Value &training_set, int ord)
 {
-    // ── Argument validation ──────────────────────────────────────
     if (ord < 1)
         throw numkit::Error("The predictor order must be a positive "
                             "integer.",
@@ -106,6 +102,16 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
         throw numkit::Error("The size of the training set is not large "
                             "enough for the given predictor order.",
                             0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidInput");
+}
+
+}  // namespace
+
+DpcmOptResult dpcmopt(const Value &training_set, int ord,
+                      const Value &ini_codebook,
+                      std::pmr::memory_resource *mr)
+{
+    dpcmopt_argcheck(training_set, ord);
+    const std::size_t N = training_set.numel();
 
     numkit::ScratchArena arena(mr);
 
