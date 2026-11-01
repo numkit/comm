@@ -1,6 +1,6 @@
 /// @file fsk_ofdm.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/modulation/fsk_ofdm.hpp
+// toolboxes/comm/include/numkit/comm/modulation/fsk_ofdm.hpp
 //
 // Frequency-shift keying and OFDM modulation.
 

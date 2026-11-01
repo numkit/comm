@@ -1,6 +1,6 @@
 /// @file arithcoding.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/arithcoding.hpp
+// toolboxes/comm/include/numkit/comm/source/arithcoding.hpp
 //
 // Arithmetic coding encoder + decoder.
 

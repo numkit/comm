@@ -1,6 +1,6 @@
 /// @file scrambler.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/eq/scrambler.hpp
+// toolboxes/comm/include/numkit/comm/eq/scrambler.hpp
 //
 // Multiplicative bit scrambler / descrambler — the function-form
 // equivalent of the comm.Scrambler / comm.Descrambler System

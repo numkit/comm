@@ -1,6 +1,6 @@
 /// @file convcoding.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/coding/convcoding.hpp
+// toolboxes/comm/include/numkit/comm/coding/convcoding.hpp
 //
 // Convolutional coding — Error Correction Codes section of the
 // Communications Toolbox: poly2trellis (and, as they land, istrellis /

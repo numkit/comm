@@ -1,6 +1,6 @@
 /// @file lloyds.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/lloyds.hpp
+// toolboxes/comm/include/numkit/comm/source/lloyds.hpp
 //
 // Lloyd-Max scalar quantizer designer.
 

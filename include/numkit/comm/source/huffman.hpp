@@ -1,6 +1,6 @@
 /// @file huffman.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/huffman.hpp
+// toolboxes/comm/include/numkit/comm/source/huffman.hpp
 //
 // Huffman entropy coding (huffmandict + huffmanenco / huffmandeco).
 

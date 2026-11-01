@@ -1,6 +1,6 @@
 /// @file qam.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/modulation/qam.hpp
+// toolboxes/comm/include/numkit/comm/modulation/qam.hpp
 //
 // PAM / rectangular QAM modulators + demodulators, plus modnorm.
 

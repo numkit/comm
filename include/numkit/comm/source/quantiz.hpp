@@ -1,6 +1,6 @@
 /// @file quantiz.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/quantiz.hpp
+// toolboxes/comm/include/numkit/comm/source/quantiz.hpp
 //
 // Scalar quantizer applier.
 

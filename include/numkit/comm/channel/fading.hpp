@@ -1,6 +1,6 @@
 /// @file fading.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/channel/fading.hpp
+// toolboxes/comm/include/numkit/comm/channel/fading.hpp
 //
 // Frequency-flat fading channels — per-sample iid Rayleigh and
 // Rician multiplicative gains.

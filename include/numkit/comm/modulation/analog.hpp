@@ -1,6 +1,6 @@
 /// @file analog.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/modulation/analog.hpp
+// toolboxes/comm/include/numkit/comm/modulation/analog.hpp
 //
 // Analog modulators (PM / AM / FM / SSB / MSK).
 

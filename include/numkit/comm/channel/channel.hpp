@@ -1,6 +1,6 @@
 /// @file channel.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/channel/channel.hpp
+// toolboxes/comm/include/numkit/comm/channel/channel.hpp
 //
 // AWGN / WGN / BSC channel models, Q-functions, analytical BER, and
 // SNR conversions.

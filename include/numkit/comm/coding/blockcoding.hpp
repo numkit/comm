@@ -1,6 +1,6 @@
 /// @file blockcoding.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/coding/blockcoding.hpp
+// toolboxes/comm/include/numkit/comm/coding/blockcoding.hpp
 //
 // Block linear coding — Error Correction Codes section of the
 // Communications Toolbox. Generator / parity-check matrix construction

@@ -1,6 +1,6 @@
 /// @file pulse.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/eq/pulse.hpp
+// toolboxes/comm/include/numkit/comm/eq/pulse.hpp
 //
 // Pulse-shaping filter design (raised-cosine, root-raised-cosine,
 // Gaussian) and rectangular pulse / integrate-and-dump operators.

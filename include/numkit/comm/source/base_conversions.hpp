@@ -1,6 +1,6 @@
 /// @file base_conversions.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/base_conversions.hpp
+// toolboxes/comm/include/numkit/comm/source/base_conversions.hpp
 //
 // Communications Toolbox base-conversion utilities: bit <-> integer
 // packing (bit2int / int2bit) and the legacy binary <-> decimal digit

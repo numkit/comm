@@ -1,6 +1,6 @@
 /// @file dpcm.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/dpcm.hpp
+// toolboxes/comm/include/numkit/comm/source/dpcm.hpp
 //
 // Differential Pulse Code Modulation encoder/decoder.
 

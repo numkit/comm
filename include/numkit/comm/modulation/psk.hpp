@@ -1,6 +1,6 @@
 /// @file psk.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/modulation/psk.hpp
+// toolboxes/comm/include/numkit/comm/modulation/psk.hpp
 //
 // PSK / DPSK modulator and demodulator. Function-form (no
 // `comm.PSKModulator` System Object).

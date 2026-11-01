@@ -1,6 +1,6 @@
 /// @file apsk.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/modulation/apsk.hpp
+// toolboxes/comm/include/numkit/comm/modulation/apsk.hpp
 //
 // Amplitude-Phase Shift Keying multi-ring constellation.
 

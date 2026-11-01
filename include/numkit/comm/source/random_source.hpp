@@ -1,6 +1,6 @@
 /// @file random_source.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/random_source.hpp
+// toolboxes/comm/include/numkit/comm/source/random_source.hpp
 //
 // Random data sources (randsrc / randerr).
 

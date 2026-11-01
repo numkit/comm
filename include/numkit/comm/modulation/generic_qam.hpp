@@ -1,6 +1,6 @@
 /// @file generic_qam.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/modulation/generic_qam.hpp
+// toolboxes/comm/include/numkit/comm/modulation/generic_qam.hpp
 //
 // Generic constellation modulation/demodulation.
 

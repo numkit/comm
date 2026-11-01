@@ -1,6 +1,6 @@
 /// @file dpcmopt.hpp
 /// @ingroup group_comm
-// toolboxes/comm/include/nk/comm/source/dpcmopt.hpp
+// toolboxes/comm/include/numkit/comm/source/dpcmopt.hpp
 //
 // DPCM parameter optimiser.
 
