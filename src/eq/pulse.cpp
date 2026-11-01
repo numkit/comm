@@ -33,11 +33,7 @@ double sinc_pi(double x) {
     return std::sin(a) / a;
 }
 
-} // anonymous
-
-Value rcosdesign(double beta, int span, int sps,
-                 const std::string &shape,
-                 std::pmr::memory_resource *mr)
+void rcosdesign_argcheck(double beta, int span, int sps, const std::string &shape)
 {
     if (!(beta >= 0.0 && beta <= 1.0))
         throw Error("rcosdesign: beta must be in [0, 1]",
@@ -54,6 +50,57 @@ Value rcosdesign(double beta, int span, int sps,
         shape != "NORMAL" && !shape.empty())
         throw Error("rcosdesign: shape must be 'normal' or 'sqrt'",
                     0, 0, "rcosdesign", "", "numkit:rcosdesign:shape");
+}
+
+void gaussdesign_argcheck(double BT, int span, int sps)
+{
+    if (!(BT > 0.0))
+        throw Error("gaussdesign: BT must be positive",
+                    0, 0, "gaussdesign", "", "numkit:gaussdesign:BT");
+    if (span <= 0)
+        throw Error("gaussdesign: span must be a positive integer",
+                    0, 0, "gaussdesign", "", "numkit:gaussdesign:span");
+    if (sps <= 0)
+        throw Error("gaussdesign: sps must be a positive integer",
+                    0, 0, "gaussdesign", "", "numkit:gaussdesign:sps");
+}
+
+void rectpulse_argcheck(int n)
+{
+    if (n <= 0)
+        throw Error("rectpulse: n must be a positive integer",
+                    0, 0, "rectpulse", "", "numkit:rectpulse:n");
+}
+
+void intdump_argcheck(const Value &x, int n)
+{
+    if (n <= 0)
+        throw Error("intdump: n must be a positive integer",
+                    0, 0, "intdump", "", "numkit:intdump:n");
+    const auto &d = x.dims();
+    const size_t H = d.rows();
+    const size_t W = d.cols();
+    const bool is_row = (H == 1 && W >= 1);
+    const size_t un = static_cast<size_t>(n);
+    if (is_row) {
+        if (W % un != 0)
+            throw Error("intdump: row length must be a multiple of n",
+                        0, 0, "intdump", "", "numkit:intdump:size");
+    } else {
+        if (H % un != 0)
+            throw Error("intdump: column/row count must be a multiple of n",
+                        0, 0, "intdump", "", "numkit:intdump:size");
+    }
+}
+
+} // anonymous
+
+Value rcosdesign(double beta, int span, int sps,
+                 const std::string &shape,
+                 std::pmr::memory_resource *mr)
+{
+    rcosdesign_argcheck(beta, span, sps, shape);
+    const bool rrc = (shape == "sqrt" || shape == "Sqrt" || shape == "SQRT");
 
     // Filter length.
     const int N = span * sps + 1;
@@ -126,15 +173,7 @@ Value rcosdesign(double beta, int span, int sps,
 Value gaussdesign(double BT, int span, int sps,
                   std::pmr::memory_resource *mr)
 {
-    if (!(BT > 0.0))
-        throw Error("gaussdesign: BT must be positive",
-                    0, 0, "gaussdesign", "", "numkit:gaussdesign:BT");
-    if (span <= 0)
-        throw Error("gaussdesign: span must be a positive integer",
-                    0, 0, "gaussdesign", "", "numkit:gaussdesign:span");
-    if (sps <= 0)
-        throw Error("gaussdesign: sps must be a positive integer",
-                    0, 0, "gaussdesign", "", "numkit:gaussdesign:sps");
+    gaussdesign_argcheck(BT, span, sps);
 
     const int N = span * sps + 1;
     const double centre = 0.5 * (1 + N);  // mean(1:N)
@@ -166,9 +205,7 @@ Value gaussdesign(double BT, int span, int sps,
 // inputs repeat each row n times (column count unchanged).
 Value rectpulse(const Value &x, int n, std::pmr::memory_resource *mr)
 {
-    if (n <= 0)
-        throw Error("rectpulse: n must be a positive integer",
-                    0, 0, "rectpulse", "", "numkit:rectpulse:n");
+    rectpulse_argcheck(n);
 
     const auto &d = x.dims();
     const size_t H = d.rows();
@@ -214,9 +251,7 @@ Value rectpulse(const Value &x, int n, std::pmr::memory_resource *mr)
 // divisible by n.
 Value intdump(const Value &x, int n, std::pmr::memory_resource *mr)
 {
-    if (n <= 0)
-        throw Error("intdump: n must be a positive integer",
-                    0, 0, "intdump", "", "numkit:intdump:n");
+    intdump_argcheck(x, n);
 
     const auto &d = x.dims();
     const size_t H = d.rows();

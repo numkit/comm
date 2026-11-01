@@ -28,9 +28,9 @@
 
 namespace numkit::comm {
 
-Value compand(const Value &x, double param, double V,
-              const std::string &method,
-              std::pmr::memory_resource *mr)
+namespace {
+
+void compand_argcheck(double param, double V, const std::string &method)
 {
     if (param <= 0.0)
         throw Error("compand: param (μ or A) must be positive",
@@ -55,6 +55,21 @@ Value compand(const Value &x, double param, double V,
         throw Error("compand: method must end with '/compressor' or "
                     "'/expander'",
                     0, 0, "compand", "", "numkit:compand:method");
+}
+
+} // namespace
+
+Value compand(const Value &x, double param, double V,
+              const std::string &method,
+              std::pmr::memory_resource *mr)
+{
+    compand_argcheck(param, V, method);
+
+    const bool isMu = (method.size() >= 2
+                       && (method[0] == 'm' || method[0] == 'M')
+                       && (method[1] == 'u' || method[1] == 'U'));
+    const bool isCompress =
+        method.find("compressor") != std::string::npos;
 
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
                               ValueType::DOUBLE, mr);

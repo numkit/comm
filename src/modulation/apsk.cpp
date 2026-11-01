@@ -91,15 +91,32 @@ std::vector<int> invertMapping(const std::vector<int> &mapping)
     return inv;
 }
 
+void apsk_argcheck(Span<const size_t> M, Span<const double> radii,
+                   const Value &phaseoffset_v, const Value &mapping_v,
+                   const char *fn)
+{
+    if (M.empty() || M.size() != radii.size())
+        throw Error(std::string(fn) + ": M and radii must be vectors of same length",
+                    0, 0, fn, "", std::string("numkit:") + fn + ":DimMismatch");
+    if (!phaseoffset_v.isEmpty()
+        && phaseoffset_v.numel() != 1
+        && phaseoffset_v.numel() != M.size())
+        throw Error(std::string(fn) + ": phaseoffset length must match M",
+                    0, 0, fn, "", std::string("numkit:") + fn + ":PhaseLen");
+    size_t Ntot = 0;
+    for (size_t m : M) Ntot += m;
+    if (!mapping_v.isEmpty() && mapping_v.numel() != Ntot)
+        throw Error(std::string(fn) + ": SymbolMapping length must equal sum(M)",
+                    0, 0, fn, "", std::string("numkit:") + fn + ":MappingLen");
+}
+
 } // namespace
 
 Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
               const Value &phaseoffset_v, const Value &mapping_v,
               std::pmr::memory_resource *mr)
 {
-    if (M.empty() || M.size() != radii.size())
-        throw Error("apskmod: M and radii must be vectors of same length",
-                    0, 0, "apskmod", "", "numkit:apskmod:DimMismatch");
+    apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskmod");
     std::vector<double> phaseoffset(M.size());
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
@@ -153,9 +170,7 @@ Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
                 const Value &phaseoffset_v, const Value &mapping_v,
                 std::pmr::memory_resource *mr)
 {
-    if (M.empty() || M.size() != radii.size())
-        throw Error("apskdemod: M and radii must be vectors of same length",
-                    0, 0, "apskdemod", "", "numkit:apskdemod:DimMismatch");
+    apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskdemod");
     std::vector<double> phaseoffset(M.size());
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
