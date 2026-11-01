@@ -5,7 +5,7 @@
 // Verified vs MATLAB R2025b. Fixes bugs/comm/analog-demodulators.md (the
 // last of the five demodulators).
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 

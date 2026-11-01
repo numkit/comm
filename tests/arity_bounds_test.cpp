@@ -8,7 +8,7 @@
 // descrambler — System objects in R2025b) guard the nk-only contract.
 // A second fixture pins the newly implemented R2025b short forms.
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <numkit/value/error.hpp>
 #include <gtest/gtest.h>

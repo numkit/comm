@@ -5,7 +5,7 @@
 // MATLAB R2025b. (These depend on the length-N hilbert — see
 // bugs/signal/hilbert-nonpow2.)
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 
