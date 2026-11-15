@@ -61,7 +61,7 @@ void cyclpoly_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     const long long k = static_cast<long long>(args[1].toScalar());
     const std::string opt =
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
-            ? args[2].toString() : std::string();
+            ? std::string(args[2].toString().as_ref()) : std::string();
     outs[0] = cyclpoly(n, k, opt, ctx.engine->allocator());
 }
 
@@ -72,7 +72,7 @@ void cyclgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const long long n = static_cast<long long>(args[0].toScalar());
     const std::string opt =
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
-            ? args[2].toString() : std::string("system");
+            ? std::string(args[2].toString().as_ref()) : std::string("system");
     CyclgenResult res = cyclgen(n, args[1], opt, ctx.engine->allocator());
     outs[0] = std::move(res.h);
     if (nargout >= 2) outs[1] = std::move(res.g);
@@ -88,7 +88,7 @@ void encode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const long long k = static_cast<long long>(args[2].toScalar());
     const std::string method =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
-            ? args[3].toString() : std::string("hamming/binary");
+            ? std::string(args[3].toString().as_ref()) : std::string("hamming/binary");
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     EncodeResult res = encode(args[0], n, k, method, opt, ctx.engine->allocator());
     outs[0] = std::move(res.code);
@@ -104,7 +104,7 @@ void decode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const long long k = static_cast<long long>(args[2].toScalar());
     const std::string method =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
-            ? args[3].toString() : std::string("hamming/binary");
+            ? std::string(args[3].toString().as_ref()) : std::string("hamming/binary");
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     DecodeResult res = decode(args[0], n, k, method, opt, ctx.engine->allocator());
     outs[0] = std::move(res.msg);

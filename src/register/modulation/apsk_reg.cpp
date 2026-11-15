@@ -30,7 +30,8 @@ namespace detail {
 
 namespace {
 
-std::string toLowerApsk(std::string s) {
+std::string toLowerApsk(keel::StringRef sv) {
+    std::string s(sv.data(), sv.size());
     for (char &ch : s)
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     return s;
@@ -208,7 +209,7 @@ void parseApskTail(keel::ArrayRef<Value> args, keel::ArrayRef<keel::usize> M, co
         } else if (key == "plotconstellation" || key == "noisevariance") {
             // accept
         } else {
-            throw Error(std::string(fn) + ": unknown option '" + args[i].toString() + "'",
+            throw Error(std::string(fn) + ": unknown option '" + std::string(args[i].toString().as_ref()) + "'",
                         0, 0, fn, "", std::string("numkit:") + fn + ":BadOption");
         }
     }

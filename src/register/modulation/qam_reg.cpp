@@ -28,7 +28,7 @@ std::string parse_order(keel::ArrayRef<Value> args, keel::usize start, const cha
     for (keel::usize i = start; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
             auto s = args[i].toString();
-            if (s == "bin" || s == "gray") return s;
+            if (s == "bin" || s == "gray") return std::string(s.as_ref());
         }
     }
     return dflt;

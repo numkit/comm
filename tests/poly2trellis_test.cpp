@@ -85,9 +85,12 @@ TEST_F(Poly2trellisTest, PublicApi)
     ASSERT_TRUE(t.isStruct());
     ASSERT_EQ(t.numel(), 1u);
     const auto &el = t.structArrayElem(0);
-    EXPECT_DOUBLE_EQ(el.at("numInputSymbols").toScalar(), 2.0);
-    EXPECT_DOUBLE_EQ(el.at("numStates").toScalar(), 4.0);
-    const Value &ns = el.at("nextStates");
+    ASSERT_NE(el.get("numInputSymbols"), nullptr);
+    ASSERT_NE(el.get("numStates"), nullptr);
+    ASSERT_NE(el.get("nextStates"), nullptr);
+    EXPECT_DOUBLE_EQ(el.get("numInputSymbols")->toScalar(), 2.0);
+    EXPECT_DOUBLE_EQ(el.get("numStates")->toScalar(), 4.0);
+    const Value &ns = *el.get("nextStates");
     EXPECT_EQ(ns.dims().rows(), 4u);
     EXPECT_EQ(ns.dims().cols(), 2u);
     // ns(4,2) 1-based = (row 3, col 1) col-major -> index 1*4 + 3 = 7

@@ -27,7 +27,8 @@ namespace detail {
 
 namespace {
 
-std::string toLowerAscii(std::string s) {
+std::string toLowerAscii(keel::StringRef sv) {
+    std::string s(sv.data(), sv.size());
     for (char &ch : s)
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     return s;
@@ -150,7 +151,7 @@ void genqammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         } else if (key == "plotconstellation") {
             // accept and ignore plotting flag
         } else {
-            throw Error("genqammod: unknown option '" + args[i].toString() + "'",
+            throw Error("genqammod: unknown option '" + std::string(args[i].toString().as_ref()) + "'",
                         0, 0, "genqammod", "", "numkit:genqammod:BadOption");
         }
     }
@@ -186,7 +187,7 @@ void genqamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         } else if (key == "noisevariance" || key == "plotconstellation") {
             // accept
         } else {
-            throw Error("genqamdemod: unknown option '" + args[i].toString() + "'",
+            throw Error("genqamdemod: unknown option '" + std::string(args[i].toString().as_ref()) + "'",
                         0, 0, "genqamdemod", "", "numkit:genqamdemod:BadOption");
         }
     }

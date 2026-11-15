@@ -10,6 +10,7 @@
 
 #include <keel/memory.h>
 #include <numkit/value/value.hpp>
+#include <string>
 
 namespace numkit::comm {
 

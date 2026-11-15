@@ -50,10 +50,10 @@ void vitdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     const long long tblen = static_cast<long long>(args[2].toScalar());
     const std::string opmode =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
-            ? args[3].toString() : std::string("trunc");
+            ? std::string(args[3].toString().as_ref()) : std::string("trunc");
     const std::string dectype =
         (args.size() >= 5 && (args[4].isChar() || args[4].isString()))
-            ? args[4].toString() : std::string("hard");
+            ? std::string(args[4].toString().as_ref()) : std::string("hard");
     outs[0] = vitdec(args[0], args[1], tblen, opmode, dectype,
                      ctx.engine->allocator());
 }

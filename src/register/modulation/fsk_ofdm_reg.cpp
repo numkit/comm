@@ -24,7 +24,7 @@ namespace detail {
 namespace {
 std::string parse_str(keel::ArrayRef<Value> args, keel::usize start, const std::string &def) {
     for (keel::usize i = start; i < args.size(); ++i)
-        if (args[i].isChar() || args[i].isString()) return args[i].toString();
+        if (args[i].isChar() || args[i].isString()) return std::string(args[i].toString().as_ref());
     return def;
 }
 }

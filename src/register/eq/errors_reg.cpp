@@ -16,6 +16,7 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
+#include <string>
 #include <utility>
 
 namespace numkit::comm {

@@ -179,7 +179,7 @@ void mskmod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     double ini_phase = 0.0;
     keel::usize i = 2;
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
-        std::string enc = args[i].toString();
+        std::string enc(args[i].toString().as_ref());
         std::string elo;
         for (char ch : enc) elo += static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
         if (elo == "nondiff") nondiff = true;
@@ -212,7 +212,7 @@ void mskdemod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     double ini_phase = 0.0;
     keel::usize i = 2;
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
-        std::string enc = args[i].toString();
+        std::string enc(args[i].toString().as_ref());
         std::string elo;
         for (char ch : enc) elo += static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
         if (elo == "nondiff") nondiff = true;
@@ -249,7 +249,7 @@ void ssbmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (!args[4].isChar() && !args[4].isString())
             throw Error("ssbmod: method must be a string ('upper')",
                         0, 0, "ssbmod", "", "numkit:ssbmod:InvStr");
-        std::string m = args[4].toString();
+        std::string m(args[4].toString().as_ref());
         // Match MATLAB behaviour: any string containing 'up' selects USB.
         for (auto &c : m) c = static_cast<char>(std::tolower(c));
         upper = (m.find("up") != std::string::npos);

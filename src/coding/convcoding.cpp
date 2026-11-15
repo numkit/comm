@@ -74,11 +74,11 @@ TrellisView readTrellis(const Value &t, const char *who)
                     0, 0, who, "", std::string("numkit:") + who + ":trellis");
     const auto &el = t.structArrayElem(0);
     auto field = [&](const char *f) -> const Value & {
-        auto it = el.find(f);
-        if (it == el.end())
+        const Value *v = el.get(f);
+        if (!v)
             throw Error(std::string(who) + ": trellis is missing field '" + f + "'",
                         0, 0, who, "", std::string("numkit:") + who + ":trellis");
-        return it->second;
+        return *v;
     };
     TrellisView tv;
     tv.numStates        = static_cast<keel::usize>(field("numStates").toScalar());
@@ -144,11 +144,11 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
 
     Value t = Value::structArray(1, 1, mr);
     auto &el = t.structArrayElem(0);
-    el.emplace("numInputSymbols",  Value::scalar(static_cast<double>(numInput),  mr));
-    el.emplace("numOutputSymbols", Value::scalar(static_cast<double>(numOutput), mr));
-    el.emplace("numStates",        Value::scalar(static_cast<double>(numStates), mr));
-    el.emplace("nextStates", std::move(ns));
-    el.emplace("outputs",    std::move(ou));
+    el.put(keel::String::from("numInputSymbols"),  Value::scalar(static_cast<double>(numInput),  mr));
+    el.put(keel::String::from("numOutputSymbols"), Value::scalar(static_cast<double>(numOutput), mr));
+    el.put(keel::String::from("numStates"),        Value::scalar(static_cast<double>(numStates), mr));
+    el.put(keel::String::from("nextStates"), std::move(ns));
+    el.put(keel::String::from("outputs"),    std::move(ou));
     return t;
 }
 
@@ -312,15 +312,18 @@ Value istrellis(const Value &S, keel::Allocator *mr)
     };
     if (!S.isStruct() || S.numel() != 1) return no();
     const auto &el = S.structArrayElem(0);
-    for (const char *f : {"numInputSymbols", "numOutputSymbols", "numStates",
-                          "nextStates", "outputs"})
-        if (el.find(f) == el.end()) return no();
+    const Value *nIvPtr = el.get("numInputSymbols");
+    const Value *nOvPtr = el.get("numOutputSymbols");
+    const Value *nSvPtr = el.get("numStates");
+    const Value *nsPtr  = el.get("nextStates");
+    const Value *ouPtr  = el.get("outputs");
+    if (!nIvPtr || !nOvPtr || !nSvPtr || !nsPtr || !ouPtr) return no();
 
-    const Value &nIv = el.at("numInputSymbols");
-    const Value &nOv = el.at("numOutputSymbols");
-    const Value &nSv = el.at("numStates");
-    const Value &ns  = el.at("nextStates");
-    const Value &ou  = el.at("outputs");
+    const Value &nIv = *nIvPtr;
+    const Value &nOv = *nOvPtr;
+    const Value &nSv = *nSvPtr;
+    const Value &ns  = *nsPtr;
+    const Value &ou  = *ouPtr;
     if (!nIv.isScalar() || !nOv.isScalar() || !nSv.isScalar()) return no();
     const double nI = nIv.toScalar(), nO = nOv.toScalar(), nS = nSv.toScalar();
     if (!isPow2(nI) || !isPow2(nO) || !isPow2(nS)) return no();

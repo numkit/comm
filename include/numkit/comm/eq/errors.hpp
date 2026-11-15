@@ -7,6 +7,7 @@
 #pragma once
 
 #include <keel/memory.h>
+#include <string_view>
 #include <utility>
 #include <numkit/value/value.hpp>
 
