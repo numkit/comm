@@ -59,7 +59,7 @@ TEST_F(Gen2parTest, Errors)
 TEST_F(Gen2parTest, PublicApi)
 {
     eval("G = [1 1 0 1 0 0 0; 0 1 1 0 1 0 0; 1 1 1 0 0 1 0; 1 0 1 0 0 0 1];");
-    Value h = comm::gen2par(*engine.getVariable("G"), engine.resource());
+    Value h = comm::gen2par(*engine.getVariable("G"), engine.allocator());
     ASSERT_EQ(h.dims().rows(), 3u);
     ASSERT_EQ(h.dims().cols(), 7u);
     // H(1,4) 1-based = col-major index 3*3 + 0 = 9 -> 1.0

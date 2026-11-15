@@ -18,6 +18,9 @@
 // A-law expand,  |y|/V ≤ 1/(1 + log A): x = sign(y) · |y|·(1+log A)/A
 //                              else : x = sign(y) · V · exp((1+log A)·|y|/V − 1)/A
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/math.h>
 #include <numkit/comm/eq/compand.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -62,7 +65,7 @@ void compand_argcheck(double param, double V, const std::string &method)
 
 Value compand(const Value &x, double param, double V,
               const std::string &method,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     compand_argcheck(param, V, method);
 
@@ -75,22 +78,22 @@ Value compand(const Value &x, double param, double V,
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
                               ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
 
     if (isMu) {
         const double logMu = std::log(1.0 + param);
         if (isCompress) {
-            for (size_t i = 0; i < N; ++i) {
+            for (keel::usize i = 0; i < N; ++i) {
                 const double xi   = x.elemAsDouble(i);
-                const double absx = std::abs(xi);
+                const double absx = keel::abs(xi);
                 const double mag  = V * std::log(1.0 + param * absx / V)
                                       / logMu;
                 o[i] = (xi >= 0.0) ? mag : -mag;
             }
         } else {  // expander
-            for (size_t i = 0; i < N; ++i) {
+            for (keel::usize i = 0; i < N; ++i) {
                 const double yi   = x.elemAsDouble(i);
-                const double absy = std::abs(yi);
+                const double absy = keel::abs(yi);
                 const double mag  = (V / param)
                                   * (std::exp(absy / V * logMu) - 1.0);
                 o[i] = (yi >= 0.0) ? mag : -mag;
@@ -101,9 +104,9 @@ Value compand(const Value &x, double param, double V,
         const double oneLogA = 1.0 + logA;
         if (isCompress) {
             const double thr = 1.0 / param;  // |x|/V threshold
-            for (size_t i = 0; i < N; ++i) {
+            for (keel::usize i = 0; i < N; ++i) {
                 const double xi   = x.elemAsDouble(i);
-                const double absx = std::abs(xi);
+                const double absx = keel::abs(xi);
                 const double ratio = absx / V;
                 double mag;
                 if (ratio <= thr) {
@@ -115,9 +118,9 @@ Value compand(const Value &x, double param, double V,
             }
         } else {  // expander
             const double thr = 1.0 / oneLogA;  // |y|/V threshold
-            for (size_t i = 0; i < N; ++i) {
+            for (keel::usize i = 0; i < N; ++i) {
                 const double yi   = x.elemAsDouble(i);
-                const double absy = std::abs(yi);
+                const double absy = keel::abs(yi);
                 const double ratio = absy / V;
                 double mag;
                 if (ratio <= thr) {

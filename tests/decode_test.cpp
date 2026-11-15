@@ -68,7 +68,7 @@ TEST_F(DecodeTest, PublicApi)
     eval("cw = encode([1 0 1 1], 7, 4, 'hamming/binary'); cw(5) = 1 - cw(5);");
     comm::DecodeResult r = comm::decode(*engine.getVariable("cw"), 7, 4,
                                         "hamming/binary", Value::Empty,
-                                        engine.resource());
+                                        engine.allocator());
     ASSERT_EQ(r.msg.numel(), 4u);
     EXPECT_DOUBLE_EQ(r.msg.elemAsDouble(0), 1.0);
     EXPECT_DOUBLE_EQ(r.msg.elemAsDouble(1), 0.0);

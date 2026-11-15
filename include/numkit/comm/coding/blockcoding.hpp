@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <string>
 #include <numkit/value/value.hpp>
 
@@ -40,7 +40,7 @@ namespace numkit::comm {
 /// @return     The complementary `(c-r)×c` binary matrix.
 /// @throws Error if `r >= c` or neither the first nor the last `r` columns
 ///         of `mat` form an identity matrix.
-Value gen2par(const Value &mat, std::pmr::memory_resource *mr = nullptr);
+Value gen2par(const Value &mat, keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref hammgen: parity-check / generator matrices and
 /// the code dimensions.
@@ -70,7 +70,7 @@ struct HammgenResult {
 /// @throws Error if `m < 2`, or `primPoly` (when supplied) is not a binary
 ///         row of length `m+1`.
 HammgenResult hammgen(long long m, const Value &primPoly = Value::Empty,
-                      std::pmr::memory_resource *mr = nullptr);
+                      keel::Allocator *mr = nullptr);
 
 /// @brief Generator polynomial(s) for an `(n, k)` cyclic code
 /// (`p = cyclpoly(n, k)` / `cyclpoly(n, k, opt)`).
@@ -94,7 +94,7 @@ HammgenResult hammgen(long long m, const Value &primPoly = Value::Empty,
 /// @throws Error on non-integer / out-of-range `n` or `k`, or an unknown
 ///         `opt`.
 Value cyclpoly(long long n, long long k, const std::string &opt = "",
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref cyclgen: parity-check / generator matrices and
 /// the message length.
@@ -126,7 +126,7 @@ struct CyclgenResult {
 ///         unknown.
 CyclgenResult cyclgen(long long n, const Value &genpoly,
                       const std::string &opt = "system",
-                      std::pmr::memory_resource *mr = nullptr);
+                      keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref encode: the codeword stream and any zero-padding
 /// added.
@@ -163,7 +163,7 @@ struct EncodeResult {
 EncodeResult encode(const Value &msg, long long n, long long k,
                     const std::string &method = "hamming/binary",
                     const Value &opt = Value::Empty,
-                    std::pmr::memory_resource *mr = nullptr);
+                    keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref decode: the recovered message and error report.
 struct DecodeResult {
@@ -196,7 +196,7 @@ struct DecodeResult {
 DecodeResult decode(const Value &code, long long n, long long k,
                     const std::string &method = "hamming/binary",
                     const Value &opt = Value::Empty,
-                    std::pmr::memory_resource *mr = nullptr);
+                    keel::Allocator *mr = nullptr);
 
 /// @brief Syndrome decoding table (coset-leader lookup) from a parity-check
 /// matrix (`t = syndtable(H)`).
@@ -214,7 +214,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
 /// @return    `2^(n-k) × n` coset-leader table.
 /// @throws    Error if `H` is empty or `n-k` is impractically large.
 /// @see hammgen, gen2par, decode
-Value syndtable(const Value &H, std::pmr::memory_resource *mr = nullptr);
+Value syndtable(const Value &H, keel::Allocator *mr = nullptr);
 
 
 /// @}

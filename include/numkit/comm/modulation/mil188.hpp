@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -29,7 +29,7 @@ namespace numkit::comm {
 /// @throws Error  Unsupported `M`.
 /// @see mil188qamdemod
 Value mil188qammod(const Value &x, int M,
-                   std::pmr::memory_resource *mr = nullptr);
+                   keel::Allocator *mr = nullptr);
 
 /// @brief MIL-STD-188-110 QAM demodulator
 /// (`z = mil188qamdemod(y, M)`).
@@ -43,7 +43,7 @@ Value mil188qammod(const Value &x, int M,
 /// @throws Error  Unsupported `M`.
 /// @see mil188qammod
 Value mil188qamdemod(const Value &y, int M,
-                     std::pmr::memory_resource *mr = nullptr);
+                     keel::Allocator *mr = nullptr);
 
 
 /// @}

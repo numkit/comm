@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/modulation/qam.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -22,8 +24,8 @@ namespace detail {
 namespace {
 // MATLAB R2025b defaults differ by function: pammod/pamdemod default to
 // 'bin' (binary symbol mapping); qammod/qamdemod default to 'gray'.
-std::string parse_order(Span<const Value> args, size_t start, const char *dflt) {
-    for (size_t i = start; i < args.size(); ++i) {
+std::string parse_order(keel::ArrayRef<Value> args, keel::usize start, const char *dflt) {
+    for (keel::usize i = start; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
             auto s = args[i].toString();
             if (s == "bin" || s == "gray") return s;
@@ -32,8 +34,8 @@ std::string parse_order(Span<const Value> args, size_t start, const char *dflt) 
     return dflt;
 }
 
-bool parse_unit_power(Span<const Value> args, size_t start) {
-    for (size_t i = start; i + 1 < args.size(); ++i) {
+bool parse_unit_power(keel::ArrayRef<Value> args, keel::usize start) {
+    for (keel::usize i = start; i + 1 < args.size(); ++i) {
         if ((args[i].isChar() || args[i].isString())
             && args[i].toString() == "UnitAveragePower")
             return args[i + 1].toScalar() != 0.0;
@@ -42,8 +44,8 @@ bool parse_unit_power(Span<const Value> args, size_t start) {
 }
 }
 
-void pammod_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void pammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "pammod");
     const int M = (int)args[1].toScalar();
@@ -51,11 +53,11 @@ void pammod_reg(Span<const Value> args, size_t /*nargout*/,
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
     auto order = parse_order(args, 2, "bin");
-    outs[0] = pammod(args[0], M, ini, order, ctx.engine->resource());
+    outs[0] = pammod(args[0], M, ini, order, ctx.engine->allocator());
 }
 
-void pamdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void pamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "pamdemod");
     const int M = (int)args[1].toScalar();
@@ -63,37 +65,37 @@ void pamdemod_reg(Span<const Value> args, size_t /*nargout*/,
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
     auto order = parse_order(args, 2, "bin");
-    outs[0] = pamdemod(args[0], M, ini, order, ctx.engine->resource());
+    outs[0] = pamdemod(args[0], M, ini, order, ctx.engine->allocator());
 }
 
-void qammod_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void qammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 11, "qammod");
     const int M = (int)args[1].toScalar();
     auto order = parse_order(args, 2, "gray");
     bool up = parse_unit_power(args, 2);
-    outs[0] = qammod(args[0], M, order, up, ctx.engine->resource());
+    outs[0] = qammod(args[0], M, order, up, ctx.engine->allocator());
 }
 
-void qamdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void qamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, "qamdemod");  // no max: name-value tail in the reference (no count wall to 12 args)
     const int M = (int)args[1].toScalar();
     auto order = parse_order(args, 2, "gray");
     bool up = parse_unit_power(args, 2);
-    outs[0] = qamdemod(args[0], M, order, up, ctx.engine->resource());
+    outs[0] = qamdemod(args[0], M, order, up, ctx.engine->allocator());
 }
 
-void modnorm_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void modnorm_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "modnorm");
     std::string type = "avpow";
     if (args[1].isChar() || args[1].isString()) type = args[1].toString();
     const double target = args[2].toScalar();
-    outs[0] = modnorm(args[0], type, target, ctx.engine->resource());
+    outs[0] = modnorm(args[0], type, target, ctx.engine->allocator());
 }
 
 } // namespace detail

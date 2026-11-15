@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -46,7 +46,7 @@ namespace numkit::comm {
 /// @throws Error on a non-scalar `constraintLength` (rate k/n), `K < 1`, an
 ///         empty `codeGenerator`, or an octal digit `> 7`.
 Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
-                   std::pmr::memory_resource *mr = nullptr);
+                   keel::Allocator *mr = nullptr);
 
 /// @brief Convolutionally encode a bit stream (`code = convenc(msg, trellis)`).
 ///
@@ -65,7 +65,7 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
 /// @throws Error if `trellis` is not a valid 1×1 trellis struct.
 /// @see poly2trellis, vitdec
 Value convenc(const Value &msg, const Value &trellis,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Viterbi-decode a convolutional code
 /// (`msg = vitdec(code, trellis, tblen, opmode, dectype)`).
@@ -97,7 +97,7 @@ Value convenc(const Value &msg, const Value &trellis,
 Value vitdec(const Value &code, const Value &trellis, long long tblen,
              const std::string &opmode = "trunc",
              const std::string &dectype = "hard",
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief Validate a trellis structure (`tf = istrellis(S)`).
 ///
@@ -112,7 +112,7 @@ Value vitdec(const Value &code, const Value &trellis, long long tblen,
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Logical scalar.
 /// @see poly2trellis
-Value istrellis(const Value &S, std::pmr::memory_resource *mr = nullptr);
+Value istrellis(const Value &S, keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -5,6 +5,9 @@
 // for first-cut digital-comm sims composing with the cycle-17–20
 // modulation primitives.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/comm/channel/fading.hpp>
 
 #include <numkit/builtin/datafun.hpp>
@@ -15,7 +18,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <complex>
 #include <mutex>
 #include <random>
 #include <vector>
@@ -24,25 +26,23 @@ namespace numkit::comm {
 
 namespace {
 
-using Cd = std::complex<double>;
-
 // Generate N iid samples of complex Gaussian CN(0, 1), i.e.
 //   real, imag ~ N(0, 1/2)  →  E[|h|²] = 1.
-std::vector<Cd> sampleCN01(::numkit::ops::RngContext &rng, size_t N) {
-    std::vector<Cd> h(N);
+std::vector<keel::c64> sampleCN01(::numkit::ops::RngContext &rng, keel::usize N) {
+    std::vector<keel::c64> h(N);
     if (N == 0) return h;
     const double s = std::sqrt(0.5);
     std::vector<double> re(N), im(N);
-    for (size_t i = 0; i < N; ++i) re[i] = s * rng.nextNormal();
-    for (size_t i = 0; i < N; ++i) im[i] = s * rng.nextNormal();
-    for (size_t i = 0; i < N; ++i) h[i] = Cd(re[i], im[i]);
+    for (keel::usize i = 0; i < N; ++i) re[i] = s * rng.nextNormal();
+    for (keel::usize i = 0; i < N; ++i) im[i] = s * rng.nextNormal();
+    for (keel::usize i = 0; i < N; ++i) h[i] = keel::c64(re[i], im[i]);
     return h;
 }
 
 // Pull element i of `x` as a complex value (x may be real or complex).
-Cd asComplex(const Value &x, size_t i) {
+keel::c64 asComplex(const Value &x, keel::usize i) {
     if (x.type() == ValueType::COMPLEX) return x.complexData()[i];
-    return Cd(x.elemAsDouble(i), 0.0);
+    return keel::c64(x.elemAsDouble(i), 0.0);
 }
 
 void rayleighchan_argcheck(const Value &x)
@@ -60,32 +60,32 @@ void ricianchan_argcheck(const Value &x, double K)
 
 } // anonymous
 
-Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x, std::pmr::memory_resource *mr)
+Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x, keel::Allocator *mr)
 {
     rayleighchan_argcheck(x);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);
     if (N == 0) return y;
     auto h = sampleCN01(rng, N);
-    Cd *yd = y.complexDataMut();
-    for (size_t i = 0; i < N; ++i) yd[i] = h[i] * asComplex(x, i);
+    keel::c64 *yd = y.complexDataMut();
+    for (keel::usize i = 0; i < N; ++i) yd[i] = h[i] * asComplex(x, i);
     return y;
 }
 
-Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, double K, std::pmr::memory_resource *mr)
+Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, double K, keel::Allocator *mr)
 {
     ricianchan_argcheck(x, K);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);
     if (N == 0) return y;
     auto g = sampleCN01(rng, N);
     const double losAmp = std::sqrt(K / (K + 1.0));
     const double sctAmp = std::sqrt(1.0 / (K + 1.0));
-    Cd *yd = y.complexDataMut();
-    for (size_t i = 0; i < N; ++i) {
-        const Cd h = Cd(losAmp, 0.0) + sctAmp * g[i];
+    keel::c64 *yd = y.complexDataMut();
+    for (keel::usize i = 0; i < N; ++i) {
+        const keel::c64 h = keel::c64(losAmp, 0.0) + sctAmp * g[i];
         yd[i] = h * asComplex(x, i);
     }
     return y;

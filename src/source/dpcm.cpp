@@ -14,6 +14,8 @@
 // uses elements (2:end). Prediction step: out = predictor[1..M] · x
 // where x is the most-recent M reconstructed samples (newest first).
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/comm/source/dpcm.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -29,23 +31,23 @@ namespace {
 
 // Find quantization bin index: smallest i such that e < partition[i],
 // or K-1 if e >= partition[K-2] (K-1 thresholds for K bins).
-size_t partitionBin(const Value &partition, double e)
+keel::usize partitionBin(const Value &partition, double e)
 {
-    const size_t M = partition.numel();
-    size_t i = 0;
+    const keel::usize M = partition.numel();
+    keel::usize i = 0;
     while (i < M && partition.elemAsDouble(i) < e) ++i;
     return i;
 }
 
 void readPredictor(const Value &predictor, std::vector<double> &p)
 {
-    const size_t L = predictor.numel();
+    const keel::usize L = predictor.numel();
     if (L < 2)
         throw Error("dpcm: predictor must have at least 2 elements",
                     0, 0, "dpcm", "", "numkit:dpcm:InvalidPredictor");
     p.resize(L - 1);
     // Skip the leading 0 (predictor[0] in MATLAB's 1-based form).
-    for (size_t k = 0; k < L - 1; ++k)
+    for (keel::usize k = 0; k < L - 1; ++k)
         p[k] = predictor.elemAsDouble(k + 1);
 }
 
@@ -75,13 +77,13 @@ void dpcmdeco_argcheck(const Value &predictor, std::vector<double> &pred)
 std::pair<Value, Value>
 dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
-         std::pmr::memory_resource *mr)
+         keel::Allocator *mr)
 {
     std::vector<double> pred;
     dpcmenco_argcheck(codebook, partition, predictor, pred);
-    const size_t M = pred.size();
+    const keel::usize M = pred.size();
 
-    const size_t N = sig.numel();
+    const keel::usize N = sig.numel();
     const bool row = isRow(sig);
     Value indx_v     = Value::matrix(row ? 1 : N, row ? N : 1,
                                      ValueType::DOUBLE, mr);
@@ -91,17 +93,17 @@ dpcmenco(const Value &sig, const Value &codebook,
     double *o_qerr = quanterr_v.doubleDataMut();
 
     std::vector<double> x(M, 0.0);  // predictor state (newest first)
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         double out = 0.0;
-        for (size_t k = 0; k < M; ++k) out += pred[k] * x[k];
+        for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
         const double e   = sig.elemAsDouble(i) - out;
-        const size_t bin = partitionBin(partition, e);
+        const keel::usize bin = partitionBin(partition, e);
         const double q   = codebook.elemAsDouble(bin);
         o_indx[i] = static_cast<double>(bin);
         o_qerr[i] = q;
         const double inp = q + out;
         // Shift state: x = [inp; x(1..M-1)]
-        for (size_t k = M; k-- > 1;) x[k] = x[k - 1];
+        for (keel::usize k = M; k-- > 1;) x[k] = x[k - 1];
         if (M > 0) x[0] = inp;
     }
     return {std::move(indx_v), std::move(quanterr_v)};
@@ -110,14 +112,14 @@ dpcmenco(const Value &sig, const Value &codebook,
 std::pair<Value, Value>
 dpcmdeco(const Value &indx, const Value &codebook,
          const Value &predictor,
-         std::pmr::memory_resource *mr)
+         keel::Allocator *mr)
 {
     std::vector<double> pred;
     dpcmdeco_argcheck(predictor, pred);
-    const size_t M = pred.size();
+    const keel::usize M = pred.size();
 
-    const size_t K = codebook.numel();
-    const size_t N = indx.numel();
+    const keel::usize K = codebook.numel();
+    const keel::usize N = indx.numel();
     const bool row = isRow(indx);
     Value sig_v      = Value::matrix(row ? 1 : N, row ? N : 1,
                                      ValueType::DOUBLE, mr);
@@ -127,20 +129,20 @@ dpcmdeco(const Value &indx, const Value &codebook,
     double *o_qerr = quanterr_v.doubleDataMut();
 
     // Lookup quanterr first (matches MATLAB ordering of work).
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double iv = indx.elemAsDouble(i);
         if (!(iv >= 0.0) || iv >= static_cast<double>(K))
             throw Error("dpcmdeco: index out of codebook range",
                         0, 0, "dpcmdeco", "", "numkit:dpcmdeco:OutOfRange");
-        o_qerr[i] = codebook.elemAsDouble(static_cast<size_t>(iv));
+        o_qerr[i] = codebook.elemAsDouble(static_cast<keel::usize>(iv));
     }
 
     std::vector<double> x(M, 0.0);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         double out = 0.0;
-        for (size_t k = 0; k < M; ++k) out += pred[k] * x[k];
+        for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
         o_sig[i] = o_qerr[i] + out;
-        for (size_t k = M; k-- > 1;) x[k] = x[k - 1];
+        for (keel::usize k = M; k-- > 1;) x[k] = x[k - 1];
         if (M > 0) x[0] = o_sig[i];
     }
     return {std::move(sig_v), std::move(quanterr_v)};

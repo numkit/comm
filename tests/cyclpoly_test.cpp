@@ -59,7 +59,7 @@ TEST_F(CyclpolyTest, DividesXnMinus1)
 // Direct C++ API.
 TEST_F(CyclpolyTest, PublicApi)
 {
-    Value p = comm::cyclpoly(7, 4, "", engine.resource());
+    Value p = comm::cyclpoly(7, 4, "", engine.allocator());
     ASSERT_EQ(p.dims().rows(), 1u);
     ASSERT_EQ(p.dims().cols(), 4u);
     EXPECT_DOUBLE_EQ(p.doubleData()[0], 1.0);

@@ -1,5 +1,9 @@
 // toolboxes/comm/src/channel/channel.cpp
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
+#include <keel/math.h>
 #include <numkit/comm/channel/channel.hpp>
 
 #include <numkit/builtin/datafun.hpp>
@@ -12,7 +16,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <complex>
 #include <limits>
 #include <mutex>
 #include <random>
@@ -29,18 +32,16 @@ namespace numkit::comm {
 
 namespace {
 
-using Cd = std::complex<double>;
-
 // Compute average power of a complex / real array.
 double avg_power(const Value &x) {
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0) return 0.0;
     double s = 0.0;
     if (x.type() == ValueType::COMPLEX) {
-        const Cd *cd = x.complexData();
-        for (size_t i = 0; i < N; ++i) s += std::norm(cd[i]);
+        const keel::c64 *cd = x.complexData();
+        for (keel::usize i = 0; i < N; ++i) s += keel::norm(cd[i]);
     } else {
-        for (size_t i = 0; i < N; ++i) {
+        for (keel::usize i = 0; i < N; ++i) {
             const double v = x.elemAsDouble(i);
             s += v * v;
         }
@@ -49,8 +50,8 @@ double avg_power(const Value &x) {
 }
 
 template <typename Op>
-Value elementwise(std::pmr::memory_resource *mr, const Value &x, Op op) {
-    const size_t N = x.numel();
+Value elementwise(keel::Allocator *mr, const Value &x, Op op) {
+    const keel::usize N = x.numel();
     if (x.isScalar()) return Value::scalar(op(x.toScalar()), mr);
     const auto &d = x.dims();
     Value out;
@@ -58,7 +59,7 @@ Value elementwise(std::pmr::memory_resource *mr, const Value &x, Op op) {
     else          out = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
     if (N == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t i = 0; i < N; ++i) od[i] = op(x.elemAsDouble(i));
+    for (keel::usize i = 0; i < N; ++i) od[i] = op(x.elemAsDouble(i));
     return out;
 }
 
@@ -142,7 +143,7 @@ void convertSNR_argcheck(const Value &snr_in, const std::string &in_type,
 } // anonymous
 
 Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double sigpower_db,
-           std::pmr::memory_resource *mr)
+           keel::Allocator *mr)
 {
     awgn_argcheck(x, snr_db, sigpower_db);
     const bool is_complex = (x.type() == ValueType::COMPLEX);
@@ -154,7 +155,7 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
     const double noise_pow = sig_pow / snr_lin;
     const double sigma = std::sqrt(is_complex ? noise_pow / 2.0 : noise_pow);
 
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     Value out;
     const auto &d = x.dims();
     const ValueType ty = is_complex ? ValueType::COMPLEX : ValueType::DOUBLE;
@@ -163,23 +164,23 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
     else              out = Value::matrix(d.rows(), d.cols(), ty, mr);
 
     if (is_complex) {
-        Cd *od = out.complexDataMut();
-        const Cd *xd = x.complexData();
-        for (size_t i = 0; i < N; ++i) {
+        keel::c64 *od = out.complexDataMut();
+        const keel::c64 *xd = x.complexData();
+        for (keel::usize i = 0; i < N; ++i) {
             double re = sigma * rng.nextNormal();
             double im = sigma * rng.nextNormal();
-            od[i] = xd[i] + Cd(re, im);
+            od[i] = xd[i] + keel::c64(re, im);
         }
     } else {
         double *od = out.doubleDataMut();
-        for (size_t i = 0; i < N; ++i)
+        for (keel::usize i = 0; i < N; ++i)
             od[i] = x.elemAsDouble(i) + sigma * rng.nextNormal();
     }
     return out;
 }
 
 Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::string &type,
-          bool complex_out, std::pmr::memory_resource *mr)
+          bool complex_out, keel::Allocator *mr)
 {
     wgn_argcheck(m, n, p, type);
     double power_lin = 0.0;
@@ -191,40 +192,40 @@ Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::str
 
     if (complex_out) {
         Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
-        Cd *od = out.complexDataMut();
-        const size_t N = (size_t)m * (size_t)n;
-        for (size_t i = 0; i < N; ++i) {
+        keel::c64 *od = out.complexDataMut();
+        const keel::usize N = (keel::usize)m * (keel::usize)n;
+        for (keel::usize i = 0; i < N; ++i) {
             double re = sigma * rng.nextNormal();
             double im = sigma * rng.nextNormal();
-            od[i] = Cd(re, im);
+            od[i] = keel::c64(re, im);
         }
         return out;
     }
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
-    const size_t N = (size_t)m * (size_t)n;
-    for (size_t i = 0; i < N; ++i) od[i] = sigma * rng.nextNormal();
+    const keel::usize N = (keel::usize)m * (keel::usize)n;
+    for (keel::usize i = 0; i < N; ++i) od[i] = sigma * rng.nextNormal();
     return out;
 }
 
-Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, std::pmr::memory_resource *mr) {
+Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, keel::Allocator *mr) {
     bsc_argcheck(x, p);
 
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     Value out;
     const auto &d = x.dims();
     if (x.isScalar()) out = Value::matrix(1, 1, ValueType::DOUBLE, mr);
     else if (d.is3D())out = Value::matrix3d(d.rows(), d.cols(), d.pages(), ValueType::DOUBLE, mr);
     else              out = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const int b = (int)x.elemAsDouble(i) & 1;
         od[i] = double(rng.nextUniform() < p ? (b ^ 1) : b);
     }
     return out;
 }
 
-Value qfunc(const Value &x, std::pmr::memory_resource *mr) {
+Value qfunc(const Value &x, keel::Allocator *mr) {
     qfunc_argcheck(x);
     return elementwise(mr, x, [](double v) {
         return 0.5 * std::erfc(v / std::sqrt(2.0));
@@ -267,7 +268,7 @@ double erfcinv_approx(double x) {
 }
 } // anonymous
 
-Value qfuncinv(const Value &p, std::pmr::memory_resource *mr) {
+Value qfuncinv(const Value &p, keel::Allocator *mr) {
     qfuncinv_argcheck(p);
     return elementwise(mr, p, [](double v) {
         if (!(v > 0.0 && v < 1.0)) return std::numeric_limits<double>::quiet_NaN();
@@ -277,7 +278,7 @@ Value qfuncinv(const Value &p, std::pmr::memory_resource *mr) {
 }
 
 Value marcumq(const Value &a_v, const Value &b_v, int m,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     marcumq_argcheck(a_v, b_v, m);
     // Power-series approximation: Q_m(a, b) = exp(-(a²+b²)/2) · Σ_{k=0..} (a/b)^(m-1+k) · I_{m-1+k}(ab)
@@ -286,12 +287,12 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
     // which simplifies to the classical formula. For other m, fall back to
     // numerical integration of the integral form.
     if (m < 1) m = 1;
-    const size_t Na = a_v.numel(), Nb = b_v.numel();
-    const size_t N = std::max(Na, Nb);
+    const keel::usize Na = a_v.numel(), Nb = b_v.numel();
+    const keel::usize N = std::max(Na, Nb);
     Value out = Value::matrix((Na > Nb) ? Na : Nb, 1, ValueType::DOUBLE, mr);
     if (N == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double a = a_v.elemAsDouble(Na > 1 ? i : 0);
         const double b = b_v.elemAsDouble(Nb > 1 ? i : 0);
         if (b <= 0.0)         { od[i] = 1.0; continue; }
@@ -356,7 +357,7 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
 }
 
 Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     berawgn_argcheck(EbNo_dB, mod, M);
     return elementwise(mr, EbNo_dB, [&](double dB) {
@@ -394,7 +395,7 @@ Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
 }
 
 Value noisebw(const Value &num, const Value &den, int Nsamp,
-              double fs, std::pmr::memory_resource *mr)
+              double fs, keel::Allocator *mr)
 {
     noisebw_argcheck(num, den, Nsamp, fs);
     // MATLAB convention (noisebw):
@@ -402,23 +403,23 @@ Value noisebw(const Value &num, const Value &den, int Nsamp,
     // Discrete grid over [0, pi) -- N points spaced w_k = pi*k/N.
     // (No 1/2 factor; the resulting NBW matches MATLAB's reference.)
     if (Nsamp <= 0) Nsamp = 1024;
-    const size_t Mn = num.numel();
-    const size_t Md = den.numel();
+    const keel::usize Mn = num.numel();
+    const keel::usize Md = den.numel();
     std::vector<double> bn(Mn), an(Md);
-    for (size_t i = 0; i < Mn; ++i) bn[i] = num.elemAsDouble(i);
-    for (size_t i = 0; i < Md; ++i) an[i] = den.elemAsDouble(i);
+    for (keel::usize i = 0; i < Mn; ++i) bn[i] = num.elemAsDouble(i);
+    for (keel::usize i = 0; i < Md; ++i) an[i] = den.elemAsDouble(i);
 
     double Hmax2 = 0.0;
     double sum_H2 = 0.0;
     for (int k = 0; k < Nsamp; ++k) {
         const double w = M_PI * double(k) / double(Nsamp);
-        const Cd z = std::polar(1.0, -w);
-        Cd np(0.0, 0.0), dp(0.0, 0.0);
-        Cd zk(1.0, 0.0);
-        for (size_t i = 0; i < Mn; ++i) { np += bn[i] * zk; zk *= z; }
-        zk = Cd(1.0, 0.0);
-        for (size_t i = 0; i < Md; ++i) { dp += an[i] * zk; zk *= z; }
-        const double H2 = (std::abs(dp) > 0.0) ? std::norm(np / dp) : 0.0;
+        const keel::c64 z = keel::polar(1.0, -w);
+        keel::c64 np(0.0, 0.0), dp(0.0, 0.0);
+        keel::c64 zk(1.0, 0.0);
+        for (keel::usize i = 0; i < Mn; ++i) { np += bn[i] * zk; zk *= z; }
+        zk = keel::c64(1.0, 0.0);
+        for (keel::usize i = 0; i < Md; ++i) { dp += an[i] * zk; zk *= z; }
+        const double H2 = (keel::abs(dp) > 0.0) ? keel::norm(np / dp) : 0.0;
         if (H2 > Hmax2) Hmax2 = H2;
         sum_H2 += H2;
     }
@@ -430,7 +431,7 @@ Value noisebw(const Value &num, const Value &den, int Nsamp,
 
 // Inverse regularized incomplete beta scalar wrapper (uses builtin Newton-iter
 // implementation that operates on Value).
-static double betaincinv_scalar(std::pmr::memory_resource *mr,
+static double betaincinv_scalar(keel::Allocator *mr,
                                 double p, double a, double b)
 {
     if (a <= 0.0 || b <= 0.0) return std::numeric_limits<double>::quiet_NaN();
@@ -444,7 +445,7 @@ static double betaincinv_scalar(std::pmr::memory_resource *mr,
 
 std::tuple<Value, Value>
 berconfint(double numErrs, double numBits, double level,
-           std::pmr::memory_resource *mr)
+           keel::Allocator *mr)
 {
     berconfint_argcheck(numErrs, numBits, level);
 
@@ -471,7 +472,7 @@ Value convertSNR(const Value &snr_in,
                  const std::string &in_type,
                  const std::string &out_type,
                  int bits_per_symbol,
-                 std::pmr::memory_resource *mr)
+                 keel::Allocator *mr)
 {
     convertSNR_argcheck(snr_in, in_type, out_type, bits_per_symbol);
     if (in_type == out_type) return snr_in;

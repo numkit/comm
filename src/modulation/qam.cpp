@@ -1,5 +1,8 @@
 // toolboxes/comm/src/modulation/qam.cpp
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/comm/modulation/qam.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -8,7 +11,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <complex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,8 +18,6 @@
 namespace numkit::comm {
 
 namespace {
-
-using Cd = std::complex<double>;
 
 inline int to_gray(int b) { return b ^ (b >> 1); }
 inline int from_gray(int g) {
@@ -42,7 +42,7 @@ inline int pam_amp_to_symbol(double amp, int M, const std::string &order) {
     return from_gray(k);
 }
 
-Value alloc_double_like(std::pmr::memory_resource *mr, const Value &x) {
+Value alloc_double_like(keel::Allocator *mr, const Value &x) {
     const auto &d = x.dims();
     if (x.isScalar()) return Value::scalar(0.0, mr);
     if (d.is3D())
@@ -50,7 +50,7 @@ Value alloc_double_like(std::pmr::memory_resource *mr, const Value &x) {
     return Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
 }
 
-Value alloc_complex_like(std::pmr::memory_resource *mr, const Value &x) {
+Value alloc_complex_like(keel::Allocator *mr, const Value &x) {
     const auto &d = x.dims();
     if (x.isScalar()) return Value::matrix(1, 1, ValueType::COMPLEX, mr);
     if (d.is3D())
@@ -92,39 +92,39 @@ void modnorm_argcheck(const Value &ref, const std::string &type, double target) 
 
 Value pammod(const Value &x, int M, double ini_phase,
              const std::string &symbol_order,
-             std::pmr::memory_resource *mr)
+             keel::Allocator *mr)
 {
     pammod_argcheck(M);
     Value out = alloc_complex_like(mr, x);   // PAM is real-valued but
     // MATLAB still returns complex when ini_phase ≠ 0; for simplicity always
     // return complex.
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0) return out;
-    Cd *od = out.complexDataMut();
-    const Cd phase = (ini_phase == 0.0) ? Cd(1.0, 0.0)
-                                        : Cd(std::cos(ini_phase), std::sin(ini_phase));
-    for (size_t i = 0; i < N; ++i) {
+    keel::c64 *od = out.complexDataMut();
+    const keel::c64 phase = (ini_phase == 0.0) ? keel::c64(1.0, 0.0)
+                                        : keel::c64(std::cos(ini_phase), std::sin(ini_phase));
+    for (keel::usize i = 0; i < N; ++i) {
         const int s = (int)x.elemAsDouble(i);
         const double amp = pam_amp(s, M, symbol_order);
-        od[i] = Cd(amp, 0.0) * phase;
+        od[i] = keel::c64(amp, 0.0) * phase;
     }
     return out;
 }
 
 Value pamdemod(const Value &y, int M, double ini_phase,
                const std::string &symbol_order,
-               std::pmr::memory_resource *mr)
+               keel::Allocator *mr)
 {
     pamdemod_argcheck(M);
     Value out = alloc_double_like(mr, y);
-    const size_t N = y.numel();
+    const keel::usize N = y.numel();
     if (N == 0) return out;
     double *od = out.doubleDataMut();
-    const Cd inv = std::polar(1.0, -ini_phase);
-    for (size_t i = 0; i < N; ++i) {
-        Cd c = (y.type() == ValueType::COMPLEX)
+    const keel::c64 inv = keel::polar(1.0, -ini_phase);
+    for (keel::usize i = 0; i < N; ++i) {
+        keel::c64 c = (y.type() == ValueType::COMPLEX)
              ? y.complexData()[i]
-             : Cd(y.elemAsDouble(i), 0.0);
+             : keel::c64(y.elemAsDouble(i), 0.0);
         c = c * inv;
         od[i] = double(pam_amp_to_symbol(c.real(), M, symbol_order));
     }
@@ -141,7 +141,7 @@ std::pair<int, int> qam_grid(int M) {
 } // anonymous
 
 Value qammod(const Value &x, int M, const std::string &symbol_order,
-             bool unit_power, std::pmr::memory_resource *mr)
+             bool unit_power, keel::Allocator *mr)
 {
     qammod_argcheck(M);
     auto [KI, KQ] = qam_grid(M);
@@ -156,10 +156,10 @@ Value qammod(const Value &x, int M, const std::string &symbol_order,
     }
 
     Value out = alloc_complex_like(mr, x);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0) return out;
-    Cd *od = out.complexDataMut();
-    for (size_t i = 0; i < N; ++i) {
+    keel::c64 *od = out.complexDataMut();
+    for (keel::usize i = 0; i < N; ++i) {
         const int s = (int)x.elemAsDouble(i);
         // MATLAB layout: the symbol indexes a column-major grid where the
         // column (I axis) = s / KQ and the row (Q axis) = s % KQ. Each axis
@@ -170,13 +170,13 @@ Value qammod(const Value &x, int M, const std::string &symbol_order,
         const int grow = (symbol_order == "bin") ? row : to_gray(row);
         const double I = (2.0 * double(gcol) - double(KI - 1)) * scale;
         const double Q = (double(KQ - 1) - 2.0 * double(grow)) * scale;
-        od[i] = Cd(I, Q);
+        od[i] = keel::c64(I, Q);
     }
     return out;
 }
 
 Value qamdemod(const Value &y, int M, const std::string &symbol_order,
-               bool unit_power, std::pmr::memory_resource *mr)
+               bool unit_power, keel::Allocator *mr)
 {
     qamdemod_argcheck(M);
     auto [KI, KQ] = qam_grid(M);
@@ -188,13 +188,13 @@ Value qamdemod(const Value &y, int M, const std::string &symbol_order,
     }
 
     Value out = alloc_double_like(mr, y);
-    const size_t N = y.numel();
+    const keel::usize N = y.numel();
     if (N == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t i = 0; i < N; ++i) {
-        Cd c = (y.type() == ValueType::COMPLEX)
+    for (keel::usize i = 0; i < N; ++i) {
+        keel::c64 c = (y.type() == ValueType::COMPLEX)
              ? y.complexData()[i]
-             : Cd(y.elemAsDouble(i), 0.0);
+             : keel::c64(y.elemAsDouble(i), 0.0);
         const double I = c.real() / scale;
         const double Q = c.imag() / scale;
         int gcol = (int)std::lround(0.5 * (I + double(KI - 1)));
@@ -209,17 +209,17 @@ Value qamdemod(const Value &y, int M, const std::string &symbol_order,
 }
 
 Value modnorm(const Value &ref, const std::string &type, double target,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     modnorm_argcheck(ref, type, target);
-    const size_t N = ref.numel();
+    const keel::usize N = ref.numel();
     if (N == 0) return Value::scalar(1.0, mr);
     if (type == "avpow") {
         double s = 0.0;
-        for (size_t i = 0; i < N; ++i) {
+        for (keel::usize i = 0; i < N; ++i) {
             if (ref.type() == ValueType::COMPLEX) {
-                Cd c = ref.complexData()[i];
-                s += std::norm(c);
+                keel::c64 c = ref.complexData()[i];
+                s += keel::norm(c);
             } else {
                 const double v = ref.elemAsDouble(i);
                 s += v * v;
@@ -230,10 +230,10 @@ Value modnorm(const Value &ref, const std::string &type, double target,
     }
     // peakpow.
     double pk = 0.0;
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         double p = 0.0;
         if (ref.type() == ValueType::COMPLEX)
-            p = std::norm(ref.complexData()[i]);
+            p = keel::norm(ref.complexData()[i]);
         else { const double v = ref.elemAsDouble(i); p = v * v; }
         if (p > pk) pk = p;
     }

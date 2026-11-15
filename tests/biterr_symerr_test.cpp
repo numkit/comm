@@ -95,12 +95,12 @@ TEST_F(BitErrTest, PublicApiBiterr)
     EXPECT_NEAR(r.toScalar(), 1.0 / 3.0, 1e-12);
     // array, auto k=4 (max 15): 9 bits / 12
     auto [n2, r2] = comm::biterr(bv(engine, "[15 7 3]", "x"),
-                                 bv(engine, "[0 0 0]", "y"), 0, engine.resource());
+                                 bv(engine, "[0 0 0]", "y"), 0, engine.allocator());
     EXPECT_DOUBLE_EQ(n2.toScalar(), 9.0);
     EXPECT_NEAR(r2.toScalar(), 9.0 / 12.0, 1e-12);
     // explicit k=4: 1 bit / 4 = 0.25
     auto [n3, r3] = comm::biterr(bv(engine, "7", "a3"), bv(engine, "5", "b3"), 4,
-                                 engine.resource());
+                                 engine.allocator());
     EXPECT_DOUBLE_EQ(n3.toScalar(), 1.0);
     EXPECT_NEAR(r3.toScalar(), 0.25, 1e-12);
     // numel mismatch throws
@@ -114,7 +114,7 @@ TEST_F(BitErrTest, PublicApiSymerr)
     EXPECT_DOUBLE_EQ(n.toScalar(), 3.0);
     EXPECT_DOUBLE_EQ(r.toScalar(), 1.0);
     auto [n2, r2] = comm::symerr(bv(engine, "[0 1 2]", "a"),
-                                 bv(engine, "[0 1 5]", "b"), engine.resource());
+                                 bv(engine, "[0 1 5]", "b"), engine.allocator());
     EXPECT_DOUBLE_EQ(n2.toScalar(), 1.0);
     EXPECT_NEAR(r2.toScalar(), 1.0 / 3.0, 1e-12);
     EXPECT_ANY_THROW(

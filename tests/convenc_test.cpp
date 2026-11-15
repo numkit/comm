@@ -7,6 +7,7 @@
 // environment defect, not a nk issue; convenc is verified correct here
 // and via the direct probe).
 
+#include <keel/core.h>
 #include <numkit/comm/coding/convcoding.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -69,9 +70,9 @@ TEST_F(ConvencTest, PublicApi)
 {
     eval("t = poly2trellis(3, [6 7]); m = [1 0 0 1 0 1 1 0];");
     Value code = comm::convenc(*engine.getVariable("m"),
-                               *engine.getVariable("t"), engine.resource());
+                               *engine.getVariable("t"), engine.allocator());
     ASSERT_EQ(code.numel(), 16u);
     double s = 0.0;
-    for (size_t i = 0; i < code.numel(); ++i) s += code.doubleData()[i];
+    for (keel::usize i = 0; i < code.numel(); ++i) s += code.doubleData()[i];
     EXPECT_DOUBLE_EQ(s, 11.0);
 }

@@ -68,7 +68,7 @@ TEST_F(EncodeTest, PublicApi)
     eval("msg = [1 0 1 1];");
     comm::EncodeResult r = comm::encode(*engine.getVariable("msg"), 7, 4,
                                         "hamming/binary", Value::Empty,
-                                        engine.resource());
+                                        engine.allocator());
     EXPECT_EQ(r.added, 0);
     ASSERT_EQ(r.code.numel(), 7u);
     // codeword [1 0 0 1 0 1 1]

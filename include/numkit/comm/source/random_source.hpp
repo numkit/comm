@@ -6,9 +6,10 @@
 
 #pragma once
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <cstddef>
 #include <cstdint>
-#include <memory_resource>
 #include <numkit/value/value.hpp>
 
 namespace numkit {
@@ -41,9 +42,9 @@ namespace numkit::comm {
 /// @param mr          Memory resource (nullptr → process default).
 /// @return            `m`×`n` matrix of drawn symbols.
 /// @see randerr
-Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &alphabet,
-              bool have_state, uint32_t state,
-              std::pmr::memory_resource *mr = nullptr);
+Value randsrc(::numkit::ops::RngContext &rng, keel::usize m, keel::usize n, const Value &alphabet,
+              bool have_state, keel::u32 state,
+              keel::Allocator *mr = nullptr);
 
 /// @brief Generate an `m`×`n` binary error pattern
 /// (`out = randerr(m, n, errors, state)`).
@@ -62,9 +63,9 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
 /// @param mr          Memory resource (nullptr → process default).
 /// @return            `m`×`n` binary error matrix.
 /// @see randsrc
-Value randerr(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &errspec,
-              bool have_state, uint32_t state,
-              std::pmr::memory_resource *mr = nullptr);
+Value randerr(::numkit::ops::RngContext &rng, keel::usize m, keel::usize n, const Value &errspec,
+              bool have_state, keel::u32 state,
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

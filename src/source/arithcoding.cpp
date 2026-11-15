@@ -13,6 +13,8 @@
 // bounds are kept in N+1-bit unsigned integers; E1/E2/E3 rescaling
 // emits / shifts bits as the bounds tighten.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/comm/source/arithcoding.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -33,32 +35,32 @@ bool isRow(const Value &v)
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
-void readVecU(const Value &v, std::vector<uint64_t> &out)
+void readVecU(const Value &v, std::vector<keel::u64> &out)
 {
-    const size_t n = v.numel();
+    const keel::usize n = v.numel();
     out.resize(n);
-    for (size_t i = 0; i < n; ++i) {
+    for (keel::usize i = 0; i < n; ++i) {
         const double d = v.elemAsDouble(i);
         if (!(d > 0.0) || std::floor(d) != d)
             throw Error("arithenco: counts must be positive integers",
                         0, 0, "arithenco", "", "numkit:arithenco:Counts");
-        out[i] = static_cast<uint64_t>(d);
+        out[i] = static_cast<keel::u64>(d);
     }
 }
 
 // Bit at position p (1-based from LSB), matching MATLAB's bitget(x, p).
-inline uint64_t bitget(uint64_t x, int p)
+inline keel::u64 bitget(keel::u64 x, int p)
 {
     return (x >> (p - 1)) & 1ULL;
 }
 
 // Mask x to N low bits (clear bits N+1 and above).
-inline uint64_t maskN(uint64_t x, int N)
+inline keel::u64 maskN(keel::u64 x, int N)
 {
     return x & ((N == 64) ? ~0ULL : ((1ULL << N) - 1ULL));
 }
 
-void arithenco_argcheck(const Value &counts, std::vector<uint64_t> &cnt)
+void arithenco_argcheck(const Value &counts, std::vector<keel::u64> &cnt)
 {
     readVecU(counts, cnt);
     if (cnt.empty())
@@ -66,7 +68,7 @@ void arithenco_argcheck(const Value &counts, std::vector<uint64_t> &cnt)
                     0, 0, "arithenco", "", "numkit:arithenco:Counts");
 }
 
-void arithdeco_argcheck(const Value &counts, std::vector<uint64_t> &cnt)
+void arithdeco_argcheck(const Value &counts, std::vector<keel::u64> &cnt)
 {
     readVecU(counts, cnt);
 }
@@ -74,52 +76,52 @@ void arithdeco_argcheck(const Value &counts, std::vector<uint64_t> &cnt)
 } // namespace
 
 Value arithenco(const Value &seq, const Value &counts,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
-    std::vector<uint64_t> cnt;
+    std::vector<keel::u64> cnt;
     arithenco_argcheck(counts, cnt);
-    const size_t K = cnt.size();
+    const keel::usize K = cnt.size();
 
     // Cumulative counts: cum[0]=0, cum[i]=sum(cnt[0..i-1])
-    std::vector<uint64_t> cum(K + 1, 0);
-    for (size_t i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
-    const uint64_t total = cum[K];
+    std::vector<keel::u64> cum(K + 1, 0);
+    for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
+    const keel::u64 total = cum[K];
 
     const int N = static_cast<int>(std::ceil(std::log2(static_cast<double>(total)))) + 2;
-    const uint64_t topMask = 1ULL << (N - 1);
+    const keel::u64 topMask = 1ULL << (N - 1);
 
-    uint64_t dec_low = 0;
-    uint64_t dec_up  = (1ULL << N) - 1;
-    uint64_t E3_count = 0;
+    keel::u64 dec_low = 0;
+    keel::u64 dec_up  = (1ULL << N) - 1;
+    keel::u64 E3_count = 0;
 
-    std::vector<uint8_t> bits;
-    bits.reserve(seq.numel() * (static_cast<size_t>(std::ceil(std::log2(K)) + 2)) + N);
+    std::vector<keel::u8> bits;
+    bits.reserve(seq.numel() * (static_cast<keel::usize>(std::ceil(std::log2(K)) + 2)) + N);
 
-    const size_t Nseq = seq.numel();
-    for (size_t k = 0; k < Nseq; ++k) {
+    const keel::usize Nseq = seq.numel();
+    for (keel::usize k = 0; k < Nseq; ++k) {
         const double sd = seq.elemAsDouble(k);
         if (!(sd > 0.0) || std::floor(sd) != sd
-            || static_cast<size_t>(sd) > K)
+            || static_cast<keel::usize>(sd) > K)
             throw Error("arithenco: symbol out of range [1, length(counts)]",
                         0, 0, "arithenco", "", "numkit:arithenco:Sym");
-        const size_t s = static_cast<size_t>(sd);
+        const keel::usize s = static_cast<keel::usize>(sd);
 
-        const uint64_t span = dec_up - dec_low + 1;
-        const uint64_t low_new = dec_low + (span * cum[s - 1]) / total;
+        const keel::u64 span = dec_up - dec_low + 1;
+        const keel::u64 low_new = dec_low + (span * cum[s - 1]) / total;
         dec_up  = dec_low + (span * cum[s]) / total - 1;
         dec_low = low_new;
 
         // E1/E2/E3 rescaling.
         for (;;) {
             if (bitget(dec_low, N) == bitget(dec_up, N)) {
-                const uint64_t b = bitget(dec_low, N);
-                bits.push_back(static_cast<uint8_t>(b));
+                const keel::u64 b = bitget(dec_low, N);
+                bits.push_back(static_cast<keel::u8>(b));
                 dec_low = (dec_low << 1) + 0;
                 dec_up  = (dec_up  << 1) + 1;
                 // Flush queued E3 bits (complement of b).
                 if (E3_count > 0) {
-                    for (uint64_t i = 0; i < E3_count; ++i)
-                        bits.push_back(static_cast<uint8_t>(b ^ 1ULL));
+                    for (keel::u64 i = 0; i < E3_count; ++i)
+                        bits.push_back(static_cast<keel::u8>(b ^ 1ULL));
                     E3_count = 0;
                 }
                 dec_low = maskN(dec_low, N);
@@ -141,80 +143,80 @@ Value arithenco(const Value &seq, const Value &counts,
 
     // Termination: emit final bits of dec_low (with E3 handling).
     // bin_low MSB-first = N bits of dec_low.
-    std::vector<uint8_t> bin_low(N);
+    std::vector<keel::u8> bin_low(N);
     for (int i = 0; i < N; ++i)
-        bin_low[i] = static_cast<uint8_t>((dec_low >> (N - 1 - i)) & 1ULL);
+        bin_low[i] = static_cast<keel::u8>((dec_low >> (N - 1 - i)) & 1ULL);
     if (E3_count == 0) {
         for (int i = 0; i < N; ++i) bits.push_back(bin_low[i]);
     } else {
-        const uint8_t b = bin_low[0];
+        const keel::u8 b = bin_low[0];
         bits.push_back(b);
-        for (uint64_t i = 0; i < E3_count; ++i)
-            bits.push_back(static_cast<uint8_t>(b ^ 1));
+        for (keel::u64 i = 0; i < E3_count; ++i)
+            bits.push_back(static_cast<keel::u8>(b ^ 1));
         for (int i = 1; i < N; ++i) bits.push_back(bin_low[i]);
     }
 
     // Output preserves seq orientation.
     const bool row = isRow(seq);
-    const size_t L = bits.size();
+    const keel::usize L = bits.size();
     Value out = Value::matrix(row ? 1 : L, row ? L : 1,
                               ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    for (size_t i = 0; i < L; ++i) o[i] = static_cast<double>(bits[i]);
+    for (keel::usize i = 0; i < L; ++i) o[i] = static_cast<double>(bits[i]);
     return out;
 }
 
-Value arithdeco(const Value &code, const Value &counts, size_t len,
-                std::pmr::memory_resource *mr)
+Value arithdeco(const Value &code, const Value &counts, keel::usize len,
+                keel::Allocator *mr)
 {
-    std::vector<uint64_t> cnt;
+    std::vector<keel::u64> cnt;
     arithdeco_argcheck(counts, cnt);
-    const size_t K = cnt.size();
-    std::vector<uint64_t> cum(K + 1, 0);
-    for (size_t i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
-    const uint64_t total = cum[K];
+    const keel::usize K = cnt.size();
+    std::vector<keel::u64> cum(K + 1, 0);
+    for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
+    const keel::u64 total = cum[K];
 
     const int N = static_cast<int>(std::ceil(std::log2(static_cast<double>(total)))) + 2;
-    const uint64_t topMask = 1ULL << (N - 1);
+    const keel::u64 topMask = 1ULL << (N - 1);
 
     // Read code bits.
-    const size_t Lcode = code.numel();
-    auto readBit = [&](size_t i) -> uint64_t {
+    const keel::usize Lcode = code.numel();
+    auto readBit = [&](keel::usize i) -> keel::u64 {
         const double d = code.elemAsDouble(i);
         if (d != 0.0 && d != 1.0)
             throw Error("arithdeco: code bits must be 0 or 1",
                         0, 0, "arithdeco", "", "numkit:arithdeco:Bit");
-        return static_cast<uint64_t>(d);
+        return static_cast<keel::u64>(d);
     };
-    if (Lcode < static_cast<size_t>(N))
+    if (Lcode < static_cast<keel::usize>(N))
         throw Error("arithdeco: code shorter than required word length",
                     0, 0, "arithdeco", "", "numkit:arithdeco:Short");
 
-    uint64_t dec_low = 0;
-    uint64_t dec_up  = (1ULL << N) - 1;
-    uint64_t dec_tag = 0;
+    keel::u64 dec_low = 0;
+    keel::u64 dec_up  = (1ULL << N) - 1;
+    keel::u64 dec_tag = 0;
     for (int i = 0; i < N; ++i)
-        dec_tag = (dec_tag << 1) | readBit(static_cast<size_t>(i));
+        dec_tag = (dec_tag << 1) | readBit(static_cast<keel::usize>(i));
 
     // Find bin index `ptr` (1..K) such that cum[ptr-1] <= value < cum[ptr].
-    auto pick = [&](uint64_t value) -> size_t {
+    auto pick = [&](keel::u64 value) -> keel::usize {
         if (value >= cum[K]) return K;
         // Linear scan from end (matches MATLAB's order; K is small).
-        for (size_t i = K; i >= 1; --i) {
+        for (keel::usize i = K; i >= 1; --i) {
             if (cum[i - 1] <= value && value < cum[i]) return i;
         }
         return 1;
     };
 
     std::vector<double> dseq(len);
-    size_t k = static_cast<size_t>(N);   // next code-bit index (0-based)
-    for (size_t i = 0; i < len; ++i) {
-        const uint64_t span = dec_up - dec_low + 1;
-        const uint64_t dec_tag_new = ((dec_tag - dec_low + 1) * total - 1) / span;
-        const size_t ptr = pick(dec_tag_new);
+    keel::usize k = static_cast<keel::usize>(N);   // next code-bit index (0-based)
+    for (keel::usize i = 0; i < len; ++i) {
+        const keel::u64 span = dec_up - dec_low + 1;
+        const keel::u64 dec_tag_new = ((dec_tag - dec_low + 1) * total - 1) / span;
+        const keel::usize ptr = pick(dec_tag_new);
         dseq[i] = static_cast<double>(ptr);
 
-        const uint64_t low_new = dec_low + (span * cum[ptr - 1]) / total;
+        const keel::u64 low_new = dec_low + (span * cum[ptr - 1]) / total;
         dec_up  = dec_low + (span * cum[ptr]) / total - 1;
         dec_low = low_new;
 
@@ -224,7 +226,7 @@ Value arithdeco(const Value &code, const Value &counts, size_t len,
                             && bitget(dec_up,  N - 1) == 0);
             if (!e1e2 && !e3) break;
             if (k >= Lcode) break;
-            const uint64_t cb = readBit(k);
+            const keel::u64 cb = readBit(k);
             ++k;
             if (e1e2) {
                 dec_low = (dec_low << 1);

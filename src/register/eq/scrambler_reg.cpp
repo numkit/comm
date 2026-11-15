@@ -6,6 +6,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/scrambler.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -16,24 +18,24 @@
 namespace numkit::comm {
 namespace detail {
 
-void scrambler_reg(Span<const Value> args, size_t /*nargout*/,
-                   Span<Value> outs, CallContext &ctx)
+void scrambler_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // Absent from the R2025b reference (System-object API there);
     // contract fixed to the implemented signature.
     argcheck::checkNargin(args.size(), 3, 3, "scrambler");
     outs[0] = scrambler(args[0], args[1], args[2],
-                        ctx.engine->resource());
+                        ctx.engine->allocator());
 }
 
-void descrambler_reg(Span<const Value> args, size_t /*nargout*/,
-                     Span<Value> outs, CallContext &ctx)
+void descrambler_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // Absent from the R2025b reference (System-object API there);
     // contract fixed to the implemented signature.
     argcheck::checkNargin(args.size(), 3, 3, "descrambler");
     outs[0] = descrambler(args[0], args[1], args[2],
-                          ctx.engine->resource());
+                          ctx.engine->allocator());
 }
 
 } // namespace detail

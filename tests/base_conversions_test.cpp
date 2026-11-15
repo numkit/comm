@@ -208,7 +208,7 @@ TEST_F(BaseConversionsTest, PublicApiBit2intInt2bit)
     EXPECT_DOUBLE_EQ(r.doubleData()[0], 10.0); // 1010
     EXPECT_DOUBLE_EQ(r.doubleData()[1], 12.0); // 1100
     // explicit LSB-first + explicit mr
-    Value rl = comm::bit2int(b, 4, false, engine.resource());
+    Value rl = comm::bit2int(b, 4, false, engine.allocator());
     EXPECT_DOUBLE_EQ(rl.doubleData()[0], 5.0);
     // int2bit inverse -> 4x2 bit matrix
     Value bb = comm::int2bit(cvar(engine, "[10 12]", "d"), 4);
@@ -225,7 +225,7 @@ TEST_F(BaseConversionsTest, PublicApiBi2deDe2bi)
     EXPECT_DOUBLE_EQ(d.doubleData()[0], 5.0);
     EXPECT_DOUBLE_EQ(d.doubleData()[1], 12.0);
     // left-msb via the bool flag
-    Value dl = comm::bi2de(m, 2, true, engine.resource());
+    Value dl = comm::bi2de(m, 2, true, engine.allocator());
     EXPECT_DOUBLE_EQ(dl.doubleData()[0], 10.0);
     // de2bi auto width (n = -1 default) -> 2x4
     Value bb = comm::de2bi(cvar(engine, "[5 12]", "v"));
@@ -242,7 +242,7 @@ TEST_F(BaseConversionsTest, PublicApiVec2mat)
     EXPECT_EQ(pad, 2);
     // custom pad + explicit mr; 5 elems, n=3 -> 2x3, one pad at (2,3)
     auto [mat2, pad2] =
-        comm::vec2mat(cvar(engine, "[1 2 3 4 5]", "v2"), 3, 99.0, engine.resource());
+        comm::vec2mat(cvar(engine, "[1 2 3 4 5]", "v2"), 3, 99.0, engine.allocator());
     EXPECT_EQ(pad2, 1);
     EXPECT_DOUBLE_EQ(mat2.doubleData()[1 + 2 * 2], 99.0); // (2,3) col-major
 }

@@ -8,36 +8,36 @@
 // (`'InputType','bit'`) is documented as deferred -- requires
 // bit-grouping by log2(M) which we'll add when called for.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/comm/modulation/generic_qam.hpp>
 
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <complex>
 #include <limits>
 
 namespace numkit::comm {
 
-using Cd = std::complex<double>;
-
 // Read constellation point k as Cd.
-static Cd constAt(const Value &c, size_t k) {
+static keel::c64 constAt(const Value &c, keel::usize k) {
     if (c.isComplex())
         return c.complexData()[k];
-    return Cd(c.elemAsDouble(k), 0.0);
+    return keel::c64(c.elemAsDouble(k), 0.0);
 }
 
 namespace {
 
 void genqammod_argcheck(const Value &x, const Value &constellation)
 {
-    const size_t M = constellation.numel();
+    const keel::usize M = constellation.numel();
     if (M == 0)
         throw Error("genqammod: constellation must be non-empty",
                     0, 0, "genqammod", "", "numkit:genqammod:EmptyConst");
-    const size_t N = x.numel();
-    for (size_t i = 0; i < N; ++i) {
+    const keel::usize N = x.numel();
+    for (keel::usize i = 0; i < N; ++i) {
         const double xi = x.elemAsDouble(i);
         if (xi < 0.0 || xi >= static_cast<double>(M))
             throw Error("genqammod: index out of range [0, M-1]",
@@ -56,14 +56,14 @@ void genqamdemod_argcheck(const Value &constellation)
 } // namespace
 
 Value genqammod(const Value &x, const Value &constellation,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
     genqammod_argcheck(x, constellation);
 
     const auto &d = x.dims();
-    const size_t H = d.rows();
-    const size_t W = d.cols();
-    const size_t N = H * W;
+    const keel::usize H = d.rows();
+    const keel::usize W = d.cols();
+    const keel::usize N = H * W;
 
     // Output type: complex iff constellation is complex.
     const bool out_complex = constellation.isComplex();
@@ -73,15 +73,15 @@ Value genqammod(const Value &x, const Value &constellation,
                               mr);
 
     if (out_complex) {
-        Cd *o = out.complexDataMut();
-        for (size_t i = 0; i < N; ++i) {
-            const size_t k = static_cast<size_t>(x.elemAsDouble(i));
+        keel::c64 *o = out.complexDataMut();
+        for (keel::usize i = 0; i < N; ++i) {
+            const keel::usize k = static_cast<keel::usize>(x.elemAsDouble(i));
             o[i] = constellation.complexData()[k];
         }
     } else {
         double *o = out.doubleDataMut();
-        for (size_t i = 0; i < N; ++i) {
-            const size_t k = static_cast<size_t>(x.elemAsDouble(i));
+        for (keel::usize i = 0; i < N; ++i) {
+            const keel::usize k = static_cast<keel::usize>(x.elemAsDouble(i));
             o[i] = constellation.elemAsDouble(k);
         }
     }
@@ -89,28 +89,28 @@ Value genqammod(const Value &x, const Value &constellation,
 }
 
 Value genqamdemod(const Value &y, const Value &constellation,
-                  std::pmr::memory_resource *mr)
+                  keel::Allocator *mr)
 {
     genqamdemod_argcheck(constellation);
-    const size_t M = constellation.numel();
+    const keel::usize M = constellation.numel();
 
     const auto &d = y.dims();
-    const size_t H = d.rows();
-    const size_t W = d.cols();
-    const size_t N = H * W;
+    const keel::usize H = d.rows();
+    const keel::usize W = d.cols();
+    const keel::usize N = H * W;
 
     Value out = Value::matrix(H, W, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
     const bool y_complex = y.isComplex();
 
-    for (size_t i = 0; i < N; ++i) {
-        const Cd yi = y_complex
+    for (keel::usize i = 0; i < N; ++i) {
+        const keel::c64 yi = y_complex
                           ? y.complexData()[i]
-                          : Cd(y.elemAsDouble(i), 0.0);
-        size_t best_k = 0;
+                          : keel::c64(y.elemAsDouble(i), 0.0);
+        keel::usize best_k = 0;
         double best_d2 = std::numeric_limits<double>::infinity();
-        for (size_t k = 0; k < M; ++k) {
-            const Cd ck = constAt(constellation, k);
+        for (keel::usize k = 0; k < M; ++k) {
+            const keel::c64 ck = constAt(constellation, k);
             const double dr = yi.real() - ck.real();
             const double di = yi.imag() - ck.imag();
             const double d2 = dr * dr + di * di;

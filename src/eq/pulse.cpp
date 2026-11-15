@@ -9,6 +9,9 @@
 // with the standard l'Hôpital limits at t = 0 and t = ±T/(4β).
 // Output normalised to unit energy, matching MATLAB R2025b.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/math.h>
 #include <numkit/comm/eq/pulse.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -29,7 +32,7 @@ namespace numkit::comm {
 namespace {
 
 double sinc_pi(double x) {
-    if (std::abs(x) < 1e-12) return 1.0;
+    if (keel::abs(x) < 1e-12) return 1.0;
     const double a = M_PI * x;
     return std::sin(a) / a;
 }
@@ -79,10 +82,10 @@ void intdump_argcheck(const Value &x, int n)
         throw Error("intdump: n must be a positive integer",
                     0, 0, "intdump", "", "numkit:intdump:n");
     const auto &d = x.dims();
-    const size_t H = d.rows();
-    const size_t W = d.cols();
+    const keel::usize H = d.rows();
+    const keel::usize W = d.cols();
     const bool is_row = (H == 1 && W >= 1);
-    const size_t un = static_cast<size_t>(n);
+    const keel::usize un = static_cast<keel::usize>(n);
     if (is_row) {
         if (W % un != 0)
             throw Error("intdump: row length must be a multiple of n",
@@ -98,14 +101,14 @@ void intdump_argcheck(const Value &x, int n)
 
 Value rcosdesign(double beta, int span, int sps,
                  const std::string &shape,
-                 std::pmr::memory_resource *mr)
+                 keel::Allocator *mr)
 {
     rcosdesign_argcheck(beta, span, sps, shape);
     const bool rrc = (shape == "sqrt" || shape == "Sqrt" || shape == "SQRT");
 
     // Filter length.
     const int N = span * sps + 1;
-    std::vector<double> h(static_cast<size_t>(N), 0.0);
+    std::vector<double> h(static_cast<keel::usize>(N), 0.0);
 
     // Symbol period T set so that t / T is dimensionless and t runs
     // from -span/2 to +span/2 in steps of 1/sps. (T = 1 here.)
@@ -120,7 +123,7 @@ Value rcosdesign(double beta, int span, int sps,
             // Raised cosine.
             const double tT = t / T;
             const double denom = 1.0 - std::pow(2.0 * beta * tT, 2);
-            if (std::abs(denom) < 1e-12) {
+            if (keel::abs(denom) < 1e-12) {
                 // l'Hôpital limit at t = ±T/(2β).
                 v = (M_PI / 4.0) * sinc_pi(1.0 / (2.0 * beta));
             } else {
@@ -129,11 +132,11 @@ Value rcosdesign(double beta, int span, int sps,
         } else {
             // Root raised cosine.
             const double tT = t / T;
-            if (std::abs(t) < 1e-12) {
+            if (keel::abs(t) < 1e-12) {
                 // h(0) = (1 + β · (4/π − 1)) / √T
                 v = (1.0 + beta * (4.0 / M_PI - 1.0)) / std::sqrt(T);
             } else if (beta > 0.0 &&
-                       std::abs(std::abs(t) - T / (4.0 * beta)) < 1e-12) {
+                       keel::abs(keel::abs(t) - T / (4.0 * beta)) < 1e-12) {
                 // h(±T/(4β)) limit
                 const double a = (beta / std::sqrt(2.0 * T));
                 const double s = std::sin(M_PI / (4.0 * beta));
@@ -147,7 +150,7 @@ Value rcosdesign(double beta, int span, int sps,
                 v = (4.0 * beta / (M_PI * std::sqrt(T))) * num / den;
             }
         }
-        h[static_cast<size_t>(n)] = v;
+        h[static_cast<keel::usize>(n)] = v;
     }
 
     // Unit-energy normalisation (matches MATLAB).
@@ -158,7 +161,7 @@ Value rcosdesign(double beta, int span, int sps,
         for (auto &v : h) v *= s;
     }
 
-    Value r = Value::matrix(1, static_cast<size_t>(N), ValueType::DOUBLE, mr);
+    Value r = Value::matrix(1, static_cast<keel::usize>(N), ValueType::DOUBLE, mr);
     if (N > 0) std::copy(h.begin(), h.end(), r.doubleDataMut());
     return r;
 }
@@ -172,7 +175,7 @@ Value rcosdesign(double beta, int span, int sps,
 //   h       = (sqrt(pi)/alpha) * exp(-(pi*t/alpha).^2)
 //   h       = h / sum(h)                                (unit-area)
 Value gaussdesign(double BT, int span, int sps,
-                  std::pmr::memory_resource *mr)
+                  keel::Allocator *mr)
 {
     gaussdesign_argcheck(BT, span, sps);
 
@@ -181,13 +184,13 @@ Value gaussdesign(double BT, int span, int sps,
     const double alpha = std::sqrt(std::log(2.0) / 2.0) / BT;
     const double pre = std::sqrt(M_PI) / alpha;
 
-    std::vector<double> h(static_cast<size_t>(N));
+    std::vector<double> h(static_cast<keel::usize>(N));
     double s = 0.0;
     for (int k = 1; k <= N; ++k) {
         const double t = (static_cast<double>(k) - centre) / sps;
         const double arg = M_PI * t / alpha;
         const double v = pre * std::exp(-(arg * arg));
-        h[static_cast<size_t>(k - 1)] = v;
+        h[static_cast<keel::usize>(k - 1)] = v;
         s += v;
     }
     if (s > 0.0) {
@@ -195,7 +198,7 @@ Value gaussdesign(double BT, int span, int sps,
         for (auto &v : h) v *= inv;
     }
 
-    Value r = Value::matrix(1, static_cast<size_t>(N), ValueType::DOUBLE, mr);
+    Value r = Value::matrix(1, static_cast<keel::usize>(N), ValueType::DOUBLE, mr);
     if (N > 0) std::copy(h.begin(), h.end(), r.doubleDataMut());
     return r;
 }
@@ -204,42 +207,42 @@ Value gaussdesign(double BT, int span, int sps,
 // rectpulse(x, n) repeats each sample of x n times along the leading
 // non-singleton dimension. Vector inputs preserve orientation; matrix
 // inputs repeat each row n times (column count unchanged).
-Value rectpulse(const Value &x, int n, std::pmr::memory_resource *mr)
+Value rectpulse(const Value &x, int n, keel::Allocator *mr)
 {
     rectpulse_argcheck(n);
 
     const auto &d = x.dims();
-    const size_t H = d.rows();
-    const size_t W = d.cols();
+    const keel::usize H = d.rows();
+    const keel::usize W = d.cols();
     const bool is_row = (H == 1 && W >= 1);
     const bool is_col = (W == 1 && H >= 1);
 
     Value out;
     if (is_row) {
-        out = Value::matrix(1, W * static_cast<size_t>(n), ValueType::DOUBLE, mr);
+        out = Value::matrix(1, W * static_cast<keel::usize>(n), ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
-        for (size_t c = 0; c < W; ++c) {
+        for (keel::usize c = 0; c < W; ++c) {
             const double v = x.elemAsDouble(c);
             for (int k = 0; k < n; ++k)
-                od[c * static_cast<size_t>(n) + static_cast<size_t>(k)] = v;
+                od[c * static_cast<keel::usize>(n) + static_cast<keel::usize>(k)] = v;
         }
     } else if (is_col) {
-        out = Value::matrix(H * static_cast<size_t>(n), 1, ValueType::DOUBLE, mr);
+        out = Value::matrix(H * static_cast<keel::usize>(n), 1, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double v = x.elemAsDouble(r);
             for (int k = 0; k < n; ++k)
-                od[r * static_cast<size_t>(n) + static_cast<size_t>(k)] = v;
+                od[r * static_cast<keel::usize>(n) + static_cast<keel::usize>(k)] = v;
         }
     } else {
-        const size_t Nh = H * static_cast<size_t>(n);
+        const keel::usize Nh = H * static_cast<keel::usize>(n);
         out = Value::matrix(Nh, W, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
-        for (size_t c = 0; c < W; ++c) {
-            for (size_t r = 0; r < H; ++r) {
+        for (keel::usize c = 0; c < W; ++c) {
+            for (keel::usize r = 0; r < H; ++r) {
                 const double v = x.elemAsDouble(c * H + r);
                 for (int k = 0; k < n; ++k)
-                    od[c * Nh + r * static_cast<size_t>(n) + static_cast<size_t>(k)] = v;
+                    od[c * Nh + r * static_cast<keel::usize>(n) + static_cast<keel::usize>(k)] = v;
             }
         }
     }
@@ -250,28 +253,28 @@ Value rectpulse(const Value &x, int n, std::pmr::memory_resource *mr)
 // Inverse of rectpulse: average each n consecutive samples along the
 // leading non-singleton dimension. Length along that axis must be
 // divisible by n.
-Value intdump(const Value &x, int n, std::pmr::memory_resource *mr)
+Value intdump(const Value &x, int n, keel::Allocator *mr)
 {
     intdump_argcheck(x, n);
 
     const auto &d = x.dims();
-    const size_t H = d.rows();
-    const size_t W = d.cols();
+    const keel::usize H = d.rows();
+    const keel::usize W = d.cols();
     const bool is_row = (H == 1 && W >= 1);
     const bool is_col = (W == 1 && H >= 1);
-    const size_t un = static_cast<size_t>(n);
+    const keel::usize un = static_cast<keel::usize>(n);
 
     Value out;
     if (is_row) {
         if (W % un != 0)
             throw Error("intdump: row length must be a multiple of n",
                         0, 0, "intdump", "", "numkit:intdump:size");
-        const size_t Wo = W / un;
+        const keel::usize Wo = W / un;
         out = Value::matrix(1, Wo, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
-        for (size_t c = 0; c < Wo; ++c) {
+        for (keel::usize c = 0; c < Wo; ++c) {
             double s = 0.0;
-            for (size_t k = 0; k < un; ++k)
+            for (keel::usize k = 0; k < un; ++k)
                 s += x.elemAsDouble(c * un + k);
             od[c] = s / static_cast<double>(un);
         }
@@ -279,12 +282,12 @@ Value intdump(const Value &x, int n, std::pmr::memory_resource *mr)
         if (H % un != 0)
             throw Error("intdump: column length must be a multiple of n",
                         0, 0, "intdump", "", "numkit:intdump:size");
-        const size_t Ho = H / un;
+        const keel::usize Ho = H / un;
         out = Value::matrix(Ho, 1, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
-        for (size_t r = 0; r < Ho; ++r) {
+        for (keel::usize r = 0; r < Ho; ++r) {
             double s = 0.0;
-            for (size_t k = 0; k < un; ++k)
+            for (keel::usize k = 0; k < un; ++k)
                 s += x.elemAsDouble(r * un + k);
             od[r] = s / static_cast<double>(un);
         }
@@ -293,13 +296,13 @@ Value intdump(const Value &x, int n, std::pmr::memory_resource *mr)
         if (H % un != 0)
             throw Error("intdump: row count must be a multiple of n",
                         0, 0, "intdump", "", "numkit:intdump:size");
-        const size_t Ho = H / un;
+        const keel::usize Ho = H / un;
         out = Value::matrix(Ho, W, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
-        for (size_t c = 0; c < W; ++c) {
-            for (size_t r = 0; r < Ho; ++r) {
+        for (keel::usize c = 0; c < W; ++c) {
+            for (keel::usize r = 0; r < Ho; ++r) {
                 double s = 0.0;
-                for (size_t k = 0; k < un; ++k)
+                for (keel::usize k = 0; k < un; ++k)
                     s += x.elemAsDouble(c * H + r * un + k);
                 od[c * Ho + r] = s / static_cast<double>(un);
             }

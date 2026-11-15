@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -27,13 +28,13 @@ namespace numkit::comm {
 /// @return           Bin index per sample.
 /// @see quantiz, lloyds
 Value quantiz_indx(const Value &sig, const Value &partition,
-                   std::pmr::memory_resource *mr = nullptr);
+                   keel::Allocator *mr = nullptr);
 
 /// @brief Result of the three-output form of `quantiz`.
 struct QuantizResult {
     Value  indx;     ///< Bin index per sample.
     Value  quantv;   ///< `codebook(indx + 1)`.
-    double distor;   ///< `mean((sig - quantv)^2)`.
+    keel::f64 distor;   ///< `mean((sig - quantv)^2)`.
 };
 
 /// @brief Three-output form of `quantiz`
@@ -48,7 +49,7 @@ struct QuantizResult {
 /// @see quantiz_indx, lloyds
 QuantizResult
 quantiz(const Value &sig, const Value &partition, const Value &codebook,
-        std::pmr::memory_resource *mr = nullptr);
+        keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 
@@ -37,9 +38,9 @@ namespace numkit::comm {
 /// @return       Row vector of length `span·sps + 1`.
 /// @throws Error On invalid β, span, sps, or unknown shape.
 /// @see gaussdesign
-Value rcosdesign(double beta, int span, int sps,
+Value rcosdesign(keel::f64 beta, int span, int sps,
                  const std::string &shape = "normal",
-                 std::pmr::memory_resource *mr = nullptr);
+                 keel::Allocator *mr = nullptr);
 
 /// @brief Design a Gaussian FIR pulse-shaping filter
 /// (`h = gaussdesign(BT, span, sps)`).
@@ -57,8 +58,8 @@ Value rcosdesign(double beta, int span, int sps,
 /// @return      Row vector of length `span·sps + 1`, sum-normalised.
 /// @throws Error On invalid BT, span, or sps.
 /// @see rcosdesign
-Value gaussdesign(double BT, int span, int sps,
-                  std::pmr::memory_resource *mr = nullptr);
+Value gaussdesign(keel::f64 BT, int span, int sps,
+                  keel::Allocator *mr = nullptr);
 
 /// @brief Rectangular pulse shaping (`y = rectpulse(x, n)`).
 ///
@@ -74,7 +75,7 @@ Value gaussdesign(double BT, int span, int sps,
 /// @throws Error On non-positive `n`.
 /// @see intdump
 Value rectpulse(const Value &x, int n,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 /// @brief Integrate-and-dump (`y = intdump(x, n)`).
 ///
@@ -90,7 +91,7 @@ Value rectpulse(const Value &x, int n,
 ///               or `n` is non-positive.
 /// @see rectpulse
 Value intdump(const Value &x, int n,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

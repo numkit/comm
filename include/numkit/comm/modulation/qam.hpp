@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 #include <string>
@@ -31,9 +32,9 @@ namespace numkit::comm {
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Real amplitudes, same shape as `x`.
 /// @see pamdemod, qammod
-Value pammod(const Value &x, int M, double ini_phase,
+Value pammod(const Value &x, int M, keel::f64 ini_phase,
              const std::string &symbol_order,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief M-ary PAM demodulator — nearest-amplitude decision
 /// (`x = pamdemod(y, M, ini_phase, symbol_order)`).
@@ -45,9 +46,9 @@ Value pammod(const Value &x, int M, double ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see pammod
-Value pamdemod(const Value &y, int M, double ini_phase,
+Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
                const std::string &symbol_order,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// @brief Rectangular M-ary QAM modulator
 /// (`y = qammod(x, M, symbol_order, unit_power)`).
@@ -66,7 +67,7 @@ Value pamdemod(const Value &y, int M, double ini_phase,
 /// @see qamdemod, pammod, genqammod
 Value qammod(const Value &x, int M, const std::string &symbol_order,
              bool unit_power,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief Rectangular M-ary QAM demodulator
 /// (`x = qamdemod(y, M, symbol_order, unit_power)`).
@@ -81,7 +82,7 @@ Value qammod(const Value &x, int M, const std::string &symbol_order,
 /// @see qammod
 Value qamdemod(const Value &y, int M, const std::string &symbol_order,
                bool unit_power,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// @brief Constellation normalisation factor
 /// (`factor = modnorm(ref, type, target)`).
@@ -97,8 +98,8 @@ Value qamdemod(const Value &y, int M, const std::string &symbol_order,
 /// @return        Real scalar scaling factor.
 /// @throws Error  Unknown `type` or empty `ref`.
 /// @see qammod, pammod
-Value modnorm(const Value &ref, const std::string &type, double target,
-              std::pmr::memory_resource *mr = nullptr);
+Value modnorm(const Value &ref, const std::string &type, keel::f64 target,
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/lloyds.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -20,11 +22,11 @@
 namespace numkit::comm {
 namespace detail {
 
-void lloyds_reg(Span<const Value> args, size_t nargout,
-                Span<Value> outs, CallContext &ctx)
+void lloyds_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "lloyds");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     double tol = 1e-7;
     if (args.size() >= 3 && !args[2].isEmpty())
         tol = args[2].toScalar();

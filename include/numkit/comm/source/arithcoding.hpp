@@ -6,8 +6,9 @@
 
 #pragma once
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <cstddef>
-#include <memory_resource>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -30,7 +31,7 @@ namespace numkit::comm {
 /// @throws Error  On bad `seq` symbols or non-positive counts.
 /// @see arithdeco
 Value arithenco(const Value &seq, const Value &counts,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 /// @brief Invert @ref arithenco (`seq = arithdeco(code, counts, len)`).
 ///
@@ -44,8 +45,8 @@ Value arithenco(const Value &seq, const Value &counts,
 /// @return        Decoded symbol sequence of length `len`.
 /// @throws Error  On bad inputs or truncated bit stream.
 /// @see arithenco
-Value arithdeco(const Value &code, const Value &counts, std::size_t len,
-                std::pmr::memory_resource *mr = nullptr);
+Value arithdeco(const Value &code, const Value &counts, keel::usize len,
+                keel::Allocator *mr = nullptr);
 
 
 /// @}

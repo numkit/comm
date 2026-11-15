@@ -60,7 +60,7 @@ TEST_F(VitdecTest, PublicApi)
     eval("t = poly2trellis(3, [6 7]); msg = [1 0 1 1]; code = convenc(msg, t);");
     Value dec = comm::vitdec(*engine.getVariable("code"),
                              *engine.getVariable("t"), 8, "trunc", "hard",
-                             engine.resource());
+                             engine.allocator());
     ASSERT_EQ(dec.numel(), 4u);
     EXPECT_DOUBLE_EQ(dec.doubleData()[0], 1.0);
     EXPECT_DOUBLE_EQ(dec.doubleData()[1], 0.0);

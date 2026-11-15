@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <utility>
 #include <numkit/value/value.hpp>
 
@@ -32,7 +33,7 @@ namespace numkit::comm {
 /// @throws Error if `n ∉ 1..64` or `numel(b)` is not divisible by `n`.
 /// @see int2bit
 Value bit2int(const Value &b, int n, bool msbfirst = true,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Unpack integers into a bit matrix — `b = int2bit(d, n)`.
 ///
@@ -48,7 +49,7 @@ Value bit2int(const Value &b, int n, bool msbfirst = true,
 /// @throws Error if `n ∉ 1..64`.
 /// @see bit2int
 Value int2bit(const Value &d, int n, bool msbfirst = true,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Convert digit-rows to decimal — `d = bi2de(b)` (legacy).
 ///
@@ -66,7 +67,7 @@ Value int2bit(const Value &d, int n, bool msbfirst = true,
 /// @throws Error if `b` is not 2-D or `base < 2`.
 /// @see de2bi, bit2int
 Value bi2de(const Value &b, int base = 2, bool msbfirst = false,
-            std::pmr::memory_resource *mr = nullptr);
+            keel::Allocator *mr = nullptr);
 
 /// @brief Convert integers to digit-rows — `b = de2bi(d)` (legacy).
 ///
@@ -85,7 +86,7 @@ Value bi2de(const Value &b, int base = 2, bool msbfirst = false,
 /// @throws Error if `base < 2`.
 /// @see bi2de, int2bit
 Value de2bi(const Value &d, int n = -1, int base = 2, bool msbfirst = false,
-            std::pmr::memory_resource *mr = nullptr);
+            keel::Allocator *mr = nullptr);
 
 /// @brief Reshape a vector into an N-column matrix with padding —
 /// `[m, pad] = vec2mat(v, n)`.
@@ -103,8 +104,8 @@ Value de2bi(const Value &d, int n = -1, int base = 2, bool msbfirst = false,
 ///                number of pad entries added to fill the final row.
 /// @throws Error if `n <= 0`.
 std::pair<Value, int>
-vec2mat(const Value &v, int n, double padval = 0.0,
-        std::pmr::memory_resource *mr = nullptr);
+vec2mat(const Value &v, int n, keel::f64 padval = 0.0,
+        keel::Allocator *mr = nullptr);
 
 
 /// @}

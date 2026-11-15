@@ -1,5 +1,7 @@
 // toolboxes/comm/src/library.cpp
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/library.hpp>
 
 #include <numkit/sys/plugin.hpp>
@@ -7,128 +9,128 @@
 
 namespace numkit::comm::detail {
 // modulation/psk.cpp
-void pskmod_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void pskdemod_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void dpskmod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void dpskdemod_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void pskmod_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void pskdemod_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void dpskmod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void dpskdemod_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // modulation/qam.cpp
-void pammod_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void pamdemod_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void qammod_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void qamdemod_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void modnorm_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void pammod_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void pamdemod_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void qammod_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void qamdemod_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void modnorm_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // modulation/fsk_ofdm.cpp
-void fskmod_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void fskdemod_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ofdmmod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ofdmdemod_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void fskmod_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void fskdemod_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ofdmmod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ofdmdemod_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // modulation/analog.cpp
-void pmmod_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ammod_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void fmmod_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void pmdemod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void fmdemod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void amdemod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ssbdemod_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ssbmod_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void mskmod_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void mskdemod_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
+void pmmod_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ammod_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void fmmod_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void pmdemod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void fmdemod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void amdemod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ssbdemod_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ssbmod_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void mskmod_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void mskdemod_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // modulation/generic_qam.cpp
-void genqammod_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void genqamdemod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void genqammod_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void genqamdemod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // modulation/apsk.cpp
-void apskmod_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
-void apskdemod_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
+void apskmod_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void apskdemod_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // modulation/mil188.cpp
-void mil188qammod_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void mil188qamdemod_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void mil188qammod_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void mil188qamdemod_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // channel/channel.cpp
-void awgn_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wgn_reg        (Span<const Value>, size_t, Span<Value>, CallContext &);
-void bsc_reg        (Span<const Value>, size_t, Span<Value>, CallContext &);
-void qfunc_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void qfuncinv_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void marcumq_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void berawgn_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void berconfint_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void noisebw_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void convertSNR_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void awgn_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wgn_reg        (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void bsc_reg        (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void qfunc_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void qfuncinv_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void marcumq_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void berawgn_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void berconfint_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void noisebw_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void convertSNR_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // channel/fading.cpp
-void rayleighchan_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ricianchan_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void rayleighchan_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ricianchan_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // eq/pulse.cpp
-void rcosdesign_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void gaussdesign_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void rectpulse_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void intdump_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void rcosdesign_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void gaussdesign_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void rectpulse_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void intdump_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // eq/scrambler.cpp
-void scrambler_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void descrambler_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
+void scrambler_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void descrambler_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // eq/errors.cpp
-void biterr_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
-void symerr_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
+void biterr_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void symerr_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // eq/compand.cpp
-void compand_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void compand_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/random_source.cpp
-void randsrc_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void randerr_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void randsrc_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void randerr_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/huffman.cpp
-void huffmandict_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void huffmanenco_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void huffmandeco_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
+void huffmandict_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void huffmanenco_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void huffmandeco_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/dpcm.cpp
-void dpcmenco_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void dpcmdeco_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
+void dpcmenco_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void dpcmdeco_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/quantiz.cpp
-void quantiz_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void quantiz_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/lloyds.cpp
-void lloyds_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
+void lloyds_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/dpcmopt.cpp
-void dpcmopt_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void dpcmopt_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/arithcoding.cpp
-void arithenco_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void arithdeco_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
+void arithenco_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void arithdeco_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // source/base_conversions.cpp
-void bit2int_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void int2bit_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void bi2de_reg        (Span<const Value>, size_t, Span<Value>, CallContext &);
-void de2bi_reg        (Span<const Value>, size_t, Span<Value>, CallContext &);
-void vec2mat_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void bit2int_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void int2bit_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void bi2de_reg        (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void de2bi_reg        (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void vec2mat_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // coding/convcoding.cpp
-void poly2trellis_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void convenc_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void vitdec_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
-void istrellis_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
+void poly2trellis_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void convenc_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void vitdec_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void istrellis_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 
 // coding/blockcoding.cpp
-void gen2par_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void syndtable_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void hammgen_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void cyclpoly_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void cyclgen_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void encode_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
-void decode_reg       (Span<const Value>, size_t, Span<Value>, CallContext &);
+void gen2par_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void syndtable_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void hammgen_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void cyclpoly_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void cyclgen_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void encode_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void decode_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 } // namespace numkit::comm::detail
 
 namespace numkit {

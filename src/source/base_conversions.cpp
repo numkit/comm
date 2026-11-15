@@ -17,9 +17,10 @@
 // Scratch via ScratchArena/ScratchVec. No std::vector for transient
 // buffers.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/comm/source/base_conversions.hpp>
 #include <numkit/value/argcheck.hpp>
-#include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -33,9 +34,9 @@ namespace numkit::comm {
 namespace {
 
 // Read element as integer (truncating).
-inline int64_t getI64(const Value &v, size_t i)
+inline keel::i64 getI64(const Value &v, keel::usize i)
 {
-    return static_cast<int64_t>(v.elemAsDouble(i));
+    return static_cast<keel::i64>(v.elemAsDouble(i));
 }
 
 } // namespace
@@ -44,23 +45,23 @@ inline int64_t getI64(const Value &v, size_t i)
 // Pack column-vector of bits (length divisible by n) into an integer
 // vector of length numel(b) / n. MSB-first by default.
 Value bit2int(const Value &b, int n, bool msbfirst,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     if (n <= 0 || n > 64)
         throw Error("bit2int: n must be in 1..64",
                     0, 0, "bit2int", "", "numkit:bit2int:BadN");
-    const size_t L = b.numel();
-    if (L % static_cast<size_t>(n) != 0)
+    const keel::usize L = b.numel();
+    if (L % static_cast<keel::usize>(n) != 0)
         throw Error("bit2int: numel(b) must be divisible by n",
                     0, 0, "bit2int", "", "numkit:bit2int:BadLen");
-    const size_t M = L / static_cast<size_t>(n);
+    const keel::usize M = L / static_cast<keel::usize>(n);
     Value out = Value::matrix(M, 1, ValueType::DOUBLE, mr);
     if (M == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t k = 0; k < M; ++k) {
-        uint64_t v = 0;
+    for (keel::usize k = 0; k < M; ++k) {
+        keel::u64 v = 0;
         for (int j = 0; j < n; ++j) {
-            const size_t bitIdx = k * n + (msbfirst ? j : (n - 1 - j));
+            const keel::usize bitIdx = k * n + (msbfirst ? j : (n - 1 - j));
             v = (v << 1) | (getI64(b, bitIdx) & 1);
         }
         od[k] = static_cast<double>(v);
@@ -72,17 +73,17 @@ Value bit2int(const Value &b, int n, bool msbfirst,
 // Inverse of bit2int. d is a row/col vector of integers; returns
 // (n × numel(d)) bit matrix (each input contributes one column of n bits).
 Value int2bit(const Value &d, int n, bool msbfirst,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     if (n <= 0 || n > 64)
         throw Error("int2bit: n must be in 1..64",
                     0, 0, "int2bit", "", "numkit:int2bit:BadN");
-    const size_t M = d.numel();
-    Value out = Value::matrix(static_cast<size_t>(n), M, ValueType::DOUBLE, mr);
+    const keel::usize M = d.numel();
+    Value out = Value::matrix(static_cast<keel::usize>(n), M, ValueType::DOUBLE, mr);
     if (M == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t k = 0; k < M; ++k) {
-        const uint64_t v = static_cast<uint64_t>(getI64(d, k));
+    for (keel::usize k = 0; k < M; ++k) {
+        const keel::u64 v = static_cast<keel::u64>(getI64(d, k));
         for (int j = 0; j < n; ++j) {
             // out(j, k) = j-th MSB-first bit of v (or LSB-first).
             const int bitPos = msbfirst ? (n - 1 - j) : j;
@@ -113,20 +114,20 @@ void bi2de_argcheck(const Value &b, int base)
 } // namespace
 
 Value bi2de(const Value &b, int base, bool msbfirst,
-            std::pmr::memory_resource *mr)
+            keel::Allocator *mr)
 {
     bi2de_argcheck(b, base);
-    const size_t R = b.dims().rows();
-    const size_t C = b.dims().cols();
+    const keel::usize R = b.dims().rows();
+    const keel::usize C = b.dims().cols();
     Value out = Value::matrix(R, 1, ValueType::DOUBLE, mr);
     if (R == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t r = 0; r < R; ++r) {
+    for (keel::usize r = 0; r < R; ++r) {
         // b is column-major; element (r, c) at idx r + c*R.
         long double v = 0.0L;
         long double pwr = 1.0L;
-        for (size_t c = 0; c < C; ++c) {
-            const size_t idx = msbfirst ? (C - 1 - c) : c;
+        for (keel::usize c = 0; c < C; ++c) {
+            const keel::usize idx = msbfirst ? (C - 1 - c) : c;
             v += static_cast<long double>(getI64(b, r + idx * R)) * pwr;
             pwr *= static_cast<long double>(base);
         }
@@ -140,35 +141,35 @@ Value bi2de(const Value &b, int base, bool msbfirst,
 // (default LSB-first 'right-msb', default base = 2). Width n is the
 // minimum number of digits; if not given, computed from the largest input.
 Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
-            std::pmr::memory_resource *mr)
+            keel::Allocator *mr)
 {
     if (base < 2)
         throw Error("de2bi: base must be >= 2",
                     0, 0, "de2bi", "", "numkit:de2bi:BadBase");
-    const size_t R = d.numel();
+    const keel::usize R = d.numel();
     // Auto-width: ceil(log_base(max(d)+1)).
     int n = n_user;
     if (n <= 0) {
-        uint64_t mx = 0;
-        for (size_t i = 0; i < R; ++i) {
-            const uint64_t v = static_cast<uint64_t>(getI64(d, i));
+        keel::u64 mx = 0;
+        for (keel::usize i = 0; i < R; ++i) {
+            const keel::u64 v = static_cast<keel::u64>(getI64(d, i));
             if (v > mx) mx = v;
         }
         n = 0;
-        uint64_t t = mx;
-        while (t > 0) { ++n; t /= static_cast<uint64_t>(base); }
+        keel::u64 t = mx;
+        while (t > 0) { ++n; t /= static_cast<keel::u64>(base); }
         if (n == 0) n = 1;
     }
-    Value out = Value::matrix(R, static_cast<size_t>(n), ValueType::DOUBLE, mr);
+    Value out = Value::matrix(R, static_cast<keel::usize>(n), ValueType::DOUBLE, mr);
     if (R == 0) return out;
     double *od = out.doubleDataMut();
-    for (size_t r = 0; r < R; ++r) {
-        uint64_t v = static_cast<uint64_t>(getI64(d, r));
+    for (keel::usize r = 0; r < R; ++r) {
+        keel::u64 v = static_cast<keel::u64>(getI64(d, r));
         for (int j = 0; j < n; ++j) {
             const int col = msbfirst ? (n - 1 - j) : j;
-            od[r + static_cast<size_t>(col) * R] =
-                static_cast<double>(v % static_cast<uint64_t>(base));
-            v /= static_cast<uint64_t>(base);
+            od[r + static_cast<keel::usize>(col) * R] =
+                static_cast<double>(v % static_cast<keel::u64>(base));
+            v /= static_cast<keel::u64>(base);
         }
     }
     return out;
@@ -179,23 +180,23 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
 // last row to width N with `padval` (default 0). Returns the matrix and
 // the count of pad entries added.
 std::pair<Value, int>
-vec2mat(const Value &v, int n, double padval, std::pmr::memory_resource *mr)
+vec2mat(const Value &v, int n, double padval, keel::Allocator *mr)
 {
     if (n <= 0)
         throw Error("vec2mat: n must be positive",
                     0, 0, "vec2mat", "", "numkit:vec2mat:BadN");
-    const size_t L = v.numel();
-    const size_t cols = static_cast<size_t>(n);
-    const size_t rows = (L + cols - 1) / cols;
-    const size_t pad  = rows * cols - L;
+    const keel::usize L = v.numel();
+    const keel::usize cols = static_cast<keel::usize>(n);
+    const keel::usize rows = (L + cols - 1) / cols;
+    const keel::usize pad  = rows * cols - L;
     Value out = Value::matrix(rows, cols, ValueType::DOUBLE, mr);
     if (rows == 0) return {out, 0};
     double *od = out.doubleDataMut();
     // Row-major fill: out(r, c) = v(r * cols + c) when in-range, padval otherwise.
     // out is column-major, so write to (r + c*rows).
-    for (size_t r = 0; r < rows; ++r) {
-        for (size_t c = 0; c < cols; ++c) {
-            const size_t lin = r * cols + c;
+    for (keel::usize r = 0; r < rows; ++r) {
+        for (keel::usize c = 0; c < cols; ++c) {
+            const keel::usize lin = r * cols + c;
             od[r + c * rows] = (lin < L) ? v.elemAsDouble(lin) : padval;
         }
     }

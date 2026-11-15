@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <utility>
 
@@ -34,7 +34,7 @@ namespace numkit::comm {
 std::pair<Value, Value>
 dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
-         std::pmr::memory_resource *mr = nullptr);
+         keel::Allocator *mr = nullptr);
 
 /// @brief DPCM decoder — invert @ref dpcmenco
 /// (`[sig, quanterr] = dpcmdeco(indx, codebook, predictor)`).
@@ -51,7 +51,7 @@ dpcmenco(const Value &sig, const Value &codebook,
 std::pair<Value, Value>
 dpcmdeco(const Value &indx, const Value &codebook,
          const Value &predictor,
-         std::pmr::memory_resource *mr = nullptr);
+         keel::Allocator *mr = nullptr);
 
 
 /// @}

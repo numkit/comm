@@ -3,10 +3,11 @@
 // biterr / symerr -- bit and symbol error counts/rates between two
 // arrays. MATLAB Communications Toolbox metrics.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/comm/eq/errors.hpp>
 
 #include <numkit/value/argcheck.hpp>
-#include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -21,17 +22,17 @@ namespace {
 
 // Count bit differences between two non-negative integers (Hamming
 // distance over their binary representations). Treats both as uint64.
-inline std::uint64_t hammingBits(std::uint64_t a, std::uint64_t b)
+inline keel::u64 hammingBits(keel::u64 a, keel::u64 b)
 {
-    std::uint64_t x = a ^ b;
-    std::uint64_t count = 0;
+    keel::u64 x = a ^ b;
+    keel::u64 count = 0;
     while (x) { count += (x & 1); x >>= 1; }
     return count;
 }
 
 void biterr_argcheck(const Value &x, const Value &y, int k)
 {
-    const std::size_t n = x.numel();
+    const keel::usize n = x.numel();
     if (y.numel() != n)
         throw Error("biterr: x and y must have the same number of elements",
                     0, 0, "biterr", "", "numkit:biterr:size");
@@ -40,7 +41,7 @@ void biterr_argcheck(const Value &x, const Value &y, int k)
                     0, 0, "biterr", "", "numkit:biterr:k");
     const double *xd = x.doubleData();
     const double *yd = y.doubleData();
-    for (std::size_t i = 0; i < n; ++i) {
+    for (keel::usize i = 0; i < n; ++i) {
         if (xd[i] < 0.0 || yd[i] < 0.0)
             throw Error("biterr: inputs must be non-negative integers",
                         0, 0, "biterr", "", "numkit:biterr:negative");
@@ -74,30 +75,30 @@ std::string symerr_argcheck(const Value &x, const Value &y, std::string_view flg
 // ── Public C++ API (see eq/errors.hpp) ────────────────────────────────
 
 std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
-                               std::pmr::memory_resource *mr)
+                               keel::Allocator *mr)
 {
     biterr_argcheck(x, y, k);
-    const std::size_t n = x.numel();
+    const keel::usize n = x.numel();
     const double *xd = x.doubleData();
     const double *yd = y.doubleData();
 
     // Determine k: explicit (>= 1), else smallest covering bit width.
     int k_bits = k;
     if (k_bits < 1) {
-        std::uint64_t mx = 0;
-        for (std::size_t i = 0; i < n; ++i) {
-            const std::uint64_t xi = static_cast<std::uint64_t>(xd[i]);
-            const std::uint64_t yi = static_cast<std::uint64_t>(yd[i]);
+        keel::u64 mx = 0;
+        for (keel::usize i = 0; i < n; ++i) {
+            const keel::u64 xi = static_cast<keel::u64>(xd[i]);
+            const keel::u64 yi = static_cast<keel::u64>(yd[i]);
             mx = std::max(mx, std::max(xi, yi));
         }
         k_bits = 1;
-        while ((static_cast<std::uint64_t>(1) << k_bits) <= mx) ++k_bits;
+        while ((static_cast<keel::u64>(1) << k_bits) <= mx) ++k_bits;
     }
 
-    std::uint64_t total = 0;
-    for (std::size_t i = 0; i < n; ++i) {
-        const std::uint64_t xi = static_cast<std::uint64_t>(xd[i]);
-        const std::uint64_t yi = static_cast<std::uint64_t>(yd[i]);
+    keel::u64 total = 0;
+    for (keel::usize i = 0; i < n; ++i) {
+        const keel::u64 xi = static_cast<keel::u64>(xd[i]);
+        const keel::u64 yi = static_cast<keel::u64>(yd[i]);
         total += hammingBits(xi, yi);
     }
     const double total_bits =
@@ -111,17 +112,17 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
                                std::string_view flg,
-                               std::pmr::memory_resource *mr)
+                               keel::Allocator *mr)
 {
     const std::string mode = symerr_argcheck(x, y, flg);
 
     if (mode == "overall") {
-        const std::size_t n = x.numel();
+        const keel::usize n = x.numel();
 
         const double *xd = x.doubleData();
         const double *yd = y.doubleData();
-        std::uint64_t count = 0;
-        for (std::size_t i = 0; i < n; ++i)
+        keel::u64 count = 0;
+        for (keel::usize i = 0; i < n; ++i)
             if (xd[i] != yd[i]) ++count;
 
         const double ratio = (n > 0)
@@ -132,17 +133,17 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
     }
 
     if (mode == "column-wise") {
-        const std::size_t r = x.dims().rows();
-        const std::size_t c = x.dims().cols();
+        const keel::usize r = x.dims().rows();
+        const keel::usize c = x.dims().cols();
         const double *xd = x.doubleData();
         const double *yd = y.doubleData();
         Value counts = Value::matrix(1, c, ValueType::DOUBLE, mr);
         Value ratios = Value::matrix(1, c, ValueType::DOUBLE, mr);
         double *cd = counts.doubleDataMut();
         double *rd = ratios.doubleDataMut();
-        for (std::size_t j = 0; j < c; ++j) {
-            std::uint64_t cnt = 0;
-            for (std::size_t i = 0; i < r; ++i) {
+        for (keel::usize j = 0; j < c; ++j) {
+            keel::u64 cnt = 0;
+            for (keel::usize i = 0; i < r; ++i) {
                 if (xd[j * r + i] != yd[j * r + i]) ++cnt;
             }
             cd[j] = static_cast<double>(cnt);
@@ -151,17 +152,17 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
         return {std::move(counts), std::move(ratios)};
     }
 
-    const std::size_t r = x.dims().rows();
-    const std::size_t c = x.dims().cols();
+    const keel::usize r = x.dims().rows();
+    const keel::usize c = x.dims().cols();
     const double *xd = x.doubleData();
     const double *yd = y.doubleData();
     Value counts = Value::matrix(r, 1, ValueType::DOUBLE, mr);
     Value ratios = Value::matrix(r, 1, ValueType::DOUBLE, mr);
     double *cd = counts.doubleDataMut();
     double *rd = ratios.doubleDataMut();
-    for (std::size_t i = 0; i < r; ++i) {
-        std::uint64_t cnt = 0;
-        for (std::size_t j = 0; j < c; ++j) {
+    for (keel::usize i = 0; i < r; ++i) {
+        keel::u64 cnt = 0;
+        for (keel::usize j = 0; j < c; ++j) {
             if (xd[j * r + i] != yd[j * r + i]) ++cnt;
         }
         cd[i] = static_cast<double>(cnt);
@@ -171,7 +172,7 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
 }
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
-                               std::pmr::memory_resource *mr)
+                               keel::Allocator *mr)
 {
     return symerr(x, y, "overall", mr);
 }

@@ -7,6 +7,9 @@
 // in cos / sin of a phase term; demods can pull in filtfilt or
 // Hilbert and live alongside.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/comm/modulation/analog.hpp>
 
 #include <numkit/signal/transforms/hilbert.hpp>
@@ -19,7 +22,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <complex>
 #include <string>
 #include <vector>
 
@@ -28,8 +30,6 @@
 #endif
 
 namespace numkit::comm {
-
-using Cd = std::complex<double>;
 
 namespace {
 
@@ -83,8 +83,8 @@ void mskmod_argcheck(const Value &x, int nSamp)
     if (nSamp <= 0)
         throw Error("mskmod: nSamp must be a positive integer",
                     0, 0, "mskmod", "", "numkit:mskmod:nSamp");
-    const size_t n = x.numel();
-    for (size_t i = 0; i < n; ++i) {
+    const keel::usize n = x.numel();
+    for (keel::usize i = 0; i < n; ++i) {
         const double xi = x.elemAsDouble(i);
         if (xi != 0.0 && xi != 1.0)
             throw Error("mskmod: input must be binary (0 or 1)",
@@ -98,8 +98,8 @@ void mskdemod_argcheck(const Value &y, int nSamp)
         throw Error("mskdemod: nSamp must be a positive integer",
                     0, 0, "mskdemod", "", "numkit:mskdemod:nSamp");
     const auto &d = y.dims();
-    const size_t H = (d.rows() == 1 && d.cols() >= 1) ? d.cols() : d.rows();
-    if (H == 0 || H % static_cast<size_t>(nSamp) != 0)
+    const keel::usize H = (d.rows() == 1 && d.cols() >= 1) ? d.cols() : d.rows();
+    if (H == 0 || H % static_cast<keel::usize>(nSamp) != 0)
         throw Error("mskdemod: signal length must be a positive multiple of nSamp",
                     0, 0, "mskdemod", "", "numkit:mskdemod:length");
 }
@@ -151,13 +151,13 @@ void fmdemod_argcheck(double fc, double fs, double freqdev)
 // Vector-orientation contract: 1-D row preserved as row in output;
 // columns processed independently.
 Value pmmod(const Value &x, double fc, double fs, double phasedev,
-            double ini_phase, std::pmr::memory_resource *mr)
+            double ini_phase, keel::Allocator *mr)
 {
     pmmod_argcheck(fc, fs, phasedev);
 
     const auto &d = x.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) {
         // Reorient row -> column for processing.
@@ -171,8 +171,8 @@ Value pmmod(const Value &x, double fc, double fs, double phasedev,
     const double inv_fs  = 1.0 / fs;
 
     // Process column-major: for each column index c, walk rows.
-    for (size_t c = 0; c < W; ++c) {
-        for (size_t r = 0; r < H; ++r) {
+    for (keel::usize c = 0; c < W; ++c) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double t  = static_cast<double>(r) * inv_fs;
             const double xi = was_row
                                   ? x.elemAsDouble(r)
@@ -201,13 +201,13 @@ Value pmmod(const Value &x, double fc, double fs, double phasedev,
 //
 // Vector-orientation contract identical to pmmod.
 Value ammod(const Value &x, double fc, double fs, double ini_phase,
-            double carr_amp, std::pmr::memory_resource *mr)
+            double carr_amp, keel::Allocator *mr)
 {
     ammod_argcheck(fc, fs);
 
     const auto &d = x.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) {
         std::swap(H, W);
@@ -219,8 +219,8 @@ Value ammod(const Value &x, double fc, double fs, double ini_phase,
     const double twoPiFc = 2.0 * M_PI * fc;
     const double inv_fs  = 1.0 / fs;
 
-    for (size_t c = 0; c < W; ++c) {
-        for (size_t r = 0; r < H; ++r) {
+    for (keel::usize c = 0; c < W; ++c) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double t  = static_cast<double>(r) * inv_fs;
             const double xi = was_row
                                   ? x.elemAsDouble(r)
@@ -246,13 +246,13 @@ Value ammod(const Value &x, double fc, double fs, double ini_phase,
 //
 // Vector-orientation contract identical to pmmod / ammod.
 Value fmmod(const Value &x, double fc, double fs, double freqdev,
-            double ini_phase, std::pmr::memory_resource *mr)
+            double ini_phase, keel::Allocator *mr)
 {
     fmmod_argcheck(fc, fs, freqdev);
 
     const auto &d = x.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) {
         std::swap(H, W);
@@ -266,9 +266,9 @@ Value fmmod(const Value &x, double fc, double fs, double freqdev,
     const double inv_fs       = 1.0 / fs;
 
     // Per column: walk samples, accumulating int_x = cumsum(x)/Fs.
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         double acc = 0.0;
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double xi = was_row
                                   ? x.elemAsDouble(r)
                                   : x.elemAsDouble(c * H + r);
@@ -307,26 +307,26 @@ Value fmmod(const Value &x, double fc, double fs, double freqdev,
 // rectpulse + circshift on the I/Q rails (we have rectpulse but the
 // arrangement is more involved; will get its own cycle).
 Value mskmod(const Value &x, int nSamp, double ini_phase,
-             std::pmr::memory_resource *mr)
+             keel::Allocator *mr)
 {
     mskmod_argcheck(x, nSamp);
 
     const auto &d = x.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);
 
     // Build xCum per column.
-    const size_t Nout = H * static_cast<size_t>(nSamp);
+    const keel::usize Nout = H * static_cast<keel::usize>(nSamp);
     Value out = Value::matrix(Nout, W, ValueType::COMPLEX, mr);
-    Cd *o = out.complexDataMut();
+    keel::c64 *o = out.complexDataMut();
 
     std::vector<double> xCum(H + 1);
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         // Compute xCum: xCum[0] = 0; xCum[k+1] = xCum[k] + (2*x[k] - 1)
         xCum[0] = 0.0;
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double xi = was_row
                                   ? x.elemAsDouble(r)
                                   : x.elemAsDouble(c * H + r);
@@ -338,16 +338,16 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
         }
 
         const double inv_nSamp = 1.0 / static_cast<double>(nSamp);
-        for (size_t j = 0; j < Nout; ++j) {
+        for (keel::usize j = 0; j < Nout; ++j) {
             const double tFine = static_cast<double>(j) * inv_nSamp;
-            const size_t base  = static_cast<size_t>(std::floor(tFine));
+            const keel::usize base  = static_cast<keel::usize>(std::floor(tFine));
             const double frac  = tFine - static_cast<double>(base);
             // Guard tail: at tFine = N - 1/nSamp the base = N-1, so
             // base+1 = N is in range.
             const double interp = xCum[base]
                                 + frac * (xCum[base + 1] - xCum[base]);
             const double phase  = M_PI * 0.5 * interp + ini_phase;
-            o[c * Nout + j] = Cd(std::cos(phase), std::sin(phase));
+            o[c * Nout + j] = keel::c64(std::cos(phase), std::sin(phase));
         }
     }
 
@@ -369,35 +369,35 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
 // returned final-phase state. Matches MATLAB R2025b mskdemod (default
 // 'diff'); the non-differential path is deferred, as for mskmod.
 Value mskdemod(const Value &y, int nSamp, double ini_phase,
-               double *phase_out, std::pmr::memory_resource *mr)
+               double *phase_out, keel::Allocator *mr)
 {
     mskdemod_argcheck(y, nSamp);
 
     const auto &d = y.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);   // a row is one channel of length H
 
-    const size_t N = H / static_cast<size_t>(nSamp);   // symbols per channel
+    const keel::usize N = H / static_cast<keel::usize>(nSamp);   // symbols per channel
     const bool cplx = y.isComplex();
 
     Value out = Value::matrix(N, W, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
 
-    auto getC = [&](size_t col, size_t row) -> Cd {
-        const size_t idx = was_row ? row : (col * H + row);
-        return cplx ? y.complexData()[idx] : Cd(y.elemAsDouble(idx), 0.0);
+    auto getC = [&](keel::usize col, keel::usize row) -> keel::c64 {
+        const keel::usize idx = was_row ? row : (col * H + row);
+        return cplx ? y.complexData()[idx] : keel::c64(y.elemAsDouble(idx), 0.0);
     };
 
     double lastPhase = ini_phase;
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         long long cumSum = 0;
-        for (size_t k = 0; k < N; ++k) {
-            const size_t start = k * static_cast<size_t>(nSamp);
+        for (keel::usize k = 0; k < N; ++k) {
+            const keel::usize start = k * static_cast<keel::usize>(nSamp);
             double acc = 0.0;
-            for (size_t n = start + 1; n < start + static_cast<size_t>(nSamp); ++n) {
-                const Cd p = getC(c, n) * std::conj(getC(c, n - 1));
+            for (keel::usize n = start + 1; n < start + static_cast<keel::usize>(nSamp); ++n) {
+                const keel::c64 p = getC(c, n) * keel::conj(getC(c, n - 1));
                 acc += std::atan2(p.imag(), p.real());
             }
             const int bit = (acc > 0.0) ? 1 : 0;
@@ -430,13 +430,13 @@ Value mskdemod(const Value &y, int nSamp, double ini_phase,
 //
 // Vector-orientation contract identical to pmmod / ammod / fmmod.
 Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
-             bool upper, std::pmr::memory_resource *mr)
+             bool upper, keel::Allocator *mr)
 {
     ssbmod_argcheck(fc, fs);
 
     const auto &d = x.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) {
         std::swap(H, W);
@@ -451,18 +451,18 @@ Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
 
     // hilbert is column-wise per MATLAB. Extract each column into a
     // 1-D Value and call signal::hilbert on it.
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         // Build column vector for this c
         Value col_in = Value::matrix(H, 1, ValueType::DOUBLE, mr);
         double *cp = col_in.doubleDataMut();
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             cp[r] = was_row ? x.elemAsDouble(r)
                             : x.elemAsDouble(c * H + r);
         }
         Value analytic = numkit::signal::hilbert(col_in, mr);
         // analytic.complexData()[i].imag() is imag(hilbert(col_in))
         const auto *cdat = analytic.complexData();
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double t  = static_cast<double>(r) * inv_fs;
             const double xi = cp[r];
             const double ang = twoPiFc * t + ini_phase;
@@ -480,12 +480,12 @@ Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
 }
 
 Value pmdemod(const Value &y, double fc, double fs, double phasedev,
-              double ini_phase, std::pmr::memory_resource *mr)
+              double ini_phase, keel::Allocator *mr)
 {
     pmdemod_argcheck(fc, fs, phasedev);
 
     const auto &d = y.dims();
-    size_t H = d.rows(), W = d.cols();
+    keel::usize H = d.rows(), W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);
 
@@ -494,14 +494,14 @@ Value pmdemod(const Value &y, double fc, double fs, double phasedev,
     const double twoPiFc = 2.0 * M_PI * fc;
     const double inv_fs = 1.0 / fs;
 
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         Value col_in = Value::matrix(H, 1, ValueType::DOUBLE, mr);
         double *cp = col_in.doubleDataMut();
-        for (size_t r = 0; r < H; ++r)
+        for (keel::usize r = 0; r < H; ++r)
             cp[r] = was_row ? y.elemAsDouble(r) : y.elemAsDouble(c * H + r);
         Value analytic = numkit::signal::hilbert(col_in, mr);
         const auto *z = analytic.complexData();
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double ang = twoPiFc * (static_cast<double>(r) * inv_fs) + ini_phase;
             const double ca = std::cos(ang), sa = std::sin(ang);
             const double re = z[r].real(), im = z[r].imag();
@@ -518,12 +518,12 @@ Value pmdemod(const Value &y, double fc, double fs, double phasedev,
 }
 
 Value fmdemod(const Value &y, double fc, double fs, double freqdev,
-              double ini_phase, std::pmr::memory_resource *mr)
+              double ini_phase, keel::Allocator *mr)
 {
     fmdemod_argcheck(fc, fs, freqdev);
 
     const auto &d = y.dims();
-    size_t H = d.rows(), W = d.cols();
+    keel::usize H = d.rows(), W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);
 
@@ -534,14 +534,14 @@ Value fmdemod(const Value &y, double fc, double fs, double freqdev,
     const double scale = fs / (2.0 * M_PI * freqdev);
 
     std::vector<double> ph(H);
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         Value col_in = Value::matrix(H, 1, ValueType::DOUBLE, mr);
         double *cp = col_in.doubleDataMut();
-        for (size_t r = 0; r < H; ++r)
+        for (keel::usize r = 0; r < H; ++r)
             cp[r] = was_row ? y.elemAsDouble(r) : y.elemAsDouble(c * H + r);
         Value analytic = numkit::signal::hilbert(col_in, mr);
         const auto *z = analytic.complexData();
-        for (size_t r = 0; r < H; ++r) {
+        for (keel::usize r = 0; r < H; ++r) {
             const double ang = twoPiFc * (static_cast<double>(r) * inv_fs) + ini_phase;
             const double ca = std::cos(ang), sa = std::sin(ang);
             const double re = z[r].real(), im = z[r].imag();
@@ -549,7 +549,7 @@ Value fmdemod(const Value &y, double fc, double fs, double freqdev,
         }
         // x = [0, diff(unwrap(ph))] · fs/(2π·freqdev)
         if (H > 0) o[c * H + 0] = 0.0;
-        for (size_t r = 1; r < H; ++r) {
+        for (keel::usize r = 1; r < H; ++r) {
             double dlt = ph[r] - ph[r - 1];
             dlt -= 2.0 * M_PI * std::round(dlt / (2.0 * M_PI));   // wrap to [-π, π]
             o[c * H + r] = dlt * scale;
@@ -567,15 +567,15 @@ namespace {
 // Coherent (synchronous) detection shared by amdemod / ssbdemod:
 //   2 · filtfilt(butter(5, fc·2/fs), y · cos(2π·fc·t + ini_phase)).
 Value coherentDetect(const Value &y, double fc, double fs, double ini_phase,
-                     std::pmr::memory_resource *mr)
+                     keel::Allocator *mr)
 {
     const auto &d = y.dims();
-    const size_t N = y.numel();
+    const keel::usize N = y.numel();
     Value yc = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
     double *yo = yc.doubleDataMut();
     const double twoPiFc = 2.0 * M_PI * fc;
     const double inv_fs = 1.0 / fs;
-    for (size_t i = 0; i < N; ++i)   // flat sample order: sample i → t = i/fs
+    for (keel::usize i = 0; i < N; ++i)   // flat sample order: sample i → t = i/fs
         yo[i] = y.elemAsDouble(i) * std::cos(twoPiFc * (static_cast<double>(i) * inv_fs) + ini_phase);
 
     auto [b, a] = numkit::signal::butter(5, fc * 2.0 / fs, "low", mr);
@@ -584,7 +584,7 @@ Value coherentDetect(const Value &y, double fc, double fs, double ini_phase,
     Value out = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
     double *oo = out.doubleDataMut();
     const double *zd = z.doubleData();
-    for (size_t i = 0; i < N; ++i) oo[i] = 2.0 * zd[i];
+    for (keel::usize i = 0; i < N; ++i) oo[i] = 2.0 * zd[i];
     return out;
 }
 
@@ -600,20 +600,20 @@ void checkCarrier(double fc, double fs, const char *fn)
 } // anonymous
 
 Value amdemod(const Value &y, double fc, double fs, double ini_phase,
-              double carr_amp, std::pmr::memory_resource *mr)
+              double carr_amp, keel::Allocator *mr)
 {
     checkCarrier(fc, fs, "amdemod");
     Value z = coherentDetect(y, fc, fs, ini_phase, mr);
     if (carr_amp != 0.0) {
         double *zd = z.doubleDataMut();
-        const size_t N = z.numel();
-        for (size_t i = 0; i < N; ++i) zd[i] -= carr_amp;
+        const keel::usize N = z.numel();
+        for (keel::usize i = 0; i < N; ++i) zd[i] -= carr_amp;
     }
     return z;
 }
 
 Value ssbdemod(const Value &y, double fc, double fs, double ini_phase,
-               std::pmr::memory_resource *mr)
+               keel::Allocator *mr)
 {
     checkCarrier(fc, fs, "ssbdemod");
     return coherentDetect(y, fc, fs, ini_phase, mr);

@@ -81,7 +81,7 @@ TEST_F(Poly2trellisTest, PublicApi)
 {
     eval("K = 3; g = [6 7];");
     Value t = comm::poly2trellis(*engine.getVariable("K"),
-                                 *engine.getVariable("g"), engine.resource());
+                                 *engine.getVariable("g"), engine.allocator());
     ASSERT_TRUE(t.isStruct());
     ASSERT_EQ(t.numel(), 1u);
     const auto &el = t.structArrayElem(0);

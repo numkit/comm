@@ -76,7 +76,7 @@ TEST_F(HammgenTest, Errors)
 // Direct C++ API — inspect the HammgenResult struct.
 TEST_F(HammgenTest, PublicApi)
 {
-    comm::HammgenResult r = comm::hammgen(3, Value::Empty, engine.resource());
+    comm::HammgenResult r = comm::hammgen(3, Value::Empty, engine.allocator());
     EXPECT_EQ(r.n, 7);
     EXPECT_EQ(r.k, 4);
     ASSERT_EQ(r.h.dims().rows(), 3u);

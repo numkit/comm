@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <utility>
 #include <numkit/value/value.hpp>
 
@@ -31,7 +31,7 @@ namespace numkit::comm {
 /// @throws Error on numel mismatch, or negative inputs on the auto-`k` path.
 /// @see symerr
 std::pair<Value, Value> biterr(const Value &x, const Value &y, int k = 0,
-                               std::pmr::memory_resource *mr = nullptr);
+                               keel::Allocator *mr = nullptr);
 
 /// @brief Symbol-error count and rate (`[number, ratio] = symerr(x, y)`).
 ///
@@ -44,11 +44,11 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k = 0,
 /// @throws Error on numel mismatch.
 /// @see biterr
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
-                               std::pmr::memory_resource *mr = nullptr);
+                               keel::Allocator *mr = nullptr);
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
                                std::string_view flg,
-                               std::pmr::memory_resource *mr = nullptr);
+                               keel::Allocator *mr = nullptr);
 
 
 /// @}

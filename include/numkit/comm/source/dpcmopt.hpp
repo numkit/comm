@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -45,7 +45,7 @@ struct DpcmOptResult {
 DpcmOptResult
 dpcmopt(const Value &training_set, int ord,
         const Value &ini_codebook = Value::Empty,
-        std::pmr::memory_resource *mr = nullptr);
+        keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 
@@ -36,9 +37,9 @@ namespace numkit::comm {
 /// @param mr      Memory resource (nullptr → process default).
 /// @return        Companded signal of the same shape as `x`.
 /// @throws Error  Unknown `method` string.
-Value compand(const Value &x, double param, double V,
+Value compand(const Value &x, keel::f64 param, keel::f64 V,
               const std::string &method,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

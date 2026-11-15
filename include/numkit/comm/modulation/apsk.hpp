@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <memory_resource>
-#include <numkit/value/span.hpp>
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -37,11 +38,11 @@ namespace numkit::comm {
 /// @param mr           Memory resource (nullptr → process default).
 /// @return             Complex baseband samples, same shape as `x`.
 /// @see apskdemod
-Value apskmod(const Value &x, Span<const size_t> M,
-              Span<const double> radii,
+Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M,
+              keel::ArrayRef<keel::f64> radii,
               const Value &phaseoffset = Value::Empty,
               const Value &mapping = Value::Empty,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief APSK demodulator
 /// (`z = apskdemod(y, M, radii, phaseoffset, mapping)`).
@@ -58,11 +59,11 @@ Value apskmod(const Value &x, Span<const size_t> M,
 /// @param mr           Memory resource (nullptr → process default).
 /// @return             Integer symbol indices, same shape as `y`.
 /// @see apskmod
-Value apskdemod(const Value &y, Span<const size_t> M,
-                Span<const double> radii,
+Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M,
+                keel::ArrayRef<keel::f64> radii,
                 const Value &phaseoffset = Value::Empty,
                 const Value &mapping = Value::Empty,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 
 /// @}

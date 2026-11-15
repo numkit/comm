@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -30,7 +30,7 @@ namespace numkit::comm {
 /// @return               Modulated samples, same shape as `x`.
 /// @see genqamdemod
 Value genqammod(const Value &x, const Value &constellation,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 /// @brief Generic constellation demodulator
 /// (`x = genqamdemod(y, constellation)`).
@@ -44,7 +44,7 @@ Value genqammod(const Value &x, const Value &constellation,
 /// @return               Integer indices, real, same shape as `y`.
 /// @see genqammod
 Value genqamdemod(const Value &y, const Value &constellation,
-                  std::pmr::memory_resource *mr = nullptr);
+                  keel::Allocator *mr = nullptr);
 
 
 /// @}

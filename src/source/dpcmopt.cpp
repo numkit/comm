@@ -16,11 +16,14 @@
 //  - S. P. Lloyd, "Least Squares Quantization in PCM",
 //    IEEE Trans. Inf. Theory 28(2):129-137, 1982.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/arena.h>
+#include <keel/array.h>
 #include <numkit/comm/source/dpcmopt.hpp>
 #include <numkit/comm/source/lloyds.hpp>
 
 #include <numkit/value/argcheck.hpp>
-#include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -38,14 +41,14 @@ namespace {
 // The lag-k sum has N-k terms; the denominator is N-1-k (one less than
 // the term count). The caller guarantees N >= ord + 3 so every
 // denominator (N-1-k for k <= ord) is strictly positive.
-void autocorrelation(const double *x, std::size_t N, int ord, double *r)
+void autocorrelation(const double *x, keel::usize N, int ord, double *r)
 {
     for (int k = 0; k <= ord; ++k) {
         double acc = 0.0;
-        const std::size_t last = N - static_cast<std::size_t>(k);  // N-k terms
-        for (std::size_t n = 0; n < last; ++n)
-            acc += x[n] * x[n + static_cast<std::size_t>(k)];
-        r[k] = acc / static_cast<double>(N - 1 - static_cast<std::size_t>(k));
+        const keel::usize last = N - static_cast<keel::usize>(k);  // N-k terms
+        for (keel::usize n = 0; n < last; ++n)
+            acc += x[n] * x[n + static_cast<keel::usize>(k)];
+        r[k] = acc / static_cast<double>(N - 1 - static_cast<keel::usize>(k));
     }
 }
 
@@ -95,10 +98,10 @@ void dpcmopt_argcheck(const Value &training_set, int ord)
                             "integer.",
                             0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidOrd");
 
-    const std::size_t N = training_set.numel();
+    const keel::usize N = training_set.numel();
     // N must be at least ord + 3 so the smallest autocorrelation
     // denominator (N-1-ord) is >= 2.
-    if (N < static_cast<std::size_t>(ord) + 3)
+    if (N < static_cast<keel::usize>(ord) + 3)
         throw numkit::Error("The size of the training set is not large "
                             "enough for the given predictor order.",
                             0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidInput");
@@ -108,35 +111,35 @@ void dpcmopt_argcheck(const Value &training_set, int ord)
 
 DpcmOptResult dpcmopt(const Value &training_set, int ord,
                       const Value &ini_codebook,
-                      std::pmr::memory_resource *mr)
+                      keel::Allocator *mr)
 {
     dpcmopt_argcheck(training_set, ord);
-    const std::size_t N = training_set.numel();
+    const keel::usize N = training_set.numel();
 
-    numkit::ScratchArena arena(mr);
+    keel::ArenaTemp arena = keel::get_scratch(mr);
 
     // ── Read the training signal into contiguous scratch ─────────
     // elemAsDouble accepts a row or column vector.
-    numkit::ScratchVec<double> x(N, &arena);
-    for (std::size_t i = 0; i < N; ++i)
+    keel::Array<double> x(N, arena.allocator());
+    for (keel::usize i = 0; i < N; ++i)
         x[i] = training_set.elemAsDouble(i);
 
     // ── Autocorrelation estimate, lags 0..ord ────────────────────
-    numkit::ScratchVec<double> r(static_cast<std::size_t>(ord) + 1, &arena);
+    keel::Array<double> r(static_cast<keel::usize>(ord) + 1, arena.allocator());
     autocorrelation(x.data(), N, ord, r.data());
 
     // ── Levinson-Durbin: prediction-error filter A(z) ────────────
     // a = [1, a1, ..., a_ord]
-    numkit::ScratchVec<double> a(static_cast<std::size_t>(ord) + 1, &arena);
-    numkit::ScratchVec<double> prev(static_cast<std::size_t>(ord) + 1,
-                                    &arena);
+    keel::Array<double> a(static_cast<keel::usize>(ord) + 1, arena.allocator());
+    keel::Array<double> prev(static_cast<keel::usize>(ord) + 1,
+                                    arena.allocator());
     levinson_durbin(r.data(), ord, a.data(), prev.data());
 
     // ── Predictor = [0, -a1, -a2, ..., -a_ord] ───────────────────
     // The leading 0 occupies the "current sample" slot; predictor[k]
     // is the weight on x[n-k].
     DpcmOptResult result;
-    result.predictor = Value::matrix(1, static_cast<std::size_t>(ord) + 1,
+    result.predictor = Value::matrix(1, static_cast<keel::usize>(ord) + 1,
                                      ValueType::DOUBLE, mr);
     {
         double *p = result.predictor.doubleDataMut();
@@ -153,17 +156,17 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
 
     // Prediction residual, length N - ord:
     //   e[i-ord] = x[i] - sum_{k=1}^{ord} predictor[k] * x[i-k]
-    const std::size_t resLen = N - static_cast<std::size_t>(ord);
+    const keel::usize resLen = N - static_cast<keel::usize>(ord);
     const double *p = result.predictor.doubleData();
 
     Value residual = Value::matrix(1, resLen, ValueType::DOUBLE, mr);
     {
         double *e = residual.doubleDataMut();
-        for (std::size_t i = static_cast<std::size_t>(ord); i < N; ++i) {
+        for (keel::usize i = static_cast<keel::usize>(ord); i < N; ++i) {
             double pred = 0.0;
             for (int k = 1; k <= ord; ++k)
-                pred += p[k] * x[i - static_cast<std::size_t>(k)];
-            e[i - static_cast<std::size_t>(ord)] = x[i] - pred;
+                pred += p[k] * x[i - static_cast<keel::usize>(k)];
+            e[i - static_cast<keel::usize>(ord)] = x[i] - pred;
         }
     }
 

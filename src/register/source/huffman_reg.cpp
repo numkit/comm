@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/huffman.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -19,29 +21,29 @@
 namespace numkit::comm {
 namespace detail {
 
-void huffmandict_reg(Span<const Value> args, size_t nargout,
-                     Span<Value> outs, CallContext &ctx)
+void huffmandict_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "huffmandict");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto [dict, avglen] = huffmandict(args[0], args[1], mr);
     outs[0] = std::move(dict);
     if (nargout > 1)
         outs[1] = Value::scalar(avglen, mr);
 }
 
-void huffmanenco_reg(Span<const Value> args, size_t /*nargout*/,
-                     Span<Value> outs, CallContext &ctx)
+void huffmanenco_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "huffmanenco");
-    outs[0] = huffmanenco(args[0], args[1], ctx.engine->resource());
+    outs[0] = huffmanenco(args[0], args[1], ctx.engine->allocator());
 }
 
-void huffmandeco_reg(Span<const Value> args, size_t /*nargout*/,
-                     Span<Value> outs, CallContext &ctx)
+void huffmandeco_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "huffmandeco");
-    outs[0] = huffmandeco(args[0], args[1], ctx.engine->resource());
+    outs[0] = huffmandeco(args[0], args[1], ctx.engine->allocator());
 }
 
 } // namespace detail

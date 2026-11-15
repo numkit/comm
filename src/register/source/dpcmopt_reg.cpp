@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/dpcmopt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -19,11 +21,11 @@
 namespace numkit::comm {
 namespace detail {
 
-void dpcmopt_reg(Span<const Value> args, size_t nargout,
-                 Span<Value> outs, CallContext &ctx)
+void dpcmopt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "dpcmopt");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     const int ord = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "ord", "dpcmopt"), 2, "ord", "dpcmopt");
 

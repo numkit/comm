@@ -18,6 +18,8 @@
 // the descrambler self-synchronizing — losing or flipping a few
 // channel bits eventually clears out of the register.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/comm/eq/scrambler.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -33,9 +35,9 @@ namespace numkit::comm {
 namespace {
 
 std::vector<int> readBitVec(const Value &v, const char *name) {
-    const size_t N = v.numel();
+    const keel::usize N = v.numel();
     std::vector<int> out(N);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double x = v.elemAsDouble(i);
         const int b = (x != 0.0) ? 1 : 0;
         out[i] = b;
@@ -54,13 +56,13 @@ void validatePoly(const std::vector<int> &poly, const char *name) {
                     0, 0, name, "", "numkit:scrambler:poly");
 }
 
-Value packDoubles(std::pmr::memory_resource *mr,
+Value packDoubles(keel::Allocator *mr,
                   const std::vector<int> &bits)
 {
     Value out = Value::matrix(bits.size(), 1, ValueType::DOUBLE, mr);
     if (!bits.empty()) {
         double *od = out.doubleDataMut();
-        for (size_t i = 0; i < bits.size(); ++i) od[i] = double(bits[i]);
+        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = double(bits[i]);
     }
     return out;
 }
@@ -71,7 +73,7 @@ void scrambler_argcheck(const std::vector<int> &polyVec,
                         const char *stateErrId)
 {
     validatePoly(polyVec, name);
-    const size_t n = polyVec.size() - 1;
+    const keel::usize n = polyVec.size() - 1;
     if (state.size() != n)
         throw Error(std::string(name) + ": initState length must equal polynomial order",
                     0, 0, name, "", stateErrId);
@@ -81,22 +83,22 @@ void scrambler_argcheck(const std::vector<int> &polyVec,
 
 Value scrambler(const Value &x, const Value &poly,
                 const Value &initState,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
     auto xBits   = readBitVec(x, "scrambler");
     auto polyVec = readBitVec(poly, "scrambler");
     auto state   = readBitVec(initState, "scrambler");
     scrambler_argcheck(polyVec, state, "scrambler", "numkit:scrambler:state");
-    const size_t n = polyVec.size() - 1;
+    const keel::usize n = polyVec.size() - 1;
 
     std::vector<int> y(xBits.size(), 0);
-    for (size_t k = 0; k < xBits.size(); ++k) {
+    for (keel::usize k = 0; k < xBits.size(); ++k) {
         int fb = 0;
-        for (size_t i = 1; i <= n; ++i)
+        for (keel::usize i = 1; i <= n; ++i)
             if (polyVec[i]) fb ^= state[i - 1];
         y[k] = xBits[k] ^ fb;
         // Shift register right by one position; new MSB = y[k].
-        for (size_t i = n; i-- > 1;) state[i] = state[i - 1];
+        for (keel::usize i = n; i-- > 1;) state[i] = state[i - 1];
         state[0] = y[k];
     }
     return packDoubles(mr, y);
@@ -104,22 +106,22 @@ Value scrambler(const Value &x, const Value &poly,
 
 Value descrambler(const Value &y, const Value &poly,
                   const Value &initState,
-                  std::pmr::memory_resource *mr)
+                  keel::Allocator *mr)
 {
     auto yBits   = readBitVec(y, "descrambler");
     auto polyVec = readBitVec(poly, "descrambler");
     auto state   = readBitVec(initState, "descrambler");
     scrambler_argcheck(polyVec, state, "descrambler", "numkit:descrambler:state");
-    const size_t n = polyVec.size() - 1;
+    const keel::usize n = polyVec.size() - 1;
 
     std::vector<int> x(yBits.size(), 0);
-    for (size_t k = 0; k < yBits.size(); ++k) {
+    for (keel::usize k = 0; k < yBits.size(); ++k) {
         int fb = 0;
-        for (size_t i = 1; i <= n; ++i)
+        for (keel::usize i = 1; i <= n; ++i)
             if (polyVec[i]) fb ^= state[i - 1];
         x[k] = yBits[k] ^ fb;
         // Shift register; clock in the CHANNEL bit y[k] (not x[k]).
-        for (size_t i = n; i-- > 1;) state[i] = state[i - 1];
+        for (keel::usize i = n; i-- > 1;) state[i] = state[i - 1];
         state[0] = yBits[k];
     }
     return packDoubles(mr, x);

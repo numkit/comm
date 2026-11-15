@@ -1,5 +1,8 @@
 // toolboxes/comm/src/modulation/psk.cpp
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/comm/modulation/psk.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -8,7 +11,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <complex>
 #include <string>
 #include <vector>
 
@@ -19,8 +21,6 @@
 namespace numkit::comm {
 
 namespace {
-
-using Cd = std::complex<double>;
 
 // Gray code encoding: g = b ⊕ (b >> 1).
 inline int to_gray(int b) { return b ^ (b >> 1); }
@@ -47,7 +47,7 @@ inline int phase_idx_to_symbol(int k, int M, const std::string &order) {
     return from_gray(k) % M;
 }
 
-Value alloc_complex_like(std::pmr::memory_resource *mr, const Value &x) {
+Value alloc_complex_like(keel::Allocator *mr, const Value &x) {
     const auto &d = x.dims();
     if (x.isScalar()) return Value::matrix(1, 1, ValueType::COMPLEX, mr);
     if (d.is3D())
@@ -55,7 +55,7 @@ Value alloc_complex_like(std::pmr::memory_resource *mr, const Value &x) {
     return Value::matrix(d.rows(), d.cols(), ValueType::COMPLEX, mr);
 }
 
-Value alloc_double_like(std::pmr::memory_resource *mr, const Value &x) {
+Value alloc_double_like(keel::Allocator *mr, const Value &x) {
     const auto &d = x.dims();
     if (x.isScalar()) return Value::scalar(0.0, mr);
     if (d.is3D())
@@ -91,39 +91,39 @@ void dpskdemod_argcheck(int M) {
 
 Value pskmod(const Value &x, int M, double ini_phase,
              const std::string &symbol_order,
-             std::pmr::memory_resource *mr)
+             keel::Allocator *mr)
 {
     pskmod_argcheck(M);
     Value out = alloc_complex_like(mr, x);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0) return out;
-    Cd *od = out.complexDataMut();
+    keel::c64 *od = out.complexDataMut();
     const double dphi = 2.0 * M_PI / double(M);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const int s = (int)x.elemAsDouble(i);
         const int k = symbol_to_phase_idx(s, M, symbol_order);
         const double theta = dphi * k + ini_phase;
-        od[i] = Cd(std::cos(theta), std::sin(theta));
+        od[i] = keel::c64(std::cos(theta), std::sin(theta));
     }
     return out;
 }
 
 Value pskdemod(const Value &y, int M, double ini_phase,
                const std::string &symbol_order,
-               std::pmr::memory_resource *mr)
+               keel::Allocator *mr)
 {
     pskdemod_argcheck(M);
     Value out = alloc_double_like(mr, y);
-    const size_t N = y.numel();
+    const keel::usize N = y.numel();
     if (N == 0) return out;
     double *od = out.doubleDataMut();
     const double dphi = 2.0 * M_PI / double(M);
-    for (size_t i = 0; i < N; ++i) {
-        Cd c;
+    for (keel::usize i = 0; i < N; ++i) {
+        keel::c64 c;
         if (y.type() == ValueType::COMPLEX) c = y.complexData()[i];
-        else c = Cd(y.elemAsDouble(i), 0.0);
+        else c = keel::c64(y.elemAsDouble(i), 0.0);
         // Subtract initial phase, find nearest constellation point.
-        double angle = std::arg(c) - ini_phase;
+        double angle = keel::arg(c) - ini_phase;
         int k = (int)std::lround(angle / dphi);
         // Wrap to 0..M-1.
         k = ((k % M) + M) % M;
@@ -134,40 +134,40 @@ Value pskdemod(const Value &y, int M, double ini_phase,
 
 Value dpskmod(const Value &x, int M, double phase_rot,
               const std::string &symbol_order,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     dpskmod_argcheck(M);
     Value out = alloc_complex_like(mr, x);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0) return out;
-    Cd *od = out.complexDataMut();
+    keel::c64 *od = out.complexDataMut();
     const double dphi = 2.0 * M_PI / double(M);
     double phase = phase_rot;  // initial reference
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const int s = (int)x.elemAsDouble(i);
         const int k = symbol_to_phase_idx(s, M, symbol_order);
         phase += dphi * k;
-        od[i] = Cd(std::cos(phase), std::sin(phase));
+        od[i] = keel::c64(std::cos(phase), std::sin(phase));
     }
     return out;
 }
 
 Value dpskdemod(const Value &y, int M, double phase_rot,
                 const std::string &symbol_order,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
     dpskdemod_argcheck(M);
     Value out = alloc_double_like(mr, y);
-    const size_t N = y.numel();
+    const keel::usize N = y.numel();
     if (N == 0) return out;
     double *od = out.doubleDataMut();
     const double dphi = 2.0 * M_PI / double(M);
     double prev_phase = phase_rot;
-    for (size_t i = 0; i < N; ++i) {
-        Cd c;
+    for (keel::usize i = 0; i < N; ++i) {
+        keel::c64 c;
         if (y.type() == ValueType::COMPLEX) c = y.complexData()[i];
-        else c = Cd(y.elemAsDouble(i), 0.0);
-        const double cur = std::arg(c);
+        else c = keel::c64(y.elemAsDouble(i), 0.0);
+        const double cur = keel::arg(c);
         double diff = cur - prev_phase;
         int k = (int)std::lround(diff / dphi);
         k = ((k % M) + M) % M;

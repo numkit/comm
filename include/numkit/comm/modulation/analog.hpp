@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -30,9 +31,9 @@ namespace numkit::comm {
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Modulated signal, same shape as `x`.
 /// @see ammod, fmmod
-Value pmmod(const Value &x, double fc, double fs, double phasedev,
-            double ini_phase,
-            std::pmr::memory_resource *mr = nullptr);
+Value pmmod(const Value &x, keel::f64 fc, keel::f64 fs, keel::f64 phasedev,
+            keel::f64 ini_phase,
+            keel::Allocator *mr = nullptr);
 
 /// @brief Amplitude modulator
 /// (`y = ammod(x, fc, fs, ini_phase, carr_amp)`).
@@ -49,9 +50,9 @@ Value pmmod(const Value &x, double fc, double fs, double phasedev,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Modulated signal, same shape as `x`.
 /// @see pmmod, fmmod, ssbmod
-Value ammod(const Value &x, double fc, double fs, double ini_phase,
-            double carr_amp,
-            std::pmr::memory_resource *mr = nullptr);
+Value ammod(const Value &x, keel::f64 fc, keel::f64 fs, keel::f64 ini_phase,
+            keel::f64 carr_amp,
+            keel::Allocator *mr = nullptr);
 
 /// @brief Frequency modulator
 /// (`y = fmmod(x, fc, fs, freqdev, ini_phase)`).
@@ -67,9 +68,9 @@ Value ammod(const Value &x, double fc, double fs, double ini_phase,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Modulated signal, same shape as `x`.
 /// @see ammod, pmmod, ssbmod
-Value fmmod(const Value &x, double fc, double fs, double freqdev,
-            double ini_phase,
-            std::pmr::memory_resource *mr = nullptr);
+Value fmmod(const Value &x, keel::f64 fc, keel::f64 fs, keel::f64 freqdev,
+            keel::f64 ini_phase,
+            keel::Allocator *mr = nullptr);
 
 /// @brief Phase demodulator — inverse of @ref pmmod
 /// (`x = pmdemod(y, fc, fs, phasedev, ini_phase)`).
@@ -86,8 +87,8 @@ Value fmmod(const Value &x, double fc, double fs, double freqdev,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Recovered message, same shape as `y`.
 /// @see pmmod, fmdemod
-Value pmdemod(const Value &y, double fc, double fs, double phasedev,
-              double ini_phase, std::pmr::memory_resource *mr = nullptr);
+Value pmdemod(const Value &y, keel::f64 fc, keel::f64 fs, keel::f64 phasedev,
+              keel::f64 ini_phase, keel::Allocator *mr = nullptr);
 
 /// @brief Frequency demodulator — inverse of @ref fmmod
 /// (`x = fmdemod(y, fc, fs, freqdev, ini_phase)`).
@@ -104,8 +105,8 @@ Value pmdemod(const Value &y, double fc, double fs, double phasedev,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Recovered message, same shape as `y`.
 /// @see fmmod, pmdemod
-Value fmdemod(const Value &y, double fc, double fs, double freqdev,
-              double ini_phase, std::pmr::memory_resource *mr = nullptr);
+Value fmdemod(const Value &y, keel::f64 fc, keel::f64 fs, keel::f64 freqdev,
+              keel::f64 ini_phase, keel::Allocator *mr = nullptr);
 
 /// @brief Amplitude demodulator — inverse of @ref ammod
 /// (`x = amdemod(y, fc, fs, ini_phase, carramp)`).
@@ -123,8 +124,8 @@ Value fmdemod(const Value &y, double fc, double fs, double freqdev,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Recovered message, same shape as `y`.
 /// @see ammod, ssbdemod
-Value amdemod(const Value &y, double fc, double fs, double ini_phase,
-              double carr_amp, std::pmr::memory_resource *mr = nullptr);
+Value amdemod(const Value &y, keel::f64 fc, keel::f64 fs, keel::f64 ini_phase,
+              keel::f64 carr_amp, keel::Allocator *mr = nullptr);
 
 /// @brief Single-sideband demodulator — inverse of @ref ssbmod
 /// (`x = ssbdemod(y, fc, fs, ini_phase)`).
@@ -140,8 +141,8 @@ Value amdemod(const Value &y, double fc, double fs, double ini_phase,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Recovered message, same shape as `y`.
 /// @see ssbmod, amdemod
-Value ssbdemod(const Value &y, double fc, double fs, double ini_phase,
-               std::pmr::memory_resource *mr = nullptr);
+Value ssbdemod(const Value &y, keel::f64 fc, keel::f64 fs, keel::f64 ini_phase,
+               keel::Allocator *mr = nullptr);
 
 /// @brief Single-sideband modulator
 /// (`y = ssbmod(x, fc, fs, ini_phase, upper)`).
@@ -158,9 +159,9 @@ Value ssbdemod(const Value &y, double fc, double fs, double ini_phase,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Modulated signal, same shape as `x`.
 /// @see ammod
-Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
+Value ssbmod(const Value &x, keel::f64 fc, keel::f64 fs, keel::f64 ini_phase,
              bool upper,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief Minimum-shift-keying modulator (differential variant)
 /// (`y = mskmod(x, nSamp, ini_phase)`).
@@ -175,8 +176,8 @@ Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Complex baseband waveform of length
 ///                   `numel(x) · nSamp`.
-Value mskmod(const Value &x, int nSamp, double ini_phase,
-             std::pmr::memory_resource *mr = nullptr);
+Value mskmod(const Value &x, int nSamp, keel::f64 ini_phase,
+             keel::Allocator *mr = nullptr);
 
 /// @brief Minimum-shift-keying demodulator (differential variant)
 /// (`z = mskdemod(y, nSamp [, ini_phase])`).
@@ -196,9 +197,9 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
 /// @param phase_out  If non-null, receives the final phase state in [0, 2π).
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Demodulated bit stream ({0,1}).
-Value mskdemod(const Value &y, int nSamp, double ini_phase,
-               double *phase_out = nullptr,
-               std::pmr::memory_resource *mr = nullptr);
+Value mskdemod(const Value &y, int nSamp, keel::f64 ini_phase,
+               keel::f64 *phase_out = nullptr,
+               keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <utility>
 
@@ -32,9 +33,9 @@ namespace numkit::comm {
 /// @return         Pair `(dict, avglen)`.
 /// @throws Error   On length mismatch or non-normalised `probs`.
 /// @see huffmanenco, huffmandeco
-std::pair<Value, double>
+std::pair<Value, keel::f64>
 huffmandict(const Value &symbols, const Value &probs,
-            std::pmr::memory_resource *mr = nullptr);
+            keel::Allocator *mr = nullptr);
 
 /// @brief Encode a symbol sequence using a Huffman dictionary
 /// (`enc = huffmanenco(sig, dict)`).
@@ -49,7 +50,7 @@ huffmandict(const Value &symbols, const Value &probs,
 /// @throws Error If `sig` contains symbols not present in `dict`.
 /// @see huffmandict, huffmandeco
 Value huffmanenco(const Value &sig, const Value &dict,
-                  std::pmr::memory_resource *mr = nullptr);
+                  keel::Allocator *mr = nullptr);
 
 /// @brief Decode a Huffman bit stream
 /// (`dec = huffmandeco(bits, dict)`).
@@ -65,7 +66,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
 ///               `dict`, or trailing bits that do not complete a code.
 /// @see huffmandict, huffmanenco
 Value huffmandeco(const Value &bits, const Value &dict,
-                  std::pmr::memory_resource *mr = nullptr);
+                  keel::Allocator *mr = nullptr);
 
 
 /// @}

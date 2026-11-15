@@ -7,11 +7,14 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/ref.h>
+#include <keel/arena.h>
+#include <keel/array.h>
 #include <numkit/comm/modulation/apsk.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
-#include <numkit/value/scratch.hpp>
-#include <numkit/value/span.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
@@ -34,50 +37,50 @@ std::string toLowerApsk(std::string s) {
 }
 
 // Build a ScratchVec<size_t> from a Value's elements via elemAsDouble.
-ScratchVec<size_t> valueToScratchSizes(const Value &v, std::pmr::memory_resource *mr)
+keel::Array<keel::usize> valueToScratchSizes(const Value &v, keel::Allocator *mr)
 {
-    ScratchVec<size_t> out(mr);
-    const size_t n = v.numel();
+    keel::Array<keel::usize> out(mr);
+    const keel::usize n = v.numel();
     out.reserve(n);
-    for (size_t i = 0; i < n; ++i)
-        out.push_back(static_cast<size_t>(v.elemAsDouble(i)));
+    for (keel::usize i = 0; i < n; ++i)
+        out.push_back(static_cast<keel::usize>(v.elemAsDouble(i)));
     return out;
 }
 
-ScratchVec<double> valueToScratchDoubles(const Value &v, std::pmr::memory_resource *mr)
+keel::Array<double> valueToScratchDoubles(const Value &v, keel::Allocator *mr)
 {
-    ScratchVec<double> out(mr);
-    const size_t n = v.numel();
+    keel::Array<double> out(mr);
+    const keel::usize n = v.numel();
     out.reserve(n);
-    for (size_t i = 0; i < n; ++i)
+    for (keel::usize i = 0; i < n; ++i)
         out.push_back(v.elemAsDouble(i));
     return out;
 }
 
 // Build per-ring Gray symbol mapping of length sum(M).
-Value buildGrayMapping(Span<const size_t> M, std::pmr::memory_resource *mr)
+Value buildGrayMapping(keel::ArrayRef<keel::usize> M, keel::Allocator *mr)
 {
-    size_t Ntot = 0;
+    keel::usize Ntot = 0;
     bool sameRingSize = !M.empty();
-    for (size_t m : M) {
+    for (keel::usize m : M) {
         Ntot += m;
         if (m != M[0]) sameRingSize = false;
     }
     Value mp = Value::matrix(1, Ntot, ValueType::DOUBLE, mr);
     double *md = mp.doubleDataMut();
-    size_t cum = 0;
-    const size_t R = M.size();
+    keel::usize cum = 0;
+    const keel::usize R = M.size();
     const bool pow2Rings = (R >= 2) && ((R & (R - 1)) == 0) && sameRingSize && ((M[0] & (M[0] - 1)) == 0);
-    for (size_t r = 0; r < R; ++r) {
-        const size_t Mr = M[r];
-        const size_t ringGray = pow2Rings ? (r ^ (r >> 1)) : r;
-        const size_t ringBase = pow2Rings ? (ringGray * Mr) : cum;
+    for (keel::usize r = 0; r < R; ++r) {
+        const keel::usize Mr = M[r];
+        const keel::usize ringGray = pow2Rings ? (r ^ (r >> 1)) : r;
+        const keel::usize ringBase = pow2Rings ? (ringGray * Mr) : cum;
         // Generate Gray permutation of 0..Mr-1
-        size_t p2 = 1;
+        keel::usize p2 = 1;
         while (p2 < Mr) p2 <<= 1;
-        size_t written = 0;
-        for (size_t k = 0; k < p2 && written < Mr; ++k) {
-            const size_t g = k ^ (k >> 1);
+        keel::usize written = 0;
+        for (keel::usize k = 0; k < p2 && written < Mr; ++k) {
+            const keel::usize g = k ^ (k >> 1);
             if (g < Mr) {
                 md[cum + written] = static_cast<double>(ringBase + g);
                 ++written;
@@ -88,37 +91,37 @@ Value buildGrayMapping(Span<const size_t> M, std::pmr::memory_resource *mr)
     return mp;
 }
 
-size_t apskBitsPerSymbol(Span<const size_t> M, const char *fn)
+keel::usize apskBitsPerSymbol(keel::ArrayRef<keel::usize> M, const char *fn)
 {
-    size_t Ntot = 0;
-    for (size_t m : M) Ntot += m;
+    keel::usize Ntot = 0;
+    for (keel::usize m : M) Ntot += m;
     if (Ntot < 2 || (Ntot & (Ntot - 1)) != 0)
         throw Error(std::string(fn) + ": sum(M) must be a power of 2 (>= 2) in bit mode",
                     0, 0, fn, "", std::string("numkit:") + fn + ":NotPow2");
-    size_t bps = 0;
-    while ((size_t(1) << bps) < Ntot) ++bps;
+    keel::usize bps = 0;
+    while ((keel::usize(1) << bps) < Ntot) ++bps;
     return bps;
 }
 
-Value packApskBits(const Value &x, size_t bps, const char *fn, std::pmr::memory_resource *mr)
+Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Allocator *mr)
 {
-    const size_t H = x.dims().rows();
-    const size_t W = x.dims().cols();
+    const keel::usize H = x.dims().rows();
+    const keel::usize W = x.dims().cols();
     const bool rowVec = (H == 1 && W >= bps && (H % bps != 0));
-    const size_t bitLen = rowVec ? W : H;
+    const keel::usize bitLen = rowVec ? W : H;
     if (bitLen == 0 || (bitLen % bps) != 0)
         throw Error(std::string(fn) + ": bit input length must be a positive multiple of log2(sum(M))",
                     0, 0, fn, "", std::string("numkit:") + fn + ":BitLength");
-    const size_t nSyms = bitLen / bps;
-    const size_t nCols = rowVec ? 1 : W;
+    const keel::usize nSyms = bitLen / bps;
+    const keel::usize nCols = rowVec ? 1 : W;
     Value syms = rowVec ? Value::matrix(1, nSyms, ValueType::DOUBLE, mr)
                         : Value::matrix(nSyms, nCols, ValueType::DOUBLE, mr);
     double *sd = syms.doubleDataMut();
-    for (size_t c = 0; c < nCols; ++c) {
-        for (size_t s = 0; s < nSyms; ++s) {
-            size_t val = 0;
-            for (size_t b = 0; b < bps; ++b) {
-                const size_t idx = rowVec ? (s * bps + b) : (c * H + s * bps + b);
+    for (keel::usize c = 0; c < nCols; ++c) {
+        for (keel::usize s = 0; s < nSyms; ++s) {
+            keel::usize val = 0;
+            for (keel::usize b = 0; b < bps; ++b) {
+                const keel::usize idx = rowVec ? (s * bps + b) : (c * H + s * bps + b);
                 const double bit = x.elemAsDouble(idx);
                 if (bit != 0.0 && bit != 1.0)
                     throw Error(std::string(fn) + ": bit input must contain only 0 and 1",
@@ -131,22 +134,22 @@ Value packApskBits(const Value &x, size_t bps, const char *fn, std::pmr::memory_
     return syms;
 }
 
-Value unpackApskBits(const Value &syms, size_t bps, std::pmr::memory_resource *mr)
+Value unpackApskBits(const Value &syms, keel::usize bps, keel::Allocator *mr)
 {
-    const size_t H = syms.dims().rows();
-    const size_t W = syms.dims().cols();
+    const keel::usize H = syms.dims().rows();
+    const keel::usize W = syms.dims().cols();
     const bool rowVec = (H == 1 && W > 1);
-    const size_t nSyms = rowVec ? W : H;
-    const size_t nCols = rowVec ? 1 : W;
+    const keel::usize nSyms = rowVec ? W : H;
+    const keel::usize nCols = rowVec ? 1 : W;
     Value bits = rowVec ? Value::matrix(1, nSyms * bps, ValueType::DOUBLE, mr)
                         : Value::matrix(nSyms * bps, nCols, ValueType::DOUBLE, mr);
     double *bd = bits.doubleDataMut();
-    for (size_t c = 0; c < nCols; ++c) {
-        for (size_t s = 0; s < nSyms; ++s) {
-            const size_t val = static_cast<size_t>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
-            for (size_t b = 0; b < bps; ++b) {
-                const size_t bit = (val >> (bps - 1 - b)) & 1u;
-                const size_t outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
+    for (keel::usize c = 0; c < nCols; ++c) {
+        for (keel::usize s = 0; s < nSyms; ++s) {
+            const keel::usize val = static_cast<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
+            for (keel::usize b = 0; b < bps; ++b) {
+                const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
+                const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
                 bd[outIdx] = static_cast<double>(bit);
             }
         }
@@ -154,13 +157,13 @@ Value unpackApskBits(const Value &syms, size_t bps, std::pmr::memory_resource *m
     return bits;
 }
 
-void parseApskTail(Span<const Value> args, Span<const size_t> M, const char *fn, bool isMod,
-                   Value &po, Value &mp, bool &bitMode, std::pmr::memory_resource *mr)
+void parseApskTail(keel::ArrayRef<Value> args, keel::ArrayRef<keel::usize> M, const char *fn, bool isMod,
+                   Value &po, Value &mp, bool &bitMode, keel::Allocator *mr)
 {
     po = Value::Empty;
     mp = Value::Empty;
     bitMode = false;
-    size_t i = 3;
+    keel::usize i = 3;
     if (i < args.size() && !args[i].isChar() && !args[i].isString()) {
         po = args[i];
         ++i;
@@ -215,41 +218,41 @@ void parseApskTail(Span<const Value> args, Span<const size_t> M, const char *fn,
 
 } // namespace
 
-void apskmod_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void apskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, "apskmod");
-    auto *mr = ctx.engine->resource();
-    ScratchArena scratch(mr);
-    auto Mv = valueToScratchSizes(args[1], &scratch);
-    auto Rv = valueToScratchDoubles(args[2], &scratch);
-    Span<const size_t> Mspan(Mv.data(), Mv.size());
+    auto *mr = ctx.engine->allocator();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    auto Mv = valueToScratchSizes(args[1], scratch.allocator());
+    auto Rv = valueToScratchDoubles(args[2], scratch.allocator());
+    keel::ArrayRef<keel::usize> Mspan(Mv.data(), Mv.size());
     Value po, mp;
     bool bitMode = false;
     parseApskTail(args, Mspan, "apskmod", true, po, mp, bitMode, mr);
     Value x = args[0];
     if (bitMode) {
-        const size_t bps = apskBitsPerSymbol(Mspan, "apskmod");
+        const keel::usize bps = apskBitsPerSymbol(Mspan, "apskmod");
         x = packApskBits(x, bps, "apskmod", mr);
     }
-    outs[0] = apskmod(x, Mspan, Span<const double>(Rv.data(), Rv.size()), po, mp, mr);
+    outs[0] = apskmod(x, Mspan, keel::ArrayRef<double>(Rv.data(), Rv.size()), po, mp, mr);
 }
 
-void apskdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                   Span<Value> outs, CallContext &ctx)
+void apskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, "apskdemod");
-    auto *mr = ctx.engine->resource();
-    ScratchArena scratch(mr);
-    auto Mv = valueToScratchSizes(args[1], &scratch);
-    auto Rv = valueToScratchDoubles(args[2], &scratch);
-    Span<const size_t> Mspan(Mv.data(), Mv.size());
+    auto *mr = ctx.engine->allocator();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    auto Mv = valueToScratchSizes(args[1], scratch.allocator());
+    auto Rv = valueToScratchDoubles(args[2], scratch.allocator());
+    keel::ArrayRef<keel::usize> Mspan(Mv.data(), Mv.size());
     Value po, mp;
     bool bitMode = false;
     parseApskTail(args, Mspan, "apskdemod", false, po, mp, bitMode, mr);
-    Value syms = apskdemod(args[0], Mspan, Span<const double>(Rv.data(), Rv.size()), po, mp, mr);
+    Value syms = apskdemod(args[0], Mspan, keel::ArrayRef<double>(Rv.data(), Rv.size()), po, mp, mr);
     if (bitMode) {
-        const size_t bps = apskBitsPerSymbol(Mspan, "apskdemod");
+        const keel::usize bps = apskBitsPerSymbol(Mspan, "apskdemod");
         syms = unpackApskBits(syms, bps, mr);
     }
     outs[0] = std::move(syms);

@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/coding/convcoding.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -19,30 +21,30 @@
 namespace numkit::comm {
 namespace detail {
 
-void poly2trellis_reg(Span<const Value> args, size_t /*nargout*/,
-                      Span<Value> outs, CallContext &ctx)
+void poly2trellis_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                      keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "poly2trellis");
     if (args.size() >= 3 && !args[2].isEmpty())
         throw Error("poly2trellis: FeedbackConnection (feedback codes) is not "
                     "supported in this revision",
                     0, 0, "poly2trellis", "", "numkit:poly2trellis:feedback");
-    outs[0] = poly2trellis(args[0], args[1], ctx.engine->resource());
+    outs[0] = poly2trellis(args[0], args[1], ctx.engine->allocator());
 }
 
-void convenc_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void convenc_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "convenc");
     if (args.size() >= 3 && !args[2].isEmpty())
         throw Error("convenc: puncture pattern / initial state are not "
                     "supported in this revision",
                     0, 0, "convenc", "", "numkit:convenc:opts");
-    outs[0] = convenc(args[0], args[1], ctx.engine->resource());
+    outs[0] = convenc(args[0], args[1], ctx.engine->allocator());
 }
 
-void vitdec_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void vitdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 5, 11, "vitdec");
     const long long tblen = static_cast<long long>(args[2].toScalar());
@@ -53,14 +55,14 @@ void vitdec_reg(Span<const Value> args, size_t /*nargout*/,
         (args.size() >= 5 && (args[4].isChar() || args[4].isString()))
             ? args[4].toString() : std::string("hard");
     outs[0] = vitdec(args[0], args[1], tblen, opmode, dectype,
-                     ctx.engine->resource());
+                     ctx.engine->allocator());
 }
 
-void istrellis_reg(Span<const Value> args, size_t /*nargout*/,
-                   Span<Value> outs, CallContext &ctx)
+void istrellis_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "istrellis");
-    outs[0] = istrellis(args[0], ctx.engine->resource());
+    outs[0] = istrellis(args[0], ctx.engine->allocator());
 }
 
 } // namespace detail

@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 #include <string>
@@ -34,8 +35,8 @@ namespace numkit::comm {
 /// @param mr           Memory resource (nullptr → process default).
 /// @return             Noisy signal of the same shape as `x`.
 /// @see wgn, bsc
-Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double sigpower_db,
-           std::pmr::memory_resource *mr = nullptr);
+Value awgn(::numkit::ops::RngContext &rng, const Value &x, keel::f64 snr_db, keel::f64 sigpower_db,
+           keel::Allocator *mr = nullptr);
 
 /// @brief Generate an `m`×`n` matrix of white Gaussian noise samples
 /// (`y = wgn(m, n, p, type, complex)`).
@@ -48,9 +49,9 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
 /// @param mr           Memory resource (nullptr → process default).
 /// @return             `m`×`n` matrix of noise samples.
 /// @see awgn
-Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::string &type,
+Value wgn(::numkit::ops::RngContext &rng, int m, int n, keel::f64 p, const std::string &type,
           bool complex_out,
-          std::pmr::memory_resource *mr = nullptr);
+          keel::Allocator *mr = nullptr);
 
 /// @brief Binary symmetric channel — flip each bit with probability
 /// `p` (`y = bsc(x, p)`).
@@ -60,8 +61,8 @@ Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::str
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Output array of the same shape as `x`.
 /// @see awgn
-Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p,
-          std::pmr::memory_resource *mr = nullptr);
+Value bsc(::numkit::ops::RngContext &rng, const Value &x, keel::f64 p,
+          keel::Allocator *mr = nullptr);
 
 /// @brief Gaussian Q-function: `Q(x) = 0.5·erfc(x/√2)`.
 ///
@@ -69,7 +70,7 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p,
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Element-wise `Q(x)`.
 /// @see qfuncinv
-Value qfunc(const Value &x, std::pmr::memory_resource *mr = nullptr);
+Value qfunc(const Value &x, keel::Allocator *mr = nullptr);
 
 /// @brief Inverse Q-function: `Q⁻¹(p) = √2·erfc⁻¹(2p)`.
 ///
@@ -78,7 +79,7 @@ Value qfunc(const Value &x, std::pmr::memory_resource *mr = nullptr);
 /// @return    Element-wise `Q⁻¹(p)`.
 /// @see qfunc
 Value qfuncinv(const Value &p,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// @brief Generalised Marcum Q-function
 /// (`q = marcumq(a, b, m)`).
@@ -92,7 +93,7 @@ Value qfuncinv(const Value &p,
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Element-wise Marcum Q values, broadcasting `a` & `b`.
 Value marcumq(const Value &a, const Value &b, int m,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Analytical bit-error rate over AWGN
 /// (`ber = berawgn(EbNo_dB, mod, M)`).
@@ -104,7 +105,7 @@ Value marcumq(const Value &a, const Value &b, int m,
 /// @return         Element-wise BER.
 /// @throws Error   Unknown modulation string or invalid `M`.
 Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Equivalent noise bandwidth of an LTI filter
 /// (`bw = noisebw(num, den, Nsamp, fs)`).
@@ -116,8 +117,8 @@ Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       Scalar noise bandwidth in Hz.
 Value noisebw(const Value &num, const Value &den, int Nsamp,
-              double fs,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::f64 fs,
+              keel::Allocator *mr = nullptr);
 
 /// @brief Clopper–Pearson exact binomial confidence interval for a
 /// measured BER (`[ber, ci] = berconfint(numErrs, numBits, level)`).
@@ -129,8 +130,8 @@ Value noisebw(const Value &num, const Value &den, int Nsamp,
 /// @return         Tuple `(ber, ci)` where `ber = numErrs / numBits`
 ///                 and `ci = [lo, hi]`.
 std::tuple<Value, Value>
-berconfint(double numErrs, double numBits, double level,
-           std::pmr::memory_resource *mr = nullptr);
+berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
+           keel::Allocator *mr = nullptr);
 
 /// @brief Convert between Eb/No, Es/No, and SNR
 /// (`snr_out = convertSNR(snr_in, in_type, out_type, k)`).
@@ -150,7 +151,7 @@ Value convertSNR(const Value &snr_in,
                  const std::string &in_type,
                  const std::string &out_type,
                  int bits_per_symbol,
-                 std::pmr::memory_resource *mr = nullptr);
+                 keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/dpcm.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -19,21 +21,21 @@
 namespace numkit::comm {
 namespace detail {
 
-void dpcmenco_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void dpcmenco_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 4, "dpcmenco");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto [indx, quanterr] = dpcmenco(args[0], args[1], args[2], args[3], mr);
     outs[0] = std::move(indx);
     if (nargout > 1) outs[1] = std::move(quanterr);
 }
 
-void dpcmdeco_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void dpcmdeco_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "dpcmdeco");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto [sig, quanterr] = dpcmdeco(args[0], args[1], args[2], mr);
     outs[0] = std::move(sig);
     if (nargout > 1) outs[1] = std::move(quanterr);

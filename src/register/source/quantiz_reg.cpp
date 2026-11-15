@@ -6,6 +6,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/quantiz.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -18,11 +20,11 @@
 namespace numkit::comm {
 namespace detail {
 
-void quantiz_reg(Span<const Value> args, size_t nargout,
-                 Span<Value> outs, CallContext &ctx)
+void quantiz_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "quantiz");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
 
     if (nargout <= 1 && args.size() == 2) {
         // 2-arg form, single output: just indx.

@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 #include <string>
@@ -31,10 +32,10 @@ namespace numkit::comm {
 /// @return                  Complex baseband waveform of length
 ///                          `numel(x)·nsamp`.
 /// @see fskdemod
-Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
-             double fs, const std::string &phase_continuity,
+Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
+             keel::f64 fs, const std::string &phase_continuity,
              const std::string &symbol_order,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief M-ary FSK demodulator
 /// (`x = fskdemod(y, M, freq_sep, nsamp, fs, symbol_order)`).
@@ -51,9 +52,9 @@ Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
 /// @return              Integer symbol vector of length
 ///                      `numel(y) / nsamp`.
 /// @see fskmod
-Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
-               double fs, const std::string &symbol_order,
-               std::pmr::memory_resource *mr = nullptr);
+Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
+               keel::f64 fs, const std::string &symbol_order,
+               keel::Allocator *mr = nullptr);
 
 /// @brief Basic OFDM modulator
 /// (`y = ofdmmod(in, nfft, cplen)`).
@@ -65,7 +66,7 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
 /// @return       Column vector of length `(nfft + cplen)·Nsymbols`.
 /// @see ofdmdemod
 Value ofdmmod(const Value &in, int nfft, int cplen,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Basic OFDM demodulator
 /// (`out = ofdmdemod(in, nfft, cplen, symoffset)`).
@@ -81,7 +82,7 @@ Value ofdmmod(const Value &in, int nfft, int cplen,
 /// @return           `nfft`×Nsymbols complex matrix of subcarriers.
 /// @see ofdmmod
 Value ofdmdemod(const Value &in, int nfft, int cplen, int symoffset,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 
 /// @}

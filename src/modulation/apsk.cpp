@@ -15,15 +15,17 @@
 //   ring r is the smallest with idx < cum(r);    k = idx - cum(r-1)
 //   point = radii[r] * exp(i * (phaseoffset[r] + 2π·k / M[r]))
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/ref.h>
+#include <keel/complex.h>
 #include <numkit/comm/modulation/apsk.hpp>
 
 #include <numkit/value/argcheck.hpp>
-#include <numkit/value/span.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <complex>
 #include <limits>
 #include <vector>
 
@@ -33,26 +35,24 @@
 
 namespace numkit::comm {
 
-using Cd = std::complex<double>;
-
 namespace {
 
 // Build the natural-order constellation: for each ring r, its M[r]
 // points at radii[r] * exp(i * (phaseoffset[r] + 2π·k/M[r])).
-std::vector<Cd> buildConstellation(Span<const size_t> M,
-                                   Span<const double> radii,
+std::vector<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
+                                   keel::ArrayRef<double> radii,
                                    const std::vector<double> &phaseoffset)
 {
-    const size_t R = M.size();
-    size_t N = 0;
-    for (size_t m : M) N += m;
-    std::vector<Cd> C;
+    const keel::usize R = M.size();
+    keel::usize N = 0;
+    for (keel::usize m : M) N += m;
+    std::vector<keel::c64> C;
     C.reserve(N);
-    for (size_t r = 0; r < R; ++r) {
-        const size_t Mr = M[r];
+    for (keel::usize r = 0; r < R; ++r) {
+        const keel::usize Mr = M[r];
         const double radr = radii[r];
         const double pho  = phaseoffset[r];
-        for (size_t k = 0; k < Mr; ++k) {
+        for (keel::usize k = 0; k < Mr; ++k) {
             const double theta = pho + 2.0 * M_PI * static_cast<double>(k) / static_cast<double>(Mr);
             C.emplace_back(radr * std::cos(theta), radr * std::sin(theta));
         }
@@ -62,17 +62,17 @@ std::vector<Cd> buildConstellation(Span<const size_t> M,
 
 void readVecInt(const Value &v, std::vector<int> &out)
 {
-    const size_t n = v.numel();
+    const keel::usize n = v.numel();
     out.resize(n);
-    for (size_t i = 0; i < n; ++i)
+    for (keel::usize i = 0; i < n; ++i)
         out[i] = static_cast<int>(v.elemAsDouble(i));
 }
 
 void readVec(const Value &v, std::vector<double> &out)
 {
-    const size_t n = v.numel();
+    const keel::usize n = v.numel();
     out.resize(n);
-    for (size_t i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+    for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
 }
 
 // `mapping` is a length-N permutation: when the user wants symbol idx
@@ -81,18 +81,18 @@ void readVec(const Value &v, std::vector<double> &out)
 // constellation_index = invMapping[user_index].
 std::vector<int> invertMapping(const std::vector<int> &mapping)
 {
-    const size_t N = mapping.size();
+    const keel::usize N = mapping.size();
     std::vector<int> inv(N, -1);
-    for (size_t i = 0; i < N; ++i) {
-        if (mapping[i] < 0 || static_cast<size_t>(mapping[i]) >= N)
+    for (keel::usize i = 0; i < N; ++i) {
+        if (mapping[i] < 0 || static_cast<keel::usize>(mapping[i]) >= N)
             throw Error("apsk: SymbolMapping out of range",
                         0, 0, "apsk", "", "numkit:apsk:Mapping");
-        inv[static_cast<size_t>(mapping[i])] = static_cast<int>(i);
+        inv[static_cast<keel::usize>(mapping[i])] = static_cast<int>(i);
     }
     return inv;
 }
 
-void apsk_argcheck(Span<const size_t> M, Span<const double> radii,
+void apsk_argcheck(keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
                    const Value &phaseoffset_v, const Value &mapping_v,
                    const char *fn)
 {
@@ -104,8 +104,8 @@ void apsk_argcheck(Span<const size_t> M, Span<const double> radii,
         && phaseoffset_v.numel() != M.size())
         throw Error(std::string(fn) + ": phaseoffset length must match M",
                     0, 0, fn, "", std::string("numkit:") + fn + ":PhaseLen");
-    size_t Ntot = 0;
-    for (size_t m : M) Ntot += m;
+    keel::usize Ntot = 0;
+    for (keel::usize m : M) Ntot += m;
     if (!mapping_v.isEmpty() && mapping_v.numel() != Ntot)
         throw Error(std::string(fn) + ": SymbolMapping length must equal sum(M)",
                     0, 0, fn, "", std::string("numkit:") + fn + ":MappingLen");
@@ -113,9 +113,9 @@ void apsk_argcheck(Span<const size_t> M, Span<const double> radii,
 
 } // namespace
 
-Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
+Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
               const Value &phaseoffset_v, const Value &mapping_v,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskmod");
     std::vector<double> phaseoffset(M.size());
@@ -130,14 +130,14 @@ Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
                         0, 0, "apskmod", "", "numkit:apskmod:PhaseLen");
         }
     } else {
-        for (size_t r = 0; r < M.size(); ++r)
+        for (keel::usize r = 0; r < M.size(); ++r)
             phaseoffset[r] = M_PI / static_cast<double>(M[r]);
     }
 
-    size_t Ntot = 0;
-    for (size_t m : M) Ntot += m;
+    keel::usize Ntot = 0;
+    for (keel::usize m : M) Ntot += m;
 
-    std::vector<Cd> C = buildConstellation(M, radii, phaseoffset);
+    std::vector<keel::c64> C = buildConstellation(M, radii, phaseoffset);
 
     // Mapping: identity by default; otherwise length-Ntot permutation.
     std::vector<int> invmap;
@@ -150,26 +150,26 @@ Value apskmod(const Value &x, Span<const size_t> M, Span<const double> radii,
         invmap = invertMapping(mapping);
     } else {
         invmap.resize(Ntot);
-        for (size_t i = 0; i < Ntot; ++i) invmap[i] = static_cast<int>(i);
+        for (keel::usize i = 0; i < Ntot; ++i) invmap[i] = static_cast<int>(i);
     }
 
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
                               ValueType::COMPLEX, mr);
-    Cd *o = out.complexDataMut();
-    const size_t Nx = x.numel();
-    for (size_t i = 0; i < Nx; ++i) {
+    keel::c64 *o = out.complexDataMut();
+    const keel::usize Nx = x.numel();
+    for (keel::usize i = 0; i < Nx; ++i) {
         const long xi = static_cast<long>(x.elemAsDouble(i));
-        if (xi < 0 || static_cast<size_t>(xi) >= Ntot)
+        if (xi < 0 || static_cast<keel::usize>(xi) >= Ntot)
             throw Error("apskmod: input index out of range [0, sum(M)-1]",
                         0, 0, "apskmod", "", "numkit:apskmod:OutOfRange");
-        o[i] = C[static_cast<size_t>(invmap[static_cast<size_t>(xi)])];
+        o[i] = C[static_cast<keel::usize>(invmap[static_cast<keel::usize>(xi)])];
     }
     return out;
 }
 
-Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
+Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
                 const Value &phaseoffset_v, const Value &mapping_v,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
     apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskdemod");
     std::vector<double> phaseoffset(M.size());
@@ -183,13 +183,13 @@ Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
                         0, 0, "apskdemod", "", "numkit:apskdemod:PhaseLen");
         }
     } else {
-        for (size_t r = 0; r < M.size(); ++r)
+        for (keel::usize r = 0; r < M.size(); ++r)
             phaseoffset[r] = M_PI / static_cast<double>(M[r]);
     }
 
-    size_t Ntot = 0;
-    for (size_t m : M) Ntot += m;
-    std::vector<Cd> C = buildConstellation(M, radii, phaseoffset);
+    keel::usize Ntot = 0;
+    for (keel::usize m : M) Ntot += m;
+    std::vector<keel::c64> C = buildConstellation(M, radii, phaseoffset);
 
     std::vector<int> mapping;
     if (!mapping_v.isEmpty()) {
@@ -199,22 +199,22 @@ Value apskdemod(const Value &y, Span<const size_t> M, Span<const double> radii,
                         0, 0, "apskdemod", "", "numkit:apskdemod:MappingLen");
     } else {
         mapping.resize(Ntot);
-        for (size_t i = 0; i < Ntot; ++i) mapping[i] = static_cast<int>(i);
+        for (keel::usize i = 0; i < Ntot; ++i) mapping[i] = static_cast<int>(i);
     }
 
     Value out = Value::matrix(y.dims().rows(), y.dims().cols(),
                               ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    const size_t Ny = y.numel();
+    const keel::usize Ny = y.numel();
     const bool y_complex = y.isComplex();
-    for (size_t i = 0; i < Ny; ++i) {
-        const Cd yi = y_complex
+    for (keel::usize i = 0; i < Ny; ++i) {
+        const keel::c64 yi = y_complex
                           ? y.complexData()[i]
-                          : Cd(y.elemAsDouble(i), 0.0);
+                          : keel::c64(y.elemAsDouble(i), 0.0);
         // Find nearest constellation point (by squared distance).
-        size_t best_k = 0;
+        keel::usize best_k = 0;
         double best_d2 = std::numeric_limits<double>::infinity();
-        for (size_t k = 0; k < C.size(); ++k) {
+        for (keel::usize k = 0; k < C.size(); ++k) {
             const double dr = yi.real() - C[k].real();
             const double di = yi.imag() - C[k].imag();
             const double d2 = dr * dr + di * di;

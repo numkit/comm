@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit {
@@ -30,7 +31,7 @@ namespace numkit::comm {
 /// @return    Faded signal of the same shape as `x`, COMPLEX.
 /// @see ricianchan
 Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x,
-                   std::pmr::memory_resource *mr = nullptr);
+                   keel::Allocator *mr = nullptr);
 
 /// @brief Apply iid frequency-flat Rician fading
 /// (`y = ricianchan(x, K)`).
@@ -44,8 +45,8 @@ Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x,
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Faded signal of the same shape as `x`, COMPLEX.
 /// @see rayleighchan
-Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, double K,
-                 std::pmr::memory_resource *mr = nullptr);
+Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, keel::f64 K,
+                 keel::Allocator *mr = nullptr);
 
 
 /// @}

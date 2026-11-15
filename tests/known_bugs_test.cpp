@@ -116,8 +116,8 @@ TEST_F(CommKnownBug, Mil188CppApiDiagnosticUnified)
     }
     // Direct C++ public-API path (bypasses the reg).
     try {
-        const Value x = Value::scalar(0.0, engine.resource());
-        comm::mil188qammod(x, 128, engine.resource());
+        const Value x = Value::scalar(0.0, engine.allocator());
+        comm::mil188qammod(x, 128, engine.allocator());
         FAIL() << "C++ path should reject M=128";
     } catch (const numkit::Error &e) {
         EXPECT_EQ(e.identifier(), "numkit:mil188qammod:MNotChoice") << e.what();

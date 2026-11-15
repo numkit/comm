@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/channel/fading.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -17,23 +19,23 @@
 namespace numkit::comm {
 namespace detail {
 
-void rayleighchan_reg(Span<const Value> args, size_t /*nargout*/,
-                      Span<Value> outs, CallContext &ctx)
+void rayleighchan_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                      keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // Absent from the R2025b reference (System-object API there);
     // contract fixed to the implemented signature.
     argcheck::checkNargin(args.size(), 1, 1, "rayleighchan");
-    outs[0] = rayleighchan(ctx.engine->rng(), args[0], ctx.engine->resource());
+    outs[0] = rayleighchan(ctx.engine->rng(), args[0], ctx.engine->allocator());
 }
 
-void ricianchan_reg(Span<const Value> args, size_t /*nargout*/,
-                    Span<Value> outs, CallContext &ctx)
+void ricianchan_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                    keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // Absent from the R2025b reference (System-object API there);
     // contract fixed to the implemented signature.
     argcheck::checkNargin(args.size(), 2, 2, "ricianchan");
     outs[0] = ricianchan(ctx.engine->rng(), args[0], args[1].toScalar(),
-                         ctx.engine->resource());
+                         ctx.engine->allocator());
 }
 
 } // namespace detail

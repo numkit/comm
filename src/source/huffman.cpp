@@ -16,6 +16,9 @@
 // by sorting with stable order (lexicographic by current symbol
 // index), which reproduces MATLAB R2025b on the standard probe set.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/math.h>
 #include <numkit/comm/source/huffman.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -50,7 +53,7 @@ struct TreeNode {
 
 void huffmandict_argcheck(const Value &symbols, const Value &probs)
 {
-    const size_t K = symbols.numel();
+    const keel::usize K = symbols.numel();
     if (K == 0)
         throw Error("huffmandict: symbols must be non-empty",
                     0, 0, "huffmandict", "", "numkit:huffmandict:Empty");
@@ -60,7 +63,7 @@ void huffmandict_argcheck(const Value &symbols, const Value &probs)
 
     // Validate probs.
     double sum = 0.0;
-    for (size_t k = 0; k < K; ++k) {
+    for (keel::usize k = 0; k < K; ++k) {
         const double p = probs.elemAsDouble(k);
         if (!(p >= 0.0 && p <= 1.0))
             throw Error("huffmandict: probabilities must lie in [0, 1]",
@@ -68,7 +71,7 @@ void huffmandict_argcheck(const Value &symbols, const Value &probs)
                         "numkit:huffmandict:InvalidProb");
         sum += p;
     }
-    if (std::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
+    if (keel::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
         throw Error("huffmandict: probabilities must sum to 1",
                     0, 0, "huffmandict", "",
                     "numkit:huffmandict:InvalidProbSum");
@@ -78,10 +81,10 @@ void huffmandict_argcheck(const Value &symbols, const Value &probs)
 
 std::pair<Value, double>
 huffmandict(const Value &symbols, const Value &probs,
-            std::pmr::memory_resource *mr)
+            keel::Allocator *mr)
 {
     huffmandict_argcheck(symbols, probs);
-    const size_t K = symbols.numel();
+    const keel::usize K = symbols.numel();
 
     // Edge case: a single symbol gets a single-bit "0" code.
     if (K == 1) {
@@ -99,7 +102,7 @@ huffmandict(const Value &symbols, const Value &probs,
     // Build initial leaves heap.
     std::priority_queue<HeapNode, std::vector<HeapNode>, std::greater<>> heap;
     int order_seed = 0;
-    for (size_t k = 0; k < K; ++k) {
+    for (keel::usize k = 0; k < K; ++k) {
         heap.push({probs.elemAsDouble(k), static_cast<int>(k), order_seed++});
     }
 
@@ -119,7 +122,7 @@ huffmandict(const Value &symbols, const Value &probs,
     Value dict = Value::cell(K, 2, mr);
     double avglen = 0.0;
     std::vector<double> bits;
-    for (size_t k = 0; k < K; ++k) {
+    for (keel::usize k = 0; k < K; ++k) {
         bits.clear();
         int cur = static_cast<int>(k);
         while (tree[cur].parent != -1) {
@@ -127,7 +130,7 @@ huffmandict(const Value &symbols, const Value &probs,
             cur = tree[cur].parent;
         }
         std::reverse(bits.begin(), bits.end());
-        const size_t L = bits.size();
+        const keel::usize L = bits.size();
         // MATLAB cell layout is column-major: column 0 = symbols, column 1 = codes.
         dict.cellAt(k)           = Value::scalar(symbols.elemAsDouble(k), mr);
         Value code = Value::matrix(1, L, ValueType::DOUBLE, mr);
@@ -149,8 +152,8 @@ namespace {
 //   codes[k]     = vector<uint8_t> of 0/1
 struct DictView {
     std::vector<double>                 syms;
-    std::vector<std::vector<uint8_t>>   codes;
-    size_t K = 0;
+    std::vector<std::vector<keel::u8>>   codes;
+    keel::usize K = 0;
 };
 
 DictView readDict(const Value &dict)
@@ -158,24 +161,24 @@ DictView readDict(const Value &dict)
     if (dict.dims().cols() != 2)
         throw Error("huffman codec: dict must be K-by-2 cell",
                     0, 0, "huffman", "", "numkit:huffman:DictShape");
-    const size_t K = dict.dims().rows();
+    const keel::usize K = dict.dims().rows();
     DictView dv;
     dv.K = K;
     dv.syms.resize(K);
     dv.codes.resize(K);
-    for (size_t k = 0; k < K; ++k) {
+    for (keel::usize k = 0; k < K; ++k) {
         // Cell layout: column-major. Index k = (row=k, col=0); k+K = col 1.
         const Value &symV  = dict.cellAt(k);
         const Value &codeV = dict.cellAt(k + K);
         dv.syms[k] = symV.toScalar();
-        const size_t L = codeV.numel();
+        const keel::usize L = codeV.numel();
         dv.codes[k].resize(L);
-        for (size_t b = 0; b < L; ++b) {
+        for (keel::usize b = 0; b < L; ++b) {
             const double v = codeV.elemAsDouble(b);
             if (v != 0.0 && v != 1.0)
                 throw Error("huffman codec: dict codes must contain 0/1",
                             0, 0, "huffman", "", "numkit:huffman:DictBits");
-            dv.codes[k][b] = static_cast<uint8_t>(v);
+            dv.codes[k][b] = static_cast<keel::u8>(v);
         }
     }
     return dv;
@@ -184,7 +187,7 @@ DictView readDict(const Value &dict)
 // Lookup symbol -> code index. Linear scan; K is small (typically <=256).
 int findSymbolIdx(const DictView &dv, double sym)
 {
-    for (size_t k = 0; k < dv.K; ++k) {
+    for (keel::usize k = 0; k < dv.K; ++k) {
         if (dv.syms[k] == sym) return static_cast<int>(k);
     }
     return -1;
@@ -200,10 +203,10 @@ struct DecodeTree {
     };
     std::vector<Node> nodes{ Node{} };  // start with root.
 
-    void insert(const std::vector<uint8_t> &code, int sym_idx)
+    void insert(const std::vector<keel::u8> &code, int sym_idx)
     {
         int cur = 0;
-        for (uint8_t bit : code) {
+        for (keel::u8 bit : code) {
             int child = (bit == 0) ? nodes[cur].left
                                    : nodes[cur].right;
             if (child < 0) {
@@ -238,14 +241,14 @@ DictView huffmandeco_argcheck(const Value &dict)
 } // namespace
 
 Value huffmanenco(const Value &sig, const Value &dict,
-                  std::pmr::memory_resource *mr)
+                  keel::Allocator *mr)
 {
     DictView dv = huffmanenco_argcheck(dict);
 
     // Walk sig once to compute output bit count.
-    const size_t N = sig.numel();
-    size_t total_bits = 0;
-    for (size_t i = 0; i < N; ++i) {
+    const keel::usize N = sig.numel();
+    keel::usize total_bits = 0;
+    for (keel::usize i = 0; i < N; ++i) {
         const double s = sig.elemAsDouble(i);
         const int k = findSymbolIdx(dv, s);
         if (k < 0)
@@ -261,30 +264,30 @@ Value huffmanenco(const Value &sig, const Value &dict,
                               ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
 
-    size_t pos = 0;
-    for (size_t i = 0; i < N; ++i) {
+    keel::usize pos = 0;
+    for (keel::usize i = 0; i < N; ++i) {
         const int k = findSymbolIdx(dv, sig.elemAsDouble(i));
-        for (uint8_t bit : dv.codes[k])
+        for (keel::u8 bit : dv.codes[k])
             o[pos++] = static_cast<double>(bit);
     }
     return out;
 }
 
 Value huffmandeco(const Value &bits, const Value &dict,
-                  std::pmr::memory_resource *mr)
+                  keel::Allocator *mr)
 {
     DictView dv = huffmandeco_argcheck(dict);
 
     // Build decode tree.
     DecodeTree tree;
-    for (size_t k = 0; k < dv.K; ++k)
+    for (keel::usize k = 0; k < dv.K; ++k)
         tree.insert(dv.codes[k], static_cast<int>(k));
 
     // Walk bits, emit symbols.
-    const size_t N = bits.numel();
+    const keel::usize N = bits.numel();
     std::vector<double> emitted;
     int cur = 0;
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double v = bits.elemAsDouble(i);
         if (v != 0.0 && v != 1.0)
             throw Error("huffmandeco: input bits must be 0 or 1",
@@ -308,7 +311,7 @@ Value huffmandeco(const Value &bits, const Value &dict,
                     "numkit:huffmandeco:Incomplete");
 
     const bool row = isRowOriented(bits);
-    const size_t M = emitted.size();
+    const keel::usize M = emitted.size();
     Value out = Value::matrix(row ? 1 : M, row ? M : 1,
                               ValueType::DOUBLE, mr);
     if (M > 0) std::copy(emitted.begin(), emitted.end(), out.doubleDataMut());

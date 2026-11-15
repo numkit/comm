@@ -61,7 +61,7 @@ TEST_F(CyclgenTest, PublicApi)
 {
     eval("p = [1 0 1 1];");
     comm::CyclgenResult r = comm::cyclgen(7, *engine.getVariable("p"),
-                                          "system", engine.resource());
+                                          "system", engine.allocator());
     EXPECT_EQ(r.k, 4);
     ASSERT_EQ(r.h.dims().rows(), 3u);
     ASSERT_EQ(r.h.dims().cols(), 7u);

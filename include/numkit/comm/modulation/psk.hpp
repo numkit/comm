@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 #include <string>
@@ -30,9 +31,9 @@ namespace numkit::comm {
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see pskdemod, dpskmod, qammod
-Value pskmod(const Value &x, int M, double ini_phase,
+Value pskmod(const Value &x, int M, keel::f64 ini_phase,
              const std::string &symbol_order,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief M-ary PSK demodulator — nearest-phase decision
 /// (`x = pskdemod(y, M, ini_phase, symbol_order)`).
@@ -44,9 +45,9 @@ Value pskmod(const Value &x, int M, double ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see pskmod
-Value pskdemod(const Value &y, int M, double ini_phase,
+Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
                const std::string &symbol_order,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// @brief Differential PSK modulator
 /// (`y = dpskmod(x, M, phase_rot, symbol_order)`).
@@ -62,9 +63,9 @@ Value pskdemod(const Value &y, int M, double ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see dpskdemod, pskmod
-Value dpskmod(const Value &x, int M, double phase_rot,
+Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
               const std::string &symbol_order,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// @brief Differential PSK demodulator — phase-difference decoder
 /// (`x = dpskdemod(y, M, phase_rot, symbol_order)`).
@@ -76,9 +77,9 @@ Value dpskmod(const Value &x, int M, double phase_rot,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see dpskmod
-Value dpskdemod(const Value &y, int M, double phase_rot,
+Value dpskdemod(const Value &y, int M, keel::f64 phase_rot,
                 const std::string &symbol_order,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 
 /// @}

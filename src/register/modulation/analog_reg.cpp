@@ -8,6 +8,9 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/comm/modulation/analog.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -21,8 +24,8 @@
 namespace numkit::comm {
 namespace detail {
 
-void pmmod_reg(Span<const Value> args, size_t /*nargout*/,
-               Span<Value> outs, CallContext &ctx)
+void pmmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 5, "pmmod");
     const double fc = args[1].toScalar();
@@ -33,11 +36,11 @@ void pmmod_reg(Span<const Value> args, size_t /*nargout*/,
         ini_phase = args[4].toScalar();
     }
     outs[0] = pmmod(args[0], fc, fs, phasedev, ini_phase,
-                    ctx.engine->resource());
+                    ctx.engine->allocator());
 }
 
-void ammod_reg(Span<const Value> args, size_t /*nargout*/,
-               Span<Value> outs, CallContext &ctx)
+void ammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "ammod");
     const double fc = args[1].toScalar();
@@ -49,11 +52,11 @@ void ammod_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 5 && !args[4].isEmpty())
         carr_amp = args[4].toScalar();
     outs[0] = ammod(args[0], fc, fs, ini_phase, carr_amp,
-                    ctx.engine->resource());
+                    ctx.engine->allocator());
 }
 
-void fmmod_reg(Span<const Value> args, size_t /*nargout*/,
-               Span<Value> outs, CallContext &ctx)
+void fmmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 5, "fmmod");
     const double fc = args[1].toScalar();
@@ -63,69 +66,69 @@ void fmmod_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 5 && !args[4].isEmpty())
         ini_phase = args[4].toScalar();
     outs[0] = fmmod(args[0], fc, fs, freqdev, ini_phase,
-                    ctx.engine->resource());
+                    ctx.engine->allocator());
 }
 
-void pmdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void pmdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 5, "pmdemod");
     double ini_phase = 0.0;
     if (args.size() >= 5 && !args[4].isEmpty())
         ini_phase = args[4].toScalar();
     outs[0] = pmdemod(args[0], args[1].toScalar(), args[2].toScalar(),
-                      args[3].toScalar(), ini_phase, ctx.engine->resource());
+                      args[3].toScalar(), ini_phase, ctx.engine->allocator());
 }
 
-void fmdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void fmdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 5, "fmdemod");
     double ini_phase = 0.0;
     if (args.size() >= 5 && !args[4].isEmpty())
         ini_phase = args[4].toScalar();
     outs[0] = fmdemod(args[0], args[1].toScalar(), args[2].toScalar(),
-                      args[3].toScalar(), ini_phase, ctx.engine->resource());
+                      args[3].toScalar(), ini_phase, ctx.engine->allocator());
 }
 
-void amdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void amdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 7, "amdemod");
     double ini_phase = 0.0, carr_amp = 0.0;
     if (args.size() >= 4 && !args[3].isEmpty()) ini_phase = args[3].toScalar();
     if (args.size() >= 5 && !args[4].isEmpty()) carr_amp = args[4].toScalar();
     outs[0] = amdemod(args[0], args[1].toScalar(), args[2].toScalar(),
-                      ini_phase, carr_amp, ctx.engine->resource());
+                      ini_phase, carr_amp, ctx.engine->allocator());
 }
 
-void ssbdemod_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void ssbdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 6, "ssbdemod");
     double ini_phase = 0.0;
     if (args.size() >= 4 && !args[3].isEmpty()) ini_phase = args[3].toScalar();
     outs[0] = ssbdemod(args[0], args[1].toScalar(), args[2].toScalar(),
-                       ini_phase, ctx.engine->resource());
+                       ini_phase, ctx.engine->allocator());
 }
 
 namespace {
 
-Value nondiffEncodeBits(const Value &x, std::pmr::memory_resource *mr)
+Value nondiffEncodeBits(const Value &x, keel::Allocator *mr)
 {
     const auto &d = x.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         int prevA = 1; // initial I-rail state +1
-        for (size_t r = 0; r < H; ++r) {
-            const size_t idx = was_row ? r : (c * H + r);
+        for (keel::usize r = 0; r < H; ++r) {
+            const keel::usize idx = was_row ? r : (c * H + r);
             const double xi = x.elemAsDouble(idx);
             if (xi != 0.0 && xi != 1.0)
                 throw Error("mskmod: input must be binary (0 or 1)",
@@ -139,21 +142,21 @@ Value nondiffEncodeBits(const Value &x, std::pmr::memory_resource *mr)
     return out;
 }
 
-Value nondiffDecodeBits(const Value &diffBits, std::pmr::memory_resource *mr)
+Value nondiffDecodeBits(const Value &diffBits, keel::Allocator *mr)
 {
     const auto &d = diffBits.dims();
-    size_t H = d.rows();
-    size_t W = d.cols();
+    keel::usize H = d.rows();
+    keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    for (size_t c = 0; c < W; ++c) {
+    for (keel::usize c = 0; c < W; ++c) {
         int prevA = 1;
-        for (size_t r = 0; r < H; ++r) {
-            const size_t idx = was_row ? r : (c * H + r);
+        for (keel::usize r = 0; r < H; ++r) {
+            const keel::usize idx = was_row ? r : (c * H + r);
             const int dk = (diffBits.elemAsDouble(idx) != 0.0) ? 1 : -1;
             const int ak = ((r % 2) == 0) ? (prevA * dk) : (-prevA * dk);
             o[idx] = (ak > 0) ? 1.0 : 0.0;
@@ -165,16 +168,16 @@ Value nondiffDecodeBits(const Value &diffBits, std::pmr::memory_resource *mr)
 
 } // namespace
 
-void mskmod_reg(Span<const Value> args, size_t nargout,
-                Span<Value> outs, CallContext &ctx)
+void mskmod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "mskmod");
     const int nSamp = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "nSamp", "mskmod"), 2, "nSamp", "mskmod");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     bool nondiff = false;
     double ini_phase = 0.0;
-    size_t i = 2;
+    keel::usize i = 2;
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
         std::string enc = args[i].toString();
         std::string elo;
@@ -198,16 +201,16 @@ void mskmod_reg(Span<const Value> args, size_t nargout,
     }
 }
 
-void mskdemod_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void mskdemod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 5, "mskdemod");
     const int nSamp = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "nSamp", "mskdemod"), 2, "nSamp", "mskdemod");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     bool nondiff = false;
     double ini_phase = 0.0;
-    size_t i = 2;
+    keel::usize i = 2;
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
         std::string enc = args[i].toString();
         std::string elo;
@@ -232,8 +235,8 @@ void mskdemod_reg(Span<const Value> args, size_t nargout,
         outs[1] = Value::scalar(phaseOut, mr);
 }
 
-void ssbmod_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void ssbmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "ssbmod");
     const double fc = args[1].toScalar();
@@ -255,7 +258,7 @@ void ssbmod_reg(Span<const Value> args, size_t /*nargout*/,
                         0, 0, "ssbmod", "", "numkit:ssbmod:InvStr");
     }
     outs[0] = ssbmod(args[0], fc, fs, ini_phase, upper,
-                     ctx.engine->resource());
+                     ctx.engine->allocator());
 }
 
 } // namespace detail

@@ -3,13 +3,18 @@
 // Random data sources: randsrc.
 // Future: randerr planned for the same TU (random binary error matrix).
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/arena.h>
+#include <keel/array.h>
+#include <keel/complex.h>
+#include <keel/math.h>
 #include <numkit/comm/source/random_source.hpp>
 
 #include <numkit/builtin/datafun.hpp>
 #include <numkit/ops/matlab_mt19937.hpp>
 #include <numkit/ops/rng_context.hpp>
 #include <numkit/value/argcheck.hpp>
-#include <numkit/value/scratch.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
@@ -28,24 +33,24 @@ namespace {
 //   2-row matrix     -> [alphabet; probabilities]
 // Returns the symbol count K via len_out.
 void parseAlphabet(const Value &a,
-                   std::pmr::memory_resource *mr,
-                   Complex **alpha_out, double **prob_out, size_t *len_out,
+                   keel::Allocator *mr,
+                   keel::c64 **alpha_out, double **prob_out, keel::usize *len_out,
                    bool *is_complex_out)
 {
-    const size_t R = a.dims().rows();
-    const size_t C = a.dims().cols();
+    const keel::usize R = a.dims().rows();
+    const keel::usize C = a.dims().cols();
     const bool a_cplx = a.isComplex();
 
     if (R == 1 && C >= 1) {
         // Plain alphabet row -> uniform probs.
-        const size_t K = C;
-        auto *al = static_cast<Complex *>(
-            mr->allocate(K * sizeof(Complex), alignof(Complex)));
+        const keel::usize K = C;
+        auto *al = static_cast<keel::c64 *>(
+            mr->alloc_bytes(K * sizeof(keel::c64), alignof(keel::c64)));
         auto *pr = static_cast<double *>(
-            mr->allocate(K * sizeof(double), alignof(double)));
+            mr->alloc_bytes(K * sizeof(double), alignof(double)));
         bool any_imag = false;
-        for (size_t k = 0; k < K; ++k) {
-            al[k] = a_cplx ? a.complexElem(k) : Complex(a.elemAsDouble(k), 0.0);
+        for (keel::usize k = 0; k < K; ++k) {
+            al[k] = a_cplx ? a.complexElem(k) : keel::c64(a.elemAsDouble(k), 0.0);
             if (al[k].imag() != 0.0) any_imag = true;
             pr[k] = static_cast<double>(k + 1) / static_cast<double>(K);
         }
@@ -57,20 +62,20 @@ void parseAlphabet(const Value &a,
     }
 
     if (R == 2 && C >= 1) {
-        const size_t K = C;
-        auto *al = static_cast<Complex *>(
-            mr->allocate(K * sizeof(Complex), alignof(Complex)));
+        const keel::usize K = C;
+        auto *al = static_cast<keel::c64 *>(
+            mr->alloc_bytes(K * sizeof(keel::c64), alignof(keel::c64)));
         auto *pr = static_cast<double *>(
-            mr->allocate(K * sizeof(double), alignof(double)));
+            mr->alloc_bytes(K * sizeof(double), alignof(double)));
         // Column-major: alphabet[k] = a(0, k) at index 0 + k*R = k*2;
         // prob[k] = a(1, k) at index 1 + k*2.
         double sum = 0.0;
         bool any_imag = false;
-        for (size_t k = 0; k < K; ++k) {
-            const Complex sym = a_cplx ? a.complexElem(k * R + 0)
-                                       : Complex(a.elemAsDouble(k * R + 0), 0.0);
-            const Complex pkc = a_cplx ? a.complexElem(k * R + 1)
-                                       : Complex(a.elemAsDouble(k * R + 1), 0.0);
+        for (keel::usize k = 0; k < K; ++k) {
+            const keel::c64 sym = a_cplx ? a.complexElem(k * R + 0)
+                                       : keel::c64(a.elemAsDouble(k * R + 0), 0.0);
+            const keel::c64 pkc = a_cplx ? a.complexElem(k * R + 1)
+                                       : keel::c64(a.elemAsDouble(k * R + 1), 0.0);
             const double pk = pkc.real();
             if (pkc.imag() != 0.0 || !(pk >= 0.0 && pk <= 1.0))
                 throw Error("randsrc: probabilities must be in [0, 1]",
@@ -81,7 +86,7 @@ void parseAlphabet(const Value &a,
             sum  += pk;
             pr[k] = sum;          // cumulative
         }
-        if (std::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
+        if (keel::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
             throw Error("randsrc: probabilities must sum to 1",
                         0, 0, "randsrc", "",
                         "numkit:randsrc:InvalidProbabilitySum");
@@ -101,8 +106,8 @@ void parseAlphabet(const Value &a,
 }
 
 void randsrc_argcheck(const Value &a,
-                      std::pmr::memory_resource *mr,
-                      Complex **alpha_out, double **prob_out, size_t *len_out,
+                      keel::Allocator *mr,
+                      keel::c64 **alpha_out, double **prob_out, keel::usize *len_out,
                       bool *is_complex_out)
 {
     parseAlphabet(a, mr, alpha_out, prob_out, len_out, is_complex_out);
@@ -110,37 +115,37 @@ void randsrc_argcheck(const Value &a,
 
 } // namespace
 
-Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &alphabet,
-              bool have_state, uint32_t state,
-              std::pmr::memory_resource *mr)
+Value randsrc(::numkit::ops::RngContext &rng, keel::usize m, keel::usize n, const Value &alphabet,
+              bool have_state, keel::u32 state,
+              keel::Allocator *mr)
 {
     using ::numkit::ops::MatlabMT19937;
 
     // Parse alphabet → cumulative probability table.
-    Complex *alpha     = nullptr;
+    keel::c64 *alpha     = nullptr;
     double  *prob      = nullptr;
-    size_t   K         = 0;
+    keel::usize   K         = 0;
     bool     is_cplx   = false;
     randsrc_argcheck(alphabet, mr, &alpha, &prob, &K, &is_cplx);
 
-    const size_t N = m * n;
+    const keel::usize N = m * n;
     if (is_cplx) {
         Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
-        Complex *o = out.complexDataMut();
+        keel::c64 *o = out.complexDataMut();
         if (have_state) {
             MatlabMT19937 local;
             local.seed(state);
-            for (size_t i = 0; i < N; ++i) {
+            for (keel::usize i = 0; i < N; ++i) {
                 const double r = local.genRes53();
-                size_t idx = 0;
+                keel::usize idx = 0;
                 while (idx < K - 1 && r >= prob[idx]) ++idx;
                 o[i] = alpha[idx];
             }
         } else {
             auto &gen = rng;
-            for (size_t i = 0; i < N; ++i) {
+            for (keel::usize i = 0; i < N; ++i) {
                 const double r = gen.genRes53();
-                size_t idx = 0;
+                keel::usize idx = 0;
                 while (idx < K - 1 && r >= prob[idx]) ++idx;
                 o[i] = alpha[idx];
             }
@@ -156,18 +161,18 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
     if (have_state) {
         MatlabMT19937 local;
         local.seed(state);
-        for (size_t i = 0; i < N; ++i) {
+        for (keel::usize i = 0; i < N; ++i) {
             const double r = local.genRes53();
             // idx = 1 + sum(r >= prob(k)) → (1-based) → 0-based = sum(r >= prob).
-            size_t idx = 0;
+            keel::usize idx = 0;
             while (idx < K - 1 && r >= prob[idx]) ++idx;
             o[i] = alpha[idx].real();
         }
     } else {
         auto &gen = rng;
-        for (size_t i = 0; i < N; ++i) {
+        for (keel::usize i = 0; i < N; ++i) {
             const double r = gen.genRes53();
-            size_t idx = 0;
+            keel::usize idx = 0;
             while (idx < K - 1 && r >= prob[idx]) ++idx;
             o[i] = alpha[idx].real();
         }
@@ -189,26 +194,26 @@ Value randsrc(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &a
 //   - 2-row matrix [counts; probabilities] -> weighted pick
 namespace {
 
-void parseErrspec(const Value &e, std::pmr::memory_resource *mr,
-                  int **counts_out, double **prob_out, size_t *len_out,
-                  size_t n)
+void parseErrspec(const Value &e, keel::Allocator *mr,
+                  int **counts_out, double **prob_out, keel::usize *len_out,
+                  keel::usize n)
 {
-    const size_t R = e.dims().rows();
-    const size_t C = e.dims().cols();
+    const keel::usize R = e.dims().rows();
+    const keel::usize C = e.dims().cols();
 
     if (R == 1 && C >= 1) {
-        const size_t K = C;
+        const keel::usize K = C;
         auto *cs = static_cast<int *>(
-            mr->allocate(K * sizeof(int), alignof(int)));
+            mr->alloc_bytes(K * sizeof(int), alignof(int)));
         auto *pr = static_cast<double *>(
-            mr->allocate(K * sizeof(double), alignof(double)));
-        for (size_t k = 0; k < K; ++k) {
+            mr->alloc_bytes(K * sizeof(double), alignof(double)));
+        for (keel::usize k = 0; k < K; ++k) {
             const double v = e.elemAsDouble(k);
             if (!(v >= 0.0) || std::floor(v) != v)
                 throw Error("randerr: error counts must be non-negative integers",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsElements");
-            if (static_cast<size_t>(v) > n)
+            if (static_cast<keel::usize>(v) > n)
                 throw Error("randerr: error count exceeds n",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsForm");
@@ -222,20 +227,20 @@ void parseErrspec(const Value &e, std::pmr::memory_resource *mr,
     }
 
     if (R == 2 && C >= 1) {
-        const size_t K = C;
+        const keel::usize K = C;
         auto *cs = static_cast<int *>(
-            mr->allocate(K * sizeof(int), alignof(int)));
+            mr->alloc_bytes(K * sizeof(int), alignof(int)));
         auto *pr = static_cast<double *>(
-            mr->allocate(K * sizeof(double), alignof(double)));
+            mr->alloc_bytes(K * sizeof(double), alignof(double)));
         double sum = 0.0;
-        for (size_t k = 0; k < K; ++k) {
+        for (keel::usize k = 0; k < K; ++k) {
             const double v = e.elemAsDouble(k * R + 0);
             const double p = e.elemAsDouble(k * R + 1);
             if (!(v >= 0.0) || std::floor(v) != v)
                 throw Error("randerr: error counts must be non-negative integers",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsElements");
-            if (static_cast<size_t>(v) > n)
+            if (static_cast<keel::usize>(v) > n)
                 throw Error("randerr: error count exceeds n",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsForm");
@@ -247,7 +252,7 @@ void parseErrspec(const Value &e, std::pmr::memory_resource *mr,
             sum += p;
             pr[k] = sum;
         }
-        if (std::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
+        if (keel::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
             throw Error("randerr: probabilities must sum to 1",
                         0, 0, "randerr", "",
                         "numkit:randerr:InvalidProbabilitySum");
@@ -261,66 +266,66 @@ void parseErrspec(const Value &e, std::pmr::memory_resource *mr,
                 0, 0, "randerr", "", "numkit:randerr:InvalidErrorsDims");
 }
 
-void randerr_argcheck(const Value &e, std::pmr::memory_resource *mr,
-                      int **counts_out, double **prob_out, size_t *len_out,
-                      size_t n)
+void randerr_argcheck(const Value &e, keel::Allocator *mr,
+                      int **counts_out, double **prob_out, keel::usize *len_out,
+                      keel::usize n)
 {
     parseErrspec(e, mr, counts_out, prob_out, len_out, n);
 }
 
 template <typename Rng>
-void fillOneRow(double *o_col_major, size_t i, size_t m, size_t n,
-                const int *counts, const double *prob, size_t K, Rng &rng,
-                ScratchVec<double> &rs, ScratchVec<size_t> &p)
+void fillOneRow(double *o_col_major, keel::usize i, keel::usize m, keel::usize n,
+                const int *counts, const double *prob, keel::usize K, Rng &rng,
+                keel::Array<double> &rs, keel::Array<keel::usize> &p)
 {
     // 1) Pick error count from CDF.
     const double u = rng.genRes53();
-    size_t k = 0;
+    keel::usize k = 0;
     while (k < K - 1 && u >= prob[k]) ++k;
     const int num = counts[k];
 
     // 2) n random values + sort permutation.
-    for (size_t j = 0; j < n; ++j) rs[j] = rng.genRes53();
-    std::iota(p.begin(), p.end(), size_t{0});
+    for (keel::usize j = 0; j < n; ++j) rs[j] = rng.genRes53();
+    std::iota(p.begin(), p.end(), keel::usize{0});
     std::sort(p.begin(), p.end(),
-              [&](size_t a, size_t b) { return rs[a] < rs[b]; });
+              [&](keel::usize a, keel::usize b) { return rs[a] < rs[b]; });
 
     // 3) out(i, j) = (p[j] < num)  (0-based, mirroring p<=num 1-based).
-    for (size_t j = 0; j < n; ++j) {
-        const bool one = (p[j] < static_cast<size_t>(num));
+    for (keel::usize j = 0; j < n; ++j) {
+        const bool one = (p[j] < static_cast<keel::usize>(num));
         o_col_major[i + j * m] = one ? 1.0 : 0.0;
     }
 }
 
 } // namespace
 
-Value randerr(::numkit::ops::RngContext &rng, size_t m, size_t n, const Value &errspec,
-              bool have_state, uint32_t state,
-              std::pmr::memory_resource *mr)
+Value randerr(::numkit::ops::RngContext &rng, keel::usize m, keel::usize n, const Value &errspec,
+              bool have_state, keel::u32 state,
+              keel::Allocator *mr)
 {
     using ::numkit::ops::MatlabMT19937;
 
     int    *counts = nullptr;
     double *prob   = nullptr;
-    size_t  K      = 0;
+    keel::usize  K      = 0;
     randerr_argcheck(errspec, mr, &counts, &prob, &K, n);
 
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
     std::fill(o, o + m * n, 0.0);
 
-    ScratchArena scratch(mr);
-    ScratchVec<double> rs(n, &scratch);
-    ScratchVec<size_t> p(n, &scratch);
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    keel::Array<double> rs(n, scratch.allocator());
+    keel::Array<keel::usize> p(n, scratch.allocator());
 
     if (have_state) {
         MatlabMT19937 local;
         local.seed(state);
-        for (size_t i = 0; i < m; ++i)
+        for (keel::usize i = 0; i < m; ++i)
             fillOneRow(o, i, m, n, counts, prob, K, local, rs, p);
     } else {
         auto &gen = rng;
-        for (size_t i = 0; i < m; ++i)
+        for (keel::usize i = 0; i < m; ++i)
             fillOneRow(o, i, m, n, counts, prob, K, gen, rs, p);
     }
 

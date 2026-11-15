@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/errors.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -20,8 +22,8 @@ namespace numkit::comm {
 namespace detail {
 
 // biterr(x, y[, k]): out[0] = total bit count, out[1] = ratio.
-void biterr_reg(Span<const Value> args, size_t nargout,
-                Span<Value> outs, CallContext &ctx)
+void biterr_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "biterr");
     int k = 0;  // 0 -> auto width
@@ -29,14 +31,14 @@ void biterr_reg(Span<const Value> args, size_t nargout,
         k = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "k", "biterr"), 3, "k", "biterr");
     }
-    auto [number, ratio] = biterr(args[0], args[1], k, ctx.engine->resource());
+    auto [number, ratio] = biterr(args[0], args[1], k, ctx.engine->allocator());
     outs[0] = std::move(number);
     if (nargout > 1) outs[1] = std::move(ratio);
 }
 
 // symerr(x, y[, flg]): out[0] = symbol error count, out[1] = ratio.
-void symerr_reg(Span<const Value> args, size_t nargout,
-                Span<Value> outs, CallContext &ctx)
+void symerr_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "symerr");
     std::string flg = "overall";
@@ -46,7 +48,7 @@ void symerr_reg(Span<const Value> args, size_t nargout,
                         0, 0, "symerr", "", "numkit:symerr:flg");
         flg = args[2].toString();
     }
-    auto [count, ratio] = symerr(args[0], args[1], flg, ctx.engine->resource());
+    auto [count, ratio] = symerr(args[0], args[1], flg, ctx.engine->allocator());
     outs[0] = std::move(count);
     if (nargout > 1) outs[1] = std::move(ratio);
 }

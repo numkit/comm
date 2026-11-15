@@ -10,6 +10,8 @@
 // quantv  = codebook(indx + 1)
 // distor  = mean((sig - quantv).^2)
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/comm/source/quantiz.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -44,19 +46,19 @@ void quantiz_argcheck(const Value &partition, const Value &codebook)
 } // namespace
 
 Value quantiz_indx(const Value &sig, const Value &partition,
-                   std::pmr::memory_resource *mr)
+                   keel::Allocator *mr)
 {
     quantiz_indx_argcheck(sig, partition);
-    const size_t N = sig.numel();
-    const size_t M = partition.numel();
+    const keel::usize N = sig.numel();
+    const keel::usize M = partition.numel();
     const bool row = isRow(sig);
     Value indx = Value::matrix(row ? 1 : N, row ? N : 1,
                                ValueType::DOUBLE, mr);
     double *o = indx.doubleDataMut();
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double xi = sig.elemAsDouble(i);
-        size_t cnt = 0;
-        for (size_t k = 0; k < M; ++k) {
+        keel::usize cnt = 0;
+        for (keel::usize k = 0; k < M; ++k) {
             if (partition.elemAsDouble(k) < xi) ++cnt;
             else break;   // partition is monotonic non-decreasing
         }
@@ -67,10 +69,10 @@ Value quantiz_indx(const Value &sig, const Value &partition,
 
 QuantizResult
 quantiz(const Value &sig, const Value &partition, const Value &codebook,
-        std::pmr::memory_resource *mr)
+        keel::Allocator *mr)
 {
     quantiz_argcheck(partition, codebook);
-    const size_t N = sig.numel();
+    const keel::usize N = sig.numel();
 
     Value indx = quantiz_indx(sig, partition, mr);
     const double *idx = indx.doubleData();
@@ -79,8 +81,8 @@ quantiz(const Value &sig, const Value &partition, const Value &codebook,
                                  ValueType::DOUBLE, mr);
     double *q = quantv.doubleDataMut();
     double sse = 0.0;
-    for (size_t i = 0; i < N; ++i) {
-        const size_t k = static_cast<size_t>(idx[i]);
+    for (keel::usize i = 0; i < N; ++i) {
+        const keel::usize k = static_cast<keel::usize>(idx[i]);
         const double cv = codebook.elemAsDouble(k);
         q[i] = cv;
         const double d = sig.elemAsDouble(i) - cv;

@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/random_source.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -18,14 +20,14 @@
 namespace numkit::comm {
 namespace detail {
 
-void randsrc_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void randsrc_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // R2025b contract (0..4): randsrc() -> 1x1, randsrc(m) -> m x m.
     argcheck::checkNargin(args.size(), 0, 4, "randsrc");
-    const size_t m = (args.size() >= 1) ? argcheck::arrayDim(args[0], "randsrc") : 1;
-    const size_t n = (args.size() >= 2) ? argcheck::arrayDim(args[1], "randsrc") : m;
-    auto *mr = ctx.engine->resource();
+    const keel::usize m = (args.size() >= 1) ? argcheck::arrayDim(args[0], "randsrc") : 1;
+    const keel::usize n = (args.size() >= 2) ? argcheck::arrayDim(args[1], "randsrc") : m;
+    auto *mr = ctx.engine->allocator();
 
     // Default alphabet = [-1, 1] if not provided.
     Value default_alphabet;
@@ -41,27 +43,27 @@ void randsrc_reg(Span<const Value> args, size_t /*nargout*/,
     }
 
     bool have_state = false;
-    uint32_t state = 0;
+    keel::u32 state = 0;
     if (args.size() >= 4 && !args[3].isEmpty()) {
         have_state = true;
         const double s = args[3].toScalar();
         if (s < 0.0)
             throw Error("randsrc: state must be a non-negative integer",
                         0, 0, "randsrc", "", "numkit:randsrc:InvalidState");
-        state = static_cast<uint32_t>(s);
+        state = static_cast<keel::u32>(s);
     }
 
     outs[0] = randsrc(ctx.engine->rng(), m, n, *alphabet, have_state, state, mr);
 }
 
-void randerr_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void randerr_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // R2025b contract (1..4): randerr(m) -> m x m; 0 args rejects.
     argcheck::checkNargin(args.size(), 1, 4, "randerr");
-    const size_t m = argcheck::arrayDim(args[0], "randerr");
-    const size_t n = (args.size() >= 2) ? argcheck::arrayDim(args[1], "randerr") : m;
-    auto *mr = ctx.engine->resource();
+    const keel::usize m = argcheck::arrayDim(args[0], "randerr");
+    const keel::usize n = (args.size() >= 2) ? argcheck::arrayDim(args[1], "randerr") : m;
+    auto *mr = ctx.engine->allocator();
 
     // Default errspec = 1 error per row.
     Value default_errspec;
@@ -74,14 +76,14 @@ void randerr_reg(Span<const Value> args, size_t /*nargout*/,
     }
 
     bool have_state = false;
-    uint32_t state = 0;
+    keel::u32 state = 0;
     if (args.size() >= 4 && !args[3].isEmpty()) {
         have_state = true;
         const double s = args[3].toScalar();
         if (s < 0.0)
             throw Error("randerr: state must be a non-negative integer",
                         0, 0, "randerr", "", "numkit:randerr:InvalidState");
-        state = static_cast<uint32_t>(s);
+        state = static_cast<keel::u32>(s);
     }
 
     outs[0] = randerr(ctx.engine->rng(), m, n, *errspec, have_state, state, mr);

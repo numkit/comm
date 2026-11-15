@@ -6,6 +6,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/compand.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -18,8 +20,8 @@
 namespace numkit::comm {
 namespace detail {
 
-void compand_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void compand_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // R2025b: method optional, default 'mu/compressor' (probed equal).
     argcheck::checkNargin(args.size(), 3, 4, "compand");
@@ -32,7 +34,7 @@ void compand_reg(Span<const Value> args, size_t /*nargout*/,
     }
     const double param = args[1].toScalar();
     const double V     = args[2].toScalar();
-    outs[0] = compand(args[0], param, V, method, ctx.engine->resource());
+    outs[0] = compand(args[0], param, V, method, ctx.engine->allocator());
 }
 
 } // namespace detail

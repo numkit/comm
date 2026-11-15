@@ -9,6 +9,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/base_conversions.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -41,35 +43,35 @@ bool parseMsbFlag(const Value &v, const char *who)
 
 namespace detail {
 
-void bit2int_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void bit2int_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 5, "bit2int");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "bit2int"), 2, "n", "bit2int");
     bool msb = true;
     if (args.size() >= 3) msb = (args[2].toScalar() != 0.0);
-    outs[0] = bit2int(args[0], n, msb, ctx.engine->resource());
+    outs[0] = bit2int(args[0], n, msb, ctx.engine->allocator());
 }
 
-void int2bit_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void int2bit_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "int2bit");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "int2bit"), 2, "n", "int2bit");
     bool msb = true;
     if (args.size() >= 3) msb = (args[2].toScalar() != 0.0);
-    outs[0] = int2bit(args[0], n, msb, ctx.engine->resource());
+    outs[0] = int2bit(args[0], n, msb, ctx.engine->allocator());
 }
 
-void bi2de_reg(Span<const Value> args, size_t /*nargout*/,
-               Span<Value> outs, CallContext &ctx)
+void bi2de_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "bi2de");
     int base = 2;
     bool msb = false;  // default 'right-msb' = LSB-first
-    for (size_t i = 1; i < args.size(); ++i) {
+    for (keel::usize i = 1; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString())
             msb = parseMsbFlag(args[i], "bi2de");
         else if (!args[i].isEmpty())  // empty [] base -> keep default 2
@@ -79,18 +81,18 @@ void bi2de_reg(Span<const Value> args, size_t /*nargout*/,
     }
     // Marshal-only: the base >= 2 domain check lives in the compute-side
     // bi2de_argcheck (crossed by direct C++ calls too).
-    outs[0] = bi2de(args[0], base, msb, ctx.engine->resource());
+    outs[0] = bi2de(args[0], base, msb, ctx.engine->allocator());
 }
 
-void de2bi_reg(Span<const Value> args, size_t /*nargout*/,
-               Span<Value> outs, CallContext &ctx)
+void de2bi_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 4, "de2bi");
     int n = -1;       // -1 = auto
     int base = 2;
     bool msb = false; // default 'right-msb'
     int numericFound = 0;
-    for (size_t i = 1; i < args.size(); ++i) {
+    for (keel::usize i = 1; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString())
             msb = parseMsbFlag(args[i], "de2bi");
         else if (numericFound == 0) {
@@ -109,21 +111,21 @@ void de2bi_reg(Span<const Value> args, size_t /*nargout*/,
             ++numericFound;
         }
     }
-    outs[0] = de2bi(args[0], n, base, msb, ctx.engine->resource());
+    outs[0] = de2bi(args[0], n, base, msb, ctx.engine->allocator());
 }
 
-void vec2mat_reg(Span<const Value> args, size_t nargout,
-                 Span<Value> outs, CallContext &ctx)
+void vec2mat_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "vec2mat");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "vec2mat"), 2, "n", "vec2mat");
     double padval = 0.0;
     if (args.size() >= 3) padval = args[2].toScalar();
-    auto [m, pad] = vec2mat(args[0], n, padval, ctx.engine->resource());
+    auto [m, pad] = vec2mat(args[0], n, padval, ctx.engine->allocator());
     outs[0] = m;
     if (nargout >= 2 && outs.size() >= 2)
-        outs[1] = Value::scalar(static_cast<double>(pad), ctx.engine->resource());
+        outs[1] = Value::scalar(static_cast<double>(pad), ctx.engine->allocator());
 }
 
 } // namespace detail

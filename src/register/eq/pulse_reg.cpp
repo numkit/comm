@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/pulse.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -19,8 +21,8 @@
 namespace numkit::comm {
 namespace detail {
 
-void rcosdesign_reg(Span<const Value> args, size_t /*nargout*/,
-                    Span<Value> outs, CallContext &ctx)
+void rcosdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                    keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "rcosdesign");
     const double beta = args[0].toScalar();
@@ -35,11 +37,11 @@ void rcosdesign_reg(Span<const Value> args, size_t /*nargout*/,
                         0, 0, "rcosdesign", "", "numkit:rcosdesign:shape");
         shape = args[3].toString();
     }
-    outs[0] = rcosdesign(beta, span, sps, shape, ctx.engine->resource());
+    outs[0] = rcosdesign(beta, span, sps, shape, ctx.engine->allocator());
 }
 
-void gaussdesign_reg(Span<const Value> args, size_t /*nargout*/,
-                     Span<Value> outs, CallContext &ctx)
+void gaussdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     // R2025b defaults: span 3, sps 2 — both optional.
     argcheck::checkNargin(args.size(), 1, 3, "gaussdesign");
@@ -54,25 +56,25 @@ void gaussdesign_reg(Span<const Value> args, size_t /*nargout*/,
               argcheck::expectedReal(args[2], 3, "sps", "gaussdesign"),
               3, "sps", "gaussdesign")
         : 2;
-    outs[0] = gaussdesign(BT, span, sps, ctx.engine->resource());
+    outs[0] = gaussdesign(BT, span, sps, ctx.engine->allocator());
 }
 
-void rectpulse_reg(Span<const Value> args, size_t /*nargout*/,
-                   Span<Value> outs, CallContext &ctx)
+void rectpulse_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "rectpulse");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "rectpulse"), 2, "n", "rectpulse");
-    outs[0] = rectpulse(args[0], n, ctx.engine->resource());
+    outs[0] = rectpulse(args[0], n, ctx.engine->allocator());
 }
 
-void intdump_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void intdump_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "intdump");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "intdump"), 2, "n", "intdump");
-    outs[0] = intdump(args[0], n, ctx.engine->resource());
+    outs[0] = intdump(args[0], n, ctx.engine->allocator());
 }
 
 } // namespace detail

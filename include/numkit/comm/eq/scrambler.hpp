@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -40,7 +40,7 @@ namespace numkit::comm {
 /// @see descrambler
 Value scrambler(const Value &x, const Value &poly,
                 const Value &initState,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 /// @brief Multiplicative bit descrambler — algebraic inverse of
 /// @ref scrambler (`x = descrambler(y, poly, initState)`).
@@ -63,7 +63,7 @@ Value scrambler(const Value &x, const Value &poly,
 /// @see scrambler
 Value descrambler(const Value &y, const Value &poly,
                   const Value &initState,
-                  std::pmr::memory_resource *mr = nullptr);
+                  keel::Allocator *mr = nullptr);
 
 
 /// @}
