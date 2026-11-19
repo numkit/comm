@@ -4,7 +4,10 @@
 // arrays. MATLAB Communications Toolbox metrics.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/eq/errors.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -48,9 +51,9 @@ void biterr_argcheck(const Value &x, const Value &y, int k)
     }
 }
 
-std::string symerr_argcheck(const Value &x, const Value &y, std::string_view flg)
+keel::String symerr_argcheck(const Value &x, const Value &y, keel::StringRef flg)
 {
-    std::string mode(flg);
+    keel::String mode(flg);
     for (char &ch : mode) {
         if (ch >= 'A' && ch <= 'Z') ch = static_cast<char>(ch - 'A' + 'a');
     }
@@ -58,11 +61,11 @@ std::string symerr_argcheck(const Value &x, const Value &y, std::string_view flg
         if (y.numel() != x.numel())
             throw Error("symerr: x and y must have the same number of elements",
                         0, 0, "symerr", "", "numkit:symerr:size");
-        return "overall";
+        return keel::String("overall");
     }
     if (mode == "column-wise" || mode == "row-wise") {
         if (y.dims().rows() != x.dims().rows() || y.dims().cols() != x.dims().cols())
-            throw Error("symerr: x and y must have the same dimensions for '" + mode + "'",
+            throw Error(keel::format("symerr: x and y must have the same dimensions for '{}'", mode),
                         0, 0, "symerr", "", "numkit:symerr:size");
         return mode;
     }
@@ -111,10 +114,10 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
 }
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
-                               std::string_view flg,
+                               keel::StringRef flg,
                                keel::Allocator *mr)
 {
-    const std::string mode = symerr_argcheck(x, y, flg);
+    const keel::String mode = symerr_argcheck(x, y, flg);
 
     if (mode == "overall") {
         const keel::usize n = x.numel();

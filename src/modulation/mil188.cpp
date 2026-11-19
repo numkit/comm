@@ -10,6 +10,7 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <numkit/comm/modulation/mil188.hpp>
 
@@ -18,7 +19,6 @@
 #include <numkit/value/error.hpp>
 
 #include <limits>
-#include <string_view>
 
 namespace numkit::comm {
 
@@ -442,7 +442,7 @@ const keel::c64 *constellationFor(int M, keel::usize &len_out)
 // <fn>_argcheck for the MIL-STD QAM pair: the M-set contract lives
 // here so the interpreter and direct C++ calls answer with ONE
 // identifier per function (bugs/opened/lang/reg-domain-logic.md).
-void mil188MSetArgcheck(int M, std::string_view fn)
+void mil188MSetArgcheck(int M, keel::StringRef fn)
 {
     argcheck::expectedOneOf(static_cast<double>(M), {16, 32, 64, 256},
                             2, "M", fn);

@@ -9,6 +9,7 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/modulation/psk.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -16,18 +17,16 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <string>
-
 namespace numkit::comm {
 namespace detail {
 
 namespace {
-std::string parse_order(keel::ArrayRef<Value> args, keel::usize i, const std::string &def) {
-    if (i >= args.size()) return def;
-    if (!(args[i].isChar() || args[i].isString())) return def;
-    auto s = args[i].toString();
-    if (s == "bin" || s == "gray") return std::string(s.as_ref());
-    return def;
+keel::String parse_order(keel::ArrayRef<Value> args, keel::usize i, keel::StringRef def) {
+    if (i >= args.size()) return keel::String(def);
+    if (!(args[i].isChar() || args[i].isString())) return keel::String(def);
+    keel::String s = args[i].toString();
+    if (s == "bin" || s == "gray") return s;
+    return keel::String(def);
 }
 }
 

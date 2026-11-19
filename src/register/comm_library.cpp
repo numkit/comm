@@ -1,11 +1,11 @@
 // toolboxes/comm/src/library.cpp
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
 #include <numkit/comm/library.hpp>
 
 #include <numkit/sys/plugin.hpp>
-#include <string>
 #include <utility>
 
 namespace numkit::comm::detail {
@@ -139,7 +139,7 @@ namespace numkit {
 void CommLibrary::install(PluginContext &engine)
 {
     auto reg = [&](const char *sub, const char *name, ExternalFunc fn) {
-        engine.registerFunction(std::string("comm.") + sub, name, std::move(fn));
+        engine.registerFunction(keel::format("comm.{}", sub), name, std::move(fn));
         // compat.* registration removed — bare-name resolver replaces it
     };
 

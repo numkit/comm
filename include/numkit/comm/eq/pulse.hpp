@@ -9,8 +9,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 
 namespace numkit::comm {
 
@@ -39,7 +39,7 @@ namespace numkit::comm {
 /// @throws Error On invalid β, span, sps, or unknown shape.
 /// @see gaussdesign
 Value rcosdesign(keel::f64 beta, int span, int sps,
-                 const std::string &shape = "normal",
+                 keel::StringRef shape = "normal",
                  keel::Allocator *mr = nullptr);
 
 /// @brief Design a Gaussian FIR pulse-shaping filter

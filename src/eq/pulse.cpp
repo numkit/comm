@@ -9,9 +9,11 @@
 // with the standard l'Hôpital limits at t = 0 and t = ±T/(4β).
 // Output normalised to unit energy, matching MATLAB R2025b.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/math.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/pulse.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -20,8 +22,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -37,7 +37,7 @@ double sinc_pi(double x) {
     return std::sin(a) / a;
 }
 
-void rcosdesign_argcheck(double beta, int span, int sps, const std::string &shape)
+void rcosdesign_argcheck(double beta, int span, int sps, keel::StringRef shape)
 {
     if (!(beta >= 0.0 && beta <= 1.0))
         throw Error("rcosdesign: beta must be in [0, 1]",
@@ -100,7 +100,7 @@ void intdump_argcheck(const Value &x, int n)
 } // anonymous
 
 Value rcosdesign(double beta, int span, int sps,
-                 const std::string &shape,
+                 keel::StringRef shape,
                  keel::Allocator *mr)
 {
     rcosdesign_argcheck(beta, span, sps, shape);
@@ -108,7 +108,7 @@ Value rcosdesign(double beta, int span, int sps,
 
     // Filter length.
     const int N = span * sps + 1;
-    std::vector<double> h(static_cast<keel::usize>(N), 0.0);
+    keel::Array<double> h(static_cast<keel::usize>(N), 0.0, mr);
 
     // Symbol period T set so that t / T is dimensionless and t runs
     // from -span/2 to +span/2 in steps of 1/sps. (T = 1 here.)
@@ -184,7 +184,7 @@ Value gaussdesign(double BT, int span, int sps,
     const double alpha = std::sqrt(std::log(2.0) / 2.0) / BT;
     const double pre = std::sqrt(M_PI) / alpha;
 
-    std::vector<double> h(static_cast<keel::usize>(N));
+    keel::Array<double> h(static_cast<keel::usize>(N), mr);
     double s = 0.0;
     for (int k = 1; k <= N; ++k) {
         const double t = (static_cast<double>(k) - centre) / sps;

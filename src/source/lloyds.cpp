@@ -16,9 +16,11 @@
 //
 // Plotting form (4-arg) deferred -- nk doesn't ship plot().
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/math.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/lloyds.hpp>
 #include <numkit/comm/source/quantiz.hpp>
 
@@ -29,22 +31,21 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <vector>
 
 namespace numkit::comm {
 
 namespace {
 
 // Fill out_v with double values sourced from the training-set Value.
-void readVector(const Value &v, std::vector<double> &out)
+void readVector(const Value &v, keel::Array<double> &out)
 {
     const keel::usize N = v.numel();
     out.resize(N);
     for (keel::usize i = 0; i < N; ++i) out[i] = v.elemAsDouble(i);
 }
 
-// Build a Value(1, n, DOUBLE) from a std::vector<double> on `mr`.
-Value vecToRow(keel::Allocator *mr, const std::vector<double> &v)
+// Build a Value(1, n, DOUBLE) from a double array on `mr`.
+Value vecToRow(keel::Allocator *mr, keel::ArrayRef<double> v)
 {
     Value out = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), out.doubleDataMut());
@@ -52,8 +53,8 @@ Value vecToRow(keel::Allocator *mr, const std::vector<double> &v)
 }
 
 void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
-                     std::vector<double> &training,
-                     std::vector<double> &codebook,
+                     keel::Array<double> &training,
+                     keel::Array<double> &codebook,
                      double &min_train, double &max_train)
 {
     readVector(training_set, training);
@@ -94,8 +95,8 @@ std::tuple<Value, Value, double, double>
 lloyds(const Value &training_set, const Value &ini_codebook,
        double tol, keel::Allocator *mr)
 {
-    std::vector<double> training;
-    std::vector<double> codebook;
+    keel::Array<double> training(mr);
+    keel::Array<double> codebook(mr);
     double min_train = 0.0;
     double max_train = 0.0;
     lloyds_argcheck(training_set, ini_codebook, training, codebook,
@@ -105,8 +106,8 @@ lloyds(const Value &training_set, const Value &ini_codebook,
     if (tol <= 0.0) tol = 1e-7;
 
     // Helper: midpoint partition from codebook.
-    auto midpoint = [&]() -> std::vector<double> {
-        std::vector<double> p(K > 0 ? K - 1 : 0);
+    auto midpoint = [&]() -> keel::Array<double> {
+        keel::Array<double> p(K > 0 ? K - 1 : 0, mr);
         for (keel::usize i = 0; i + 1 < K; ++i) {
             p[i] = 0.5 * (codebook[i] + codebook[i + 1]);
         }
@@ -116,8 +117,8 @@ lloyds(const Value &training_set, const Value &ini_codebook,
 
     // Helper: classify training samples into bins given partition.
     // bin index = sum(partition < x).
-    auto classify = [&](const std::vector<double> &part,
-                        std::vector<keel::usize> &bins) {
+    auto classify = [&](keel::ArrayRef<double> part,
+                        keel::Array<keel::usize> &bins) {
         bins.resize(training.size());
         for (keel::usize i = 0; i < training.size(); ++i) {
             const double x = training[i];
@@ -128,7 +129,7 @@ lloyds(const Value &training_set, const Value &ini_codebook,
     };
 
     // Helper: distortion = mean((x - codebook(bin))^2).
-    auto distortion = [&](const std::vector<keel::usize> &bins) {
+    auto distortion = [&](keel::ArrayRef<keel::usize> bins) {
         double sse = 0.0;
         for (keel::usize i = 0; i < training.size(); ++i) {
             const double d = training[i] - codebook[bins[i]];
@@ -137,8 +138,8 @@ lloyds(const Value &training_set, const Value &ini_codebook,
         return sse / static_cast<double>(training.size());
     };
 
-    std::vector<double> partition = midpoint();
-    std::vector<keel::usize> bins;
+    keel::Array<double> partition = midpoint();
+    keel::Array<keel::usize> bins(mr);
     classify(partition, bins);
     double distor      = distortion(bins);
     double last_distor = 0.0;

@@ -9,7 +9,9 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/channel/channel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -17,7 +19,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <string>
 #include <utility>
 
 namespace numkit::comm {
@@ -56,12 +57,12 @@ void wgn_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     const int m = (int)args[0].toScalar();
     const int n = (int)args[1].toScalar();
     const double p = args[2].toScalar();
-    std::string type = "dBW";
+    keel::String type("dBW");
     bool complex_out = false;
     for (keel::usize i = 3; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
-            const auto s = args[i].toString();
-            if      (s == "dBW" || s == "dBm" || s == "linear") type = s;
+            const keel::String s = args[i].toString();
+            if      (s == "dBW" || s == "dBm" || s == "linear") type.assign(s);
             else if (s == "complex") complex_out = true;
             else if (s == "real")    complex_out = false;
         }
@@ -103,7 +104,7 @@ void berawgn_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, "berawgn");  // no max: option tail in the reference (no count wall to 12 args)
-    std::string mod(args[1].toString().as_ref());
+    keel::String mod = args[1].toString();
     const int M = (int)args[2].toScalar();
     outs[0] = berawgn(args[0], mod, M, ctx.engine->allocator());
 }
@@ -135,34 +136,34 @@ void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 2, "convertSNR");  // no max: mode/name-value tail in the reference (no count wall to 12 args)
     auto toLower = [](keel::StringRef sv) {
-        std::string s(sv.data(), sv.size());
+        keel::String s(sv);
         for (char &c : s)
             if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32);
         return s;
     };
-    auto isValidMode = [](const std::string &m) {
+    auto isValidMode = [](keel::StringRef m) {
         return m == "ebno" || m == "esno" || m == "snr";
     };
 
     if (!(args[1].isChar() || args[1].isString()))
         throw Error("convertSNR: input 2 (inputmode) must be a string ('ebno', 'esno', or 'snr')",
                     0, 0, "convertSNR", "", "numkit:convertSNR:badInputMode");
-    std::string in_type = toLower(args[1].toString());
+    const keel::String rawInType = args[1].toString();
+    keel::String in_type = toLower(rawInType);
     if (!isValidMode(in_type))
-        throw Error("convertSNR: input 2 (inputmode) must be 'ebno', 'esno', or 'snr' (got '" +
-                        std::string(args[1].toString().as_ref()) + "')",
+        throw Error(keel::format("convertSNR: input 2 (inputmode) must be 'ebno', 'esno', or 'snr' (got '{}')", rawInType),
                     0, 0, "convertSNR", "", "numkit:convertSNR:badInputMode");
 
-    std::string out_type = "snr";
+    keel::String out_type("snr");
     keel::usize nvStart = 2;
     if (args.size() >= 3 && (args[2].isChar() || args[2].isString())) {
-        std::string cand = toLower(args[2].toString());
+        const keel::String rawCand = args[2].toString();
+        keel::String cand = toLower(rawCand);
         if (isValidMode(cand)) {
-            out_type = cand;
+            out_type = keel::move(cand);
             nvStart = 3;
         } else if (args.size() == 3) {
-            throw Error("convertSNR: input 3 (outputmode) must be 'ebno', 'esno', or 'snr' (got '" +
-                            std::string(args[2].toString().as_ref()) + "')",
+            throw Error(keel::format("convertSNR: input 3 (outputmode) must be 'ebno', 'esno', or 'snr' (got '{}')", rawCand),
                         0, 0, "convertSNR", "", "numkit:convertSNR:badOutputMode");
         }
     }
@@ -176,16 +177,17 @@ void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (!(args[i].isChar() || args[i].isString()))
             throw Error("convertSNR: parameter name must be a string",
                         0, 0, "convertSNR", "", "numkit:convertSNR:badParamName");
-        const std::string key = toLower(args[i].toString());
+        const keel::String rawKey = args[i].toString();
+        const keel::String key = toLower(rawKey);
         if (key == "bitspersymbol") {
             k = static_cast<int>(argcheck::expectedPositiveInteger(
                 argcheck::expectedReal(args[i + 1], int(i + 2), "BitsPerSymbol", "convertSNR"),
                 int(i + 2), "BitsPerSymbol", "convertSNR"));
         } else if (key == "codingrate" || key == "samplespersymbol" ||
                    key == "bandwidth" || key == "symbolrate") {
-            (void)argcheck::expectedReal(args[i + 1], int(i + 2), args[i].toString(), "convertSNR");
+            (void)argcheck::expectedReal(args[i + 1], int(i + 2), rawKey, "convertSNR");
         } else {
-            throw Error("convertSNR: unknown parameter '" + std::string(args[i].toString().as_ref()) + "'",
+            throw Error(keel::format("convertSNR: unknown parameter '{}'", rawKey),
                         0, 0, "convertSNR", "", "numkit:convertSNR:badParamName");
         }
     }

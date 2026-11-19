@@ -9,14 +9,13 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/coding/convcoding.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 namespace detail {
@@ -48,12 +47,12 @@ void vitdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 5, 11, "vitdec");
     const long long tblen = static_cast<long long>(args[2].toScalar());
-    const std::string opmode =
+    const keel::String opmode =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
-            ? std::string(args[3].toString().as_ref()) : std::string("trunc");
-    const std::string dectype =
+            ? args[3].toString() : keel::String("trunc");
+    const keel::String dectype =
         (args.size() >= 5 && (args[4].isChar() || args[4].isString()))
-            ? std::string(args[4].toString().as_ref()) : std::string("hard");
+            ? args[4].toString() : keel::String("hard");
     outs[0] = vitdec(args[0], args[1], tblen, opmode, dectype,
                      ctx.engine->allocator());
 }

@@ -8,8 +8,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 
 namespace numkit::comm {
 
@@ -38,7 +38,7 @@ namespace numkit::comm {
 /// @return        Companded signal of the same shape as `x`.
 /// @throws Error  Unknown `method` string.
 Value compand(const Value &x, keel::f64 param, keel::f64 V,
-              const std::string &method,
+              keel::StringRef method,
               keel::Allocator *mr = nullptr);
 
 

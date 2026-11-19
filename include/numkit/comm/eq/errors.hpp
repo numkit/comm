@@ -7,7 +7,7 @@
 #pragma once
 
 #include <keel/memory.h>
-#include <string_view>
+#include <keel/ref.h>
 #include <utility>
 #include <numkit/value/value.hpp>
 
@@ -48,7 +48,7 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
                                keel::Allocator *mr = nullptr);
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
-                               std::string_view flg,
+                               keel::StringRef flg,
                                keel::Allocator *mr = nullptr);
 
 

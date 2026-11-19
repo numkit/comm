@@ -21,6 +21,7 @@
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/math.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/compand.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -28,13 +29,12 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <string>
 
 namespace numkit::comm {
 
 namespace {
 
-void compand_argcheck(double param, double V, const std::string &method)
+void compand_argcheck(double param, double V, keel::StringRef method)
 {
     if (param <= 0.0)
         throw Error("compand: param (μ or A) must be positive",
@@ -51,10 +51,8 @@ void compand_argcheck(double param, double V, const std::string &method)
     if (!isMu && !isA)
         throw Error("compand: method must start with 'mu/' or 'A/'",
                     0, 0, "compand", "", "numkit:compand:method");
-    const bool isCompress =
-        method.find("compressor") != std::string::npos;
-    const bool isExpand =
-        method.find("expander") != std::string::npos;
+    const bool isCompress = method.contains("compressor");
+    const bool isExpand = method.contains("expander");
     if (!isCompress && !isExpand)
         throw Error("compand: method must end with '/compressor' or "
                     "'/expander'",
@@ -64,7 +62,7 @@ void compand_argcheck(double param, double V, const std::string &method)
 } // namespace
 
 Value compand(const Value &x, double param, double V,
-              const std::string &method,
+              keel::StringRef method,
               keel::Allocator *mr)
 {
     compand_argcheck(param, V, method);
@@ -72,8 +70,7 @@ Value compand(const Value &x, double param, double V,
     const bool isMu = (method.size() >= 2
                        && (method[0] == 'm' || method[0] == 'M')
                        && (method[1] == 'u' || method[1] == 'U'));
-    const bool isCompress =
-        method.find("compressor") != std::string::npos;
+    const bool isCompress = method.contains("compressor");
 
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
                               ValueType::DOUBLE, mr);

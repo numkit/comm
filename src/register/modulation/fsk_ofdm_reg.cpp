@@ -9,6 +9,7 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/modulation/fsk_ofdm.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -16,16 +17,14 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <string>
-
 namespace numkit::comm {
 namespace detail {
 
 namespace {
-std::string parse_str(keel::ArrayRef<Value> args, keel::usize start, const std::string &def) {
+keel::String parse_str(keel::ArrayRef<Value> args, keel::usize start, keel::StringRef def) {
     for (keel::usize i = start; i < args.size(); ++i)
-        if (args[i].isChar() || args[i].isString()) return std::string(args[i].toString().as_ref());
-    return def;
+        if (args[i].isChar() || args[i].isString()) return args[i].toString();
+    return keel::String(def);
 }
 }
 
@@ -44,9 +43,9 @@ void fskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     // If first string is recognised as 'gray'/'bin', that's the symbol order.
     for (keel::usize i = 5; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
-            auto s = args[i].toString();
-            if (s == "gray" || s == "bin") order = s;
-            else if (s == "cont" || s == "discont") cont = s;
+            const keel::String s = args[i].toString();
+            if (s == "gray" || s == "bin") order.assign(s);
+            else if (s == "cont" || s == "discont") cont.assign(s);
         }
     }
     outs[0] = fskmod(args[0], M, sep, n, fs, cont, order, ctx.engine->allocator());

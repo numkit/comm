@@ -14,6 +14,7 @@
 // uses elements (2:end). Prediction step: out = predictor[1..M] · x
 // where x is the most-recent M reconstructed samples (newest first).
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <numkit/comm/source/dpcm.hpp>
@@ -23,7 +24,6 @@
 #include <numkit/value/error.hpp>
 
 #include <utility>
-#include <vector>
 
 namespace numkit::comm {
 
@@ -39,7 +39,7 @@ keel::usize partitionBin(const Value &partition, double e)
     return i;
 }
 
-void readPredictor(const Value &predictor, std::vector<double> &p)
+void readPredictor(const Value &predictor, keel::Array<double> &p)
 {
     const keel::usize L = predictor.numel();
     if (L < 2)
@@ -57,7 +57,7 @@ bool isRow(const Value &v)
 }
 
 void dpcmenco_argcheck(const Value &codebook, const Value &partition,
-                       const Value &predictor, std::vector<double> &pred)
+                       const Value &predictor, keel::Array<double> &pred)
 {
     if (codebook.numel() != partition.numel() + 1)
         throw Error("dpcmenco: length(codebook) must equal "
@@ -67,7 +67,7 @@ void dpcmenco_argcheck(const Value &codebook, const Value &partition,
     readPredictor(predictor, pred);
 }
 
-void dpcmdeco_argcheck(const Value &predictor, std::vector<double> &pred)
+void dpcmdeco_argcheck(const Value &predictor, keel::Array<double> &pred)
 {
     readPredictor(predictor, pred);
 }
@@ -79,7 +79,7 @@ dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
          keel::Allocator *mr)
 {
-    std::vector<double> pred;
+    keel::Array<double> pred(mr);
     dpcmenco_argcheck(codebook, partition, predictor, pred);
     const keel::usize M = pred.size();
 
@@ -92,7 +92,7 @@ dpcmenco(const Value &sig, const Value &codebook,
     double *o_indx = indx_v.doubleDataMut();
     double *o_qerr = quanterr_v.doubleDataMut();
 
-    std::vector<double> x(M, 0.0);  // predictor state (newest first)
+    keel::Array<double> x(M, 0.0, mr);  // predictor state (newest first)
     for (keel::usize i = 0; i < N; ++i) {
         double out = 0.0;
         for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
@@ -114,7 +114,7 @@ dpcmdeco(const Value &indx, const Value &codebook,
          const Value &predictor,
          keel::Allocator *mr)
 {
-    std::vector<double> pred;
+    keel::Array<double> pred(mr);
     dpcmdeco_argcheck(predictor, pred);
     const keel::usize M = pred.size();
 
@@ -137,7 +137,7 @@ dpcmdeco(const Value &indx, const Value &codebook,
         o_qerr[i] = codebook.elemAsDouble(static_cast<keel::usize>(iv));
     }
 
-    std::vector<double> x(M, 0.0);
+    keel::Array<double> x(M, 0.0, mr);
     for (keel::usize i = 0; i < N; ++i) {
         double out = 0.0;
         for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];

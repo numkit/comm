@@ -14,7 +14,7 @@
 #pragma once
 
 #include <keel/memory.h>
-#include <string>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -93,7 +93,7 @@ HammgenResult hammgen(long long m, const Value &primPoly = Value::Empty,
 ///             no valid generator polynomial exists.
 /// @throws Error on non-integer / out-of-range `n` or `k`, or an unknown
 ///         `opt`.
-Value cyclpoly(long long n, long long k, const std::string &opt = "",
+Value cyclpoly(long long n, long long k, keel::StringRef opt = "",
                keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref cyclgen: parity-check / generator matrices and
@@ -125,7 +125,7 @@ struct CyclgenResult {
 /// @throws Error if `genpoly` does not divide `x^n - 1`, or `opt` is
 ///         unknown.
 CyclgenResult cyclgen(long long n, const Value &genpoly,
-                      const std::string &opt = "system",
+                      keel::StringRef opt = "system",
                       keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref encode: the codeword stream and any zero-padding
@@ -161,7 +161,7 @@ struct EncodeResult {
 ///         malformed `opt` where the method requires one.
 /// @see decode, hammgen, cyclgen
 EncodeResult encode(const Value &msg, long long n, long long k,
-                    const std::string &method = "hamming/binary",
+                    keel::StringRef method = "hamming/binary",
                     const Value &opt = Value::Empty,
                     keel::Allocator *mr = nullptr);
 
@@ -194,7 +194,7 @@ struct DecodeResult {
 ///         malformed `opt`.
 /// @see encode, hammgen, cyclgen
 DecodeResult decode(const Value &code, long long n, long long k,
-                    const std::string &method = "hamming/binary",
+                    keel::StringRef method = "hamming/binary",
                     const Value &opt = Value::Empty,
                     keel::Allocator *mr = nullptr);
 

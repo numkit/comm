@@ -18,8 +18,11 @@
 // the descrambler self-synchronizing — losing or flipping a few
 // channel bits eventually clears out of the register.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/comm/eq/scrambler.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -27,16 +30,14 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <string>
-#include <vector>
 
 namespace numkit::comm {
 
 namespace {
 
-std::vector<int> readBitVec(const Value &v, const char *name) {
+keel::Array<int> readBitVec(const Value &v, const char * /*name*/, keel::Allocator *mr) {
     const keel::usize N = v.numel();
-    std::vector<int> out(N);
+    keel::Array<int> out(N, mr);
     for (keel::usize i = 0; i < N; ++i) {
         const double x = v.elemAsDouble(i);
         const int b = (x != 0.0) ? 1 : 0;
@@ -45,19 +46,17 @@ std::vector<int> readBitVec(const Value &v, const char *name) {
     return out;
 }
 
-void validatePoly(const std::vector<int> &poly, const char *name) {
+void validatePoly(keel::ArrayRef<int> poly, const char *name) {
     if (poly.size() < 2)
-        throw Error(std::string(name) +
-                    ": polynomial must have at least 2 coefficients (degree ≥ 1)",
+        throw Error(keel::format("{}: polynomial must have at least 2 coefficients (degree ≥ 1)", name),
                     0, 0, name, "", "numkit:scrambler:poly");
     if (poly[0] == 0)
-        throw Error(std::string(name) +
-                    ": polynomial constant term g_0 must be non-zero",
+        throw Error(keel::format("{}: polynomial constant term g_0 must be non-zero", name),
                     0, 0, name, "", "numkit:scrambler:poly");
 }
 
 Value packDoubles(keel::Allocator *mr,
-                  const std::vector<int> &bits)
+                  keel::ArrayRef<int> bits)
 {
     Value out = Value::matrix(bits.size(), 1, ValueType::DOUBLE, mr);
     if (!bits.empty()) {
@@ -67,15 +66,15 @@ Value packDoubles(keel::Allocator *mr,
     return out;
 }
 
-void scrambler_argcheck(const std::vector<int> &polyVec,
-                        const std::vector<int> &state,
+void scrambler_argcheck(keel::ArrayRef<int> polyVec,
+                        keel::ArrayRef<int> state,
                         const char *name,
                         const char *stateErrId)
 {
     validatePoly(polyVec, name);
     const keel::usize n = polyVec.size() - 1;
     if (state.size() != n)
-        throw Error(std::string(name) + ": initState length must equal polynomial order",
+        throw Error(keel::format("{}: initState length must equal polynomial order", name),
                     0, 0, name, "", stateErrId);
 }
 
@@ -85,13 +84,13 @@ Value scrambler(const Value &x, const Value &poly,
                 const Value &initState,
                 keel::Allocator *mr)
 {
-    auto xBits   = readBitVec(x, "scrambler");
-    auto polyVec = readBitVec(poly, "scrambler");
-    auto state   = readBitVec(initState, "scrambler");
+    auto xBits   = readBitVec(x, "scrambler", mr);
+    auto polyVec = readBitVec(poly, "scrambler", mr);
+    auto state   = readBitVec(initState, "scrambler", mr);
     scrambler_argcheck(polyVec, state, "scrambler", "numkit:scrambler:state");
     const keel::usize n = polyVec.size() - 1;
 
-    std::vector<int> y(xBits.size(), 0);
+    keel::Array<int> y(xBits.size(), 0, mr);
     for (keel::usize k = 0; k < xBits.size(); ++k) {
         int fb = 0;
         for (keel::usize i = 1; i <= n; ++i)
@@ -108,13 +107,13 @@ Value descrambler(const Value &y, const Value &poly,
                   const Value &initState,
                   keel::Allocator *mr)
 {
-    auto yBits   = readBitVec(y, "descrambler");
-    auto polyVec = readBitVec(poly, "descrambler");
-    auto state   = readBitVec(initState, "descrambler");
+    auto yBits   = readBitVec(y, "descrambler", mr);
+    auto polyVec = readBitVec(poly, "descrambler", mr);
+    auto state   = readBitVec(initState, "descrambler", mr);
     scrambler_argcheck(polyVec, state, "descrambler", "numkit:descrambler:state");
     const keel::usize n = polyVec.size() - 1;
 
-    std::vector<int> x(yBits.size(), 0);
+    keel::Array<int> x(yBits.size(), 0, mr);
     for (keel::usize k = 0; k < yBits.size(); ++k) {
         int fb = 0;
         for (keel::usize i = 1; i <= n; ++i)

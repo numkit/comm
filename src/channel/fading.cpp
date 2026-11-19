@@ -5,6 +5,7 @@
 // for first-cut digital-comm sims composing with the cycle-17–20
 // modulation primitives.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
@@ -20,7 +21,6 @@
 #include <cmath>
 #include <mutex>
 #include <random>
-#include <vector>
 
 namespace numkit::comm {
 
@@ -28,11 +28,11 @@ namespace {
 
 // Generate N iid samples of complex Gaussian CN(0, 1), i.e.
 //   real, imag ~ N(0, 1/2)  →  E[|h|²] = 1.
-std::vector<keel::c64> sampleCN01(::numkit::ops::RngContext &rng, keel::usize N) {
-    std::vector<keel::c64> h(N);
+keel::Array<keel::c64> sampleCN01(::numkit::ops::RngContext &rng, keel::usize N, keel::Allocator *mr) {
+    keel::Array<keel::c64> h(N, mr);
     if (N == 0) return h;
     const double s = std::sqrt(0.5);
-    std::vector<double> re(N), im(N);
+    keel::Array<double> re(N, mr), im(N, mr);
     for (keel::usize i = 0; i < N; ++i) re[i] = s * rng.nextNormal();
     for (keel::usize i = 0; i < N; ++i) im[i] = s * rng.nextNormal();
     for (keel::usize i = 0; i < N; ++i) h[i] = keel::c64(re[i], im[i]);
@@ -67,7 +67,7 @@ Value rayleighchan(::numkit::ops::RngContext &rng, const Value &x, keel::Allocat
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);
     if (N == 0) return y;
-    auto h = sampleCN01(rng, N);
+    auto h = sampleCN01(rng, N, mr);
     keel::c64 *yd = y.complexDataMut();
     for (keel::usize i = 0; i < N; ++i) yd[i] = h[i] * asComplex(x, i);
     return y;
@@ -80,7 +80,7 @@ Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, double K, keel:
     Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                             ValueType::COMPLEX, mr);
     if (N == 0) return y;
-    auto g = sampleCN01(rng, N);
+    auto g = sampleCN01(rng, N, mr);
     const double losAmp = std::sqrt(K / (K + 1.0));
     const double sctAmp = std::sqrt(1.0 / (K + 1.0));
     keel::c64 *yd = y.complexDataMut();

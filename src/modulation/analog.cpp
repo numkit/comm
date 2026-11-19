@@ -7,7 +7,9 @@
 // in cos / sin of a phase term; demods can pull in filtfilt or
 // Hilbert and live alongside.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
 #include <numkit/comm/modulation/analog.hpp>
@@ -22,8 +24,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -322,7 +322,7 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
     Value out = Value::matrix(Nout, W, ValueType::COMPLEX, mr);
     keel::c64 *o = out.complexDataMut();
 
-    std::vector<double> xCum(H + 1);
+    keel::Array<double> xCum(H + 1, mr);
     for (keel::usize c = 0; c < W; ++c) {
         // Compute xCum: xCum[0] = 0; xCum[k+1] = xCum[k] + (2*x[k] - 1)
         xCum[0] = 0.0;
@@ -533,7 +533,7 @@ Value fmdemod(const Value &y, double fc, double fs, double freqdev,
     const double inv_fs = 1.0 / fs;
     const double scale = fs / (2.0 * M_PI * freqdev);
 
-    std::vector<double> ph(H);
+    keel::Array<double> ph(H, mr);
     for (keel::usize c = 0; c < W; ++c) {
         Value col_in = Value::matrix(H, 1, ValueType::DOUBLE, mr);
         double *cp = col_in.doubleDataMut();
@@ -591,11 +591,11 @@ Value coherentDetect(const Value &y, double fc, double fs, double ini_phase,
 void checkCarrier(double fc, double fs, const char *fn)
 {
     if (!(fs > 0.0))
-        throw Error(std::string(fn) + ": Fs must be positive", 0, 0, fn, "", "numkit:demod:Fs");
+        throw Error(keel::format("{}: Fs must be positive", fn), 0, 0, fn, "", "numkit:demod:Fs");
     if (!(fc > 0.0))
-        throw Error(std::string(fn) + ": Fc must be positive", 0, 0, fn, "", "numkit:demod:Fc");
+        throw Error(keel::format("{}: Fc must be positive", fn), 0, 0, fn, "", "numkit:demod:Fc");
     if (fs < 2.0 * fc)
-        throw Error(std::string(fn) + ": Fs must be >= 2*Fc", 0, 0, fn, "", "numkit:demod:FsLessThan2Fc");
+        throw Error(keel::format("{}: Fs must be >= 2*Fc", fn), 0, 0, fn, "", "numkit:demod:FsLessThan2Fc");
 }
 } // anonymous
 

@@ -2,6 +2,7 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <numkit/comm/modulation/qam.hpp>
 
@@ -11,9 +12,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::comm {
 
@@ -29,12 +28,12 @@ inline int from_gray(int g) {
 // Map a Gray-coded index to PAM amplitude in {-(M-1), -(M-3), …, (M-1)}.
 // MATLAB convention: pammod with default 'gray' returns
 //   level = 2·gray(s) - (M-1),  where gray(s) = s ⊕ (s/2).
-inline double pam_amp(int s, int M, const std::string &order) {
+inline double pam_amp(int s, int M, keel::StringRef order) {
     int k = (order == "bin") ? s : to_gray(s);
     return 2.0 * double(k) - double(M - 1);
 }
 
-inline int pam_amp_to_symbol(double amp, int M, const std::string &order) {
+inline int pam_amp_to_symbol(double amp, int M, keel::StringRef order) {
     int k = (int)std::lround(0.5 * (amp + (M - 1)));
     if (k < 0) k = 0;
     if (k > M - 1) k = M - 1;
@@ -82,7 +81,7 @@ void qamdemod_argcheck(int M) {
                     "numkit:qamdemod:badM");
 }
 
-void modnorm_argcheck(const Value &ref, const std::string &type, double target) {
+void modnorm_argcheck(const Value &ref, keel::StringRef type, double target) {
     (void)ref;
     (void)type;
     (void)target;
@@ -91,7 +90,7 @@ void modnorm_argcheck(const Value &ref, const std::string &type, double target) 
 } // anonymous
 
 Value pammod(const Value &x, int M, double ini_phase,
-             const std::string &symbol_order,
+             keel::StringRef symbol_order,
              keel::Allocator *mr)
 {
     pammod_argcheck(M);
@@ -112,7 +111,7 @@ Value pammod(const Value &x, int M, double ini_phase,
 }
 
 Value pamdemod(const Value &y, int M, double ini_phase,
-               const std::string &symbol_order,
+               keel::StringRef symbol_order,
                keel::Allocator *mr)
 {
     pamdemod_argcheck(M);
@@ -140,7 +139,7 @@ std::pair<int, int> qam_grid(int M) {
 }
 } // anonymous
 
-Value qammod(const Value &x, int M, const std::string &symbol_order,
+Value qammod(const Value &x, int M, keel::StringRef symbol_order,
              bool unit_power, keel::Allocator *mr)
 {
     qammod_argcheck(M);
@@ -175,7 +174,7 @@ Value qammod(const Value &x, int M, const std::string &symbol_order,
     return out;
 }
 
-Value qamdemod(const Value &y, int M, const std::string &symbol_order,
+Value qamdemod(const Value &y, int M, keel::StringRef symbol_order,
                bool unit_power, keel::Allocator *mr)
 {
     qamdemod_argcheck(M);
@@ -208,7 +207,7 @@ Value qamdemod(const Value &y, int M, const std::string &symbol_order,
     return out;
 }
 
-Value modnorm(const Value &ref, const std::string &type, double target,
+Value modnorm(const Value &ref, keel::StringRef type, double target,
               keel::Allocator *mr)
 {
     modnorm_argcheck(ref, type, target);

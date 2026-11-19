@@ -8,8 +8,10 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/modulation/generic_qam.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -20,15 +22,14 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <string>
 
 namespace numkit::comm {
 namespace detail {
 
 namespace {
 
-std::string toLowerAscii(keel::StringRef sv) {
-    std::string s(sv.data(), sv.size());
+keel::String toLowerAscii(keel::StringRef sv) {
+    keel::String s(sv);
     for (char &ch : s)
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     return s;
@@ -67,8 +68,8 @@ Value scaleConstellationUnitPower(const Value &c, keel::Allocator *mr) {
 
 keel::usize checkBitsPerSymbol(keel::usize M, const char *fn) {
     if (M < 2 || (M & (M - 1)) != 0)
-        throw Error(std::string(fn) + ": constellation length M must be a power of 2 (>= 2) in bit mode",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":NotPow2");
+        throw Error(keel::format("{}: constellation length M must be a power of 2 (>= 2) in bit mode", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:NotPow2", fn));
     keel::usize bps = 0;
     while ((keel::usize(1) << bps) < M) ++bps;
     return bps;
@@ -80,8 +81,8 @@ Value packBitsToSymbols(const Value &x, keel::usize bps, const char *fn, keel::A
     const bool rowVec = (H == 1 && W >= bps && (H % bps != 0));
     const keel::usize bitLen = rowVec ? W : H;
     if (bitLen == 0 || (bitLen % bps) != 0)
-        throw Error(std::string(fn) + ": bit input length must be a positive multiple of log2(M)",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":BitLength");
+        throw Error(keel::format("{}: bit input length must be a positive multiple of log2(M)", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BitLength", fn));
     const keel::usize nSyms = bitLen / bps;
     const keel::usize nCols = rowVec ? 1 : W;
     Value syms = rowVec ? Value::matrix(1, nSyms, ValueType::DOUBLE, mr)
@@ -94,8 +95,8 @@ Value packBitsToSymbols(const Value &x, keel::usize bps, const char *fn, keel::A
                 const keel::usize idx = rowVec ? (s * bps + b) : (c * H + s * bps + b);
                 const double bit = x.elemAsDouble(idx);
                 if (bit != 0.0 && bit != 1.0)
-                    throw Error(std::string(fn) + ": bit input must contain only 0 and 1",
-                                0, 0, fn, "", std::string("numkit:") + fn + ":InvalidBit");
+                    throw Error(keel::format("{}: bit input must contain only 0 and 1", fn),
+                                0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
                 val = (val << 1) | (bit != 0.0 ? 1u : 0u);
             }
             sd[rowVec ? s : (c * nSyms + s)] = static_cast<double>(val);
@@ -139,9 +140,11 @@ void genqammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (i + 1 >= args.size() || (!args[i].isChar() && !args[i].isString()))
             throw Error("genqammod: options must be Name-Value pairs",
                         0, 0, "genqammod", "", "numkit:genqammod:BadNV");
-        const std::string key = toLowerAscii(args[i].toString());
+        const keel::String rawKey = args[i].toString();
+        const keel::String key = toLowerAscii(rawKey);
         if (key == "inputtype") {
-            const std::string v = toLowerAscii(args[i + 1].toString());
+            const keel::String rawVal = args[i + 1].toString();
+            const keel::String v = toLowerAscii(rawVal);
             if (v == "bit") bitInput = true;
             else if (v == "integer") bitInput = false;
             else throw Error("genqammod: InputType must be 'integer' or 'bit'",
@@ -151,7 +154,7 @@ void genqammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         } else if (key == "plotconstellation") {
             // accept and ignore plotting flag
         } else {
-            throw Error("genqammod: unknown option '" + std::string(args[i].toString().as_ref()) + "'",
+            throw Error(keel::format("genqammod: unknown option '{}'", rawKey),
                         0, 0, "genqammod", "", "numkit:genqammod:BadOption");
         }
     }
@@ -175,9 +178,11 @@ void genqamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (i + 1 >= args.size() || (!args[i].isChar() && !args[i].isString()))
             throw Error("genqamdemod: options must be Name-Value pairs",
                         0, 0, "genqamdemod", "", "numkit:genqamdemod:BadNV");
-        const std::string key = toLowerAscii(args[i].toString());
+        const keel::String rawKey = args[i].toString();
+        const keel::String key = toLowerAscii(rawKey);
         if (key == "outputtype") {
-            const std::string v = toLowerAscii(args[i + 1].toString());
+            const keel::String rawVal = args[i + 1].toString();
+            const keel::String v = toLowerAscii(rawVal);
             if (v == "bit") bitOutput = true;
             else if (v == "integer") bitOutput = false;
             else throw Error("genqamdemod: OutputType must be 'integer' or 'bit'",
@@ -187,7 +192,7 @@ void genqamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         } else if (key == "noisevariance" || key == "plotconstellation") {
             // accept
         } else {
-            throw Error("genqamdemod: unknown option '" + std::string(args[i].toString().as_ref()) + "'",
+            throw Error(keel::format("genqamdemod: unknown option '{}'", rawKey),
                         0, 0, "genqamdemod", "", "numkit:genqamdemod:BadOption");
         }
     }

@@ -1,7 +1,9 @@
 // toolboxes/comm/src/modulation/fsk_ofdm.cpp
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <numkit/comm/modulation/fsk_ofdm.hpp>
 
@@ -13,8 +15,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -31,10 +31,10 @@ inline int from_gray(int g) {
     return b;
 }
 
-inline int symbol_to_freq_idx(int s, int M, const std::string &order) {
+inline int symbol_to_freq_idx(int s, int /*M*/, keel::StringRef order) {
     return (order == "bin") ? s : to_gray(s);
 }
-inline int freq_idx_to_symbol(int k, int M, const std::string &order) {
+inline int freq_idx_to_symbol(int k, int /*M*/, keel::StringRef order) {
     return (order == "bin") ? k : from_gray(k);
 }
 
@@ -82,8 +82,8 @@ void ofdmdemod_argcheck(const Value &in, int nfft, int cplen)
 } // anonymous
 
 Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
-             double fs, const std::string &phase_continuity,
-             const std::string &symbol_order,
+             double fs, keel::StringRef phase_continuity,
+             keel::StringRef symbol_order,
              keel::Allocator *mr)
 {
     fskmod_argcheck(M, freq_sep, nsamp, fs);
@@ -117,7 +117,7 @@ Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
 }
 
 Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
-               double fs, const std::string &symbol_order,
+               double fs, keel::StringRef symbol_order,
                keel::Allocator *mr)
 {
     fskdemod_argcheck(M, freq_sep, nsamp, fs);
@@ -129,13 +129,14 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
     double *od = out.doubleDataMut();
 
     // Pre-compute reference tone phasors.
-    std::vector<std::vector<keel::c64>> ref((keel::usize)M, std::vector<keel::c64>((keel::usize)nsamp));
+    const keel::usize ns = static_cast<keel::usize>(nsamp);
+    keel::Array<keel::c64> ref(static_cast<keel::usize>(M) * ns, mr);
     for (int k = 0; k < M; ++k) {
         const double f = (double(k) - 0.5 * (M - 1)) * freq_sep;
         const double dphi = 2.0 * M_PI * f / fs;
         for (int n = 0; n < nsamp; ++n) {
             const double th = dphi * double(n);
-            ref[(keel::usize)k][(keel::usize)n] = keel::c64(std::cos(th), std::sin(th));
+            ref[static_cast<keel::usize>(k) * ns + static_cast<keel::usize>(n)] = keel::c64(std::cos(th), std::sin(th));
         }
     }
 
@@ -152,7 +153,7 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
                     yi = y.complexData()[s * nsamp + (keel::usize)n];
                 else
                     yi = keel::c64(y.elemAsDouble(s * nsamp + (keel::usize)n), 0.0);
-                acc += yi * keel::conj(ref[(keel::usize)k][(keel::usize)n]);
+                acc += yi * keel::conj(ref[static_cast<keel::usize>(k) * ns + static_cast<keel::usize>(n)]);
             }
             const double E = keel::norm(acc);
             if (E > bestE) { bestE = E; bestK = k; }
@@ -192,7 +193,7 @@ Value ofdmmod(const Value &in, int nfft, int cplen,
         Value tx = ::numkit::signal::ifft(col, -1, 1, mr);
 
         keel::c64 *txd = nullptr;
-        std::vector<keel::c64> tmp;
+        keel::Array<keel::c64> tmp(mr);
         if (tx.type() == ValueType::COMPLEX) {
             txd = const_cast<keel::c64*>(tx.complexData());
         } else {

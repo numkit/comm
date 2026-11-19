@@ -9,14 +9,13 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/eq/pulse.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
 #include <numkit/value/value.hpp>
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 namespace detail {
@@ -30,7 +29,7 @@ void rcosdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         argcheck::expectedReal(args[1], 2, "span", "rcosdesign"), 2, "span", "rcosdesign");
     const int sps     = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "sps", "rcosdesign"), 3, "sps", "rcosdesign");
-    std::string shape = "normal";
+    keel::String shape("normal");
     if (args.size() >= 4 && !args[3].isEmpty()) {
         if (!args[3].isChar() && !args[3].isString())
             throw Error("rcosdesign: shape must be a string",

@@ -9,9 +9,12 @@
 //     nextStates=[0 2;0 2;1 3;1 3], outputs=[0 3;1 2;3 0;2 1].
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/arena.h>
 #include <keel/array.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/coding/convcoding.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -23,9 +26,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::comm {
 
@@ -39,9 +40,9 @@ keel::u64 octalToDecimal(keel::u64 oct, const char *who)
     while (oct > 0) {
         const keel::u64 digit = oct % 10;
         if (digit > 7)
-            throw Error(std::string(who) + ": CodeGenerator entries must be "
-                        "octal numbers (digits 0-7)",
-                        0, 0, who, "", std::string("numkit:") + who + ":octal");
+            throw Error(keel::format("{}: CodeGenerator entries must be "
+                        "octal numbers (digits 0-7)", who),
+                        0, 0, who, "", keel::format("numkit:{}:octal", who));
         result += digit * mult;
         mult *= 8;
         oct /= 10;
@@ -70,14 +71,14 @@ struct TrellisView {
 TrellisView readTrellis(const Value &t, const char *who)
 {
     if (!t.isStruct() || t.numel() != 1)
-        throw Error(std::string(who) + ": trellis must be a 1x1 struct",
-                    0, 0, who, "", std::string("numkit:") + who + ":trellis");
+        throw Error(keel::format("{}: trellis must be a 1x1 struct", who),
+                    0, 0, who, "", keel::format("numkit:{}:trellis", who));
     const auto &el = t.structArrayElem(0);
     auto field = [&](const char *f) -> const Value & {
         const Value *v = el.get(f);
         if (!v)
-            throw Error(std::string(who) + ": trellis is missing field '" + f + "'",
-                        0, 0, who, "", std::string("numkit:") + who + ":trellis");
+            throw Error(keel::format("{}: trellis is missing field '{}'", who, f),
+                        0, 0, who, "", keel::format("numkit:{}:trellis", who));
         return *v;
     };
     TrellisView tv;
@@ -110,7 +111,7 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
                     0, 0, "poly2trellis", "", "numkit:poly2trellis:gen");
 
     // Parse octal generators into K-bit binary masks.
-    std::vector<keel::u64> g(n);
+    keel::Array<keel::u64> g(n, mr);
     for (keel::usize i = 0; i < n; ++i)
         g[i] = octalToDecimal(
             static_cast<keel::u64>(codeGenerator.elemAsDouble(i)),
@@ -186,26 +187,27 @@ struct VitdecPlan {
     int n;
     keel::usize L;
     keel::usize S;
-    std::string mode;   // normalized opmode ('trunc' | 'term')
+    keel::String mode;   // normalized opmode ('trunc' | 'term')
 };
 
 // vitdec_argcheck: decision-mode and code-length contract, crossed by
 // every call path (the reg marshals the opmode/dectype defaults only).
 VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
-                           const std::string &opmode,
-                           const std::string &dectype)
+                           keel::StringRef opmode,
+                           keel::StringRef dectype)
 {
-    auto lower = [](std::string s) {
+    auto lower = [](keel::StringRef sv) {
+        keel::String s(sv);
         for (char &c : s)
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         return s;
     };
-    const std::string dt = lower(dectype);
+    const keel::String dt = lower(dectype);
     if (dt != "hard")
         throw Error("vitdec: only hard-decision decoding is supported in this "
                     "revision (soft/unquant deferred)",
                     0, 0, "vitdec", "", "numkit:vitdec:dectype");
-    const std::string mode = lower(opmode);
+    keel::String mode = lower(opmode);
     if (mode != "trunc" && mode != "term")
         throw Error("vitdec: opmode must be 'trunc' or 'term' in this revision "
                     "('cont' deferred)",
@@ -218,13 +220,13 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
         throw Error("vitdec: code length must be a multiple of "
                     "log2(numOutputSymbols)",
                     0, 0, "vitdec", "", "numkit:vitdec:len");
-    return {tv, n, total / static_cast<keel::usize>(n), tv.numStates, mode};
+    return {tv, n, total / static_cast<keel::usize>(n), tv.numStates, keel::move(mode)};
 }
 
 } // namespace
 
 Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
-             const std::string &opmode, const std::string &dectype,
+             keel::StringRef opmode, keel::StringRef dectype,
              keel::Allocator *mr)
 {
     const VitdecPlan p = vitdec_argcheck(code, trellis, opmode, dectype);
@@ -232,7 +234,7 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
     const int n = p.n;
     const keel::usize L = p.L;
     const keel::usize S = p.S;
-    const std::string &mode = p.mode;
+    const keel::String &mode = p.mode;
 
     const bool col = (code.dims().cols() == 1 && code.dims().rows() > 1);
     Value out = col ? Value::matrix(L, 1, ValueType::DOUBLE, mr)

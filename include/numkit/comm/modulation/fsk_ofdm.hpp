@@ -8,9 +8,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 
@@ -33,8 +32,8 @@ namespace numkit::comm {
 ///                          `numel(x)·nsamp`.
 /// @see fskdemod
 Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
-             keel::f64 fs, const std::string &phase_continuity,
-             const std::string &symbol_order,
+             keel::f64 fs, keel::StringRef phase_continuity,
+             keel::StringRef symbol_order,
              keel::Allocator *mr = nullptr);
 
 /// @brief M-ary FSK demodulator
@@ -53,7 +52,7 @@ Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
 ///                      `numel(y) / nsamp`.
 /// @see fskmod
 Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
-               keel::f64 fs, const std::string &symbol_order,
+               keel::f64 fs, keel::StringRef symbol_order,
                keel::Allocator *mr = nullptr);
 
 /// @brief Basic OFDM modulator

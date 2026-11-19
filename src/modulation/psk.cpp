@@ -2,6 +2,7 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <numkit/comm/modulation/psk.hpp>
 
@@ -11,8 +12,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -35,14 +34,14 @@ inline int from_gray(int g) {
 // Map an integer symbol s ∈ 0..M-1 to a phase index in 0..M-1 according
 // to the chosen ordering. For "gray" the natural index k is replaced
 // by gray⁻¹(k); for "bin" (binary), it's identity.
-inline int symbol_to_phase_idx(int s, int M, const std::string &order) {
+inline int symbol_to_phase_idx(int s, int M, keel::StringRef order) {
     if (order == "bin") return s;
     // Default: "gray". MATLAB convention: phase 2π·k/M corresponds to
     // symbol s where Gray(s) = k. Inverse: s = Gray⁻¹(k) → k = Gray(s).
     return to_gray(s) % M;
 }
 
-inline int phase_idx_to_symbol(int k, int M, const std::string &order) {
+inline int phase_idx_to_symbol(int k, int M, keel::StringRef order) {
     if (order == "bin") return k;
     return from_gray(k) % M;
 }
@@ -90,7 +89,7 @@ void dpskdemod_argcheck(int M) {
 } // anonymous
 
 Value pskmod(const Value &x, int M, double ini_phase,
-             const std::string &symbol_order,
+             keel::StringRef symbol_order,
              keel::Allocator *mr)
 {
     pskmod_argcheck(M);
@@ -109,7 +108,7 @@ Value pskmod(const Value &x, int M, double ini_phase,
 }
 
 Value pskdemod(const Value &y, int M, double ini_phase,
-               const std::string &symbol_order,
+               keel::StringRef symbol_order,
                keel::Allocator *mr)
 {
     pskdemod_argcheck(M);
@@ -133,7 +132,7 @@ Value pskdemod(const Value &y, int M, double ini_phase,
 }
 
 Value dpskmod(const Value &x, int M, double phase_rot,
-              const std::string &symbol_order,
+              keel::StringRef symbol_order,
               keel::Allocator *mr)
 {
     dpskmod_argcheck(M);
@@ -153,7 +152,7 @@ Value dpskmod(const Value &x, int M, double phase_rot,
 }
 
 Value dpskdemod(const Value &y, int M, double phase_rot,
-                const std::string &symbol_order,
+                keel::StringRef symbol_order,
                 keel::Allocator *mr)
 {
     dpskdemod_argcheck(M);

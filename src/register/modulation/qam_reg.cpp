@@ -9,6 +9,7 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/modulation/qam.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -16,22 +17,20 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <string>
-
 namespace numkit::comm {
 namespace detail {
 
 namespace {
 // MATLAB R2025b defaults differ by function: pammod/pamdemod default to
 // 'bin' (binary symbol mapping); qammod/qamdemod default to 'gray'.
-std::string parse_order(keel::ArrayRef<Value> args, keel::usize start, const char *dflt) {
+keel::String parse_order(keel::ArrayRef<Value> args, keel::usize start, const char *dflt) {
     for (keel::usize i = start; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
-            auto s = args[i].toString();
-            if (s == "bin" || s == "gray") return std::string(s.as_ref());
+            keel::String s = args[i].toString();
+            if (s == "bin" || s == "gray") return s;
         }
     }
-    return dflt;
+    return keel::String(dflt);
 }
 
 bool parse_unit_power(keel::ArrayRef<Value> args, keel::usize start) {
@@ -92,7 +91,7 @@ void modnorm_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "modnorm");
-    std::string type = "avpow";
+    keel::String type("avpow");
     if (args[1].isChar() || args[1].isString()) type = args[1].toString();
     const double target = args[2].toScalar();
     outs[0] = modnorm(args[0], type, target, ctx.engine->allocator());

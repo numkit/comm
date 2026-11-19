@@ -1,7 +1,9 @@
 // toolboxes/comm/src/channel/channel.cpp
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <keel/math.h>
 #include <numkit/comm/channel/channel.hpp>
@@ -19,10 +21,8 @@
 #include <limits>
 #include <mutex>
 #include <random>
-#include <string>
 #include <tuple>
 #include <utility>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -70,7 +70,7 @@ void awgn_argcheck(const Value &x, double snr_db, double sigpower_db)
     (void)sigpower_db;
 }
 
-void wgn_argcheck(int m, int n, double p, const std::string &type)
+void wgn_argcheck(int m, int n, double p, keel::StringRef type)
 {
     (void)m;
     (void)n;
@@ -103,7 +103,7 @@ void marcumq_argcheck(const Value &a_v, const Value &b_v, int m)
     (void)m;
 }
 
-void berawgn_argcheck(const Value &EbNo_dB, const std::string &mod, int M)
+void berawgn_argcheck(const Value &EbNo_dB, keel::StringRef mod, int M)
 {
     (void)EbNo_dB;
     (void)mod;
@@ -131,8 +131,8 @@ void berconfint_argcheck(double numErrs, double numBits, double level)
                     0, 0, "berconfint", "", "numkit:berconfint:level");
 }
 
-void convertSNR_argcheck(const Value &snr_in, const std::string &in_type,
-                         const std::string &out_type, int bits_per_symbol)
+void convertSNR_argcheck(const Value &snr_in, keel::StringRef in_type,
+                         keel::StringRef out_type, int bits_per_symbol)
 {
     (void)snr_in;
     (void)in_type;
@@ -179,7 +179,7 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
     return out;
 }
 
-Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, const std::string &type,
+Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, keel::StringRef type,
           bool complex_out, keel::Allocator *mr)
 {
     wgn_argcheck(m, n, p, type);
@@ -356,7 +356,7 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
     return out;
 }
 
-Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
+Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
               keel::Allocator *mr)
 {
     berawgn_argcheck(EbNo_dB, mod, M);
@@ -405,7 +405,7 @@ Value noisebw(const Value &num, const Value &den, int Nsamp,
     if (Nsamp <= 0) Nsamp = 1024;
     const keel::usize Mn = num.numel();
     const keel::usize Md = den.numel();
-    std::vector<double> bn(Mn), an(Md);
+    keel::Array<double> bn(Mn, mr), an(Md, mr);
     for (keel::usize i = 0; i < Mn; ++i) bn[i] = num.elemAsDouble(i);
     for (keel::usize i = 0; i < Md; ++i) an[i] = den.elemAsDouble(i);
 
@@ -469,8 +469,8 @@ berconfint(double numErrs, double numBits, double level,
 }
 
 Value convertSNR(const Value &snr_in,
-                 const std::string &in_type,
-                 const std::string &out_type,
+                 keel::StringRef in_type,
+                 keel::StringRef out_type,
                  int bits_per_symbol,
                  keel::Allocator *mr)
 {

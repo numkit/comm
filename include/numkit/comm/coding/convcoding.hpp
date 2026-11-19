@@ -9,8 +9,8 @@
 #pragma once
 
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 
 namespace numkit::comm {
 
@@ -96,8 +96,8 @@ Value convenc(const Value &msg, const Value &trellis,
 ///         or an unsupported opmode/dectype.
 /// @see convenc, poly2trellis
 Value vitdec(const Value &code, const Value &trellis, long long tblen,
-             const std::string &opmode = "trunc",
-             const std::string &dectype = "hard",
+             keel::StringRef opmode = "trunc",
+             keel::StringRef dectype = "hard",
              keel::Allocator *mr = nullptr);
 
 /// @brief Validate a trellis structure (`tf = istrellis(S)`).

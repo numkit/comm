@@ -8,9 +8,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 
@@ -33,7 +32,7 @@ namespace numkit::comm {
 /// @return              Real amplitudes, same shape as `x`.
 /// @see pamdemod, qammod
 Value pammod(const Value &x, int M, keel::f64 ini_phase,
-             const std::string &symbol_order,
+             keel::StringRef symbol_order,
              keel::Allocator *mr = nullptr);
 
 /// @brief M-ary PAM demodulator — nearest-amplitude decision
@@ -47,7 +46,7 @@ Value pammod(const Value &x, int M, keel::f64 ini_phase,
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see pammod
 Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
-               const std::string &symbol_order,
+               keel::StringRef symbol_order,
                keel::Allocator *mr = nullptr);
 
 /// @brief Rectangular M-ary QAM modulator
@@ -65,7 +64,7 @@ Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see qamdemod, pammod, genqammod
-Value qammod(const Value &x, int M, const std::string &symbol_order,
+Value qammod(const Value &x, int M, keel::StringRef symbol_order,
              bool unit_power,
              keel::Allocator *mr = nullptr);
 
@@ -80,7 +79,7 @@ Value qammod(const Value &x, int M, const std::string &symbol_order,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see qammod
-Value qamdemod(const Value &y, int M, const std::string &symbol_order,
+Value qamdemod(const Value &y, int M, keel::StringRef symbol_order,
                bool unit_power,
                keel::Allocator *mr = nullptr);
 
@@ -98,7 +97,7 @@ Value qamdemod(const Value &y, int M, const std::string &symbol_order,
 /// @return        Real scalar scaling factor.
 /// @throws Error  Unknown `type` or empty `ref`.
 /// @see qammod, pammod
-Value modnorm(const Value &ref, const std::string &type, keel::f64 target,
+Value modnorm(const Value &ref, keel::StringRef type, keel::f64 target,
               keel::Allocator *mr = nullptr);
 
 

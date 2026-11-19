@@ -13,6 +13,7 @@
 // bounds are kept in N+1-bit unsigned integers; E1/E2/E3 rescaling
 // emits / shifts bits as the bounds tighten.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <numkit/comm/source/arithcoding.hpp>
@@ -24,7 +25,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <vector>
 
 namespace numkit::comm {
 
@@ -35,7 +35,7 @@ bool isRow(const Value &v)
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
-void readVecU(const Value &v, std::vector<keel::u64> &out)
+void readVecU(const Value &v, keel::Array<keel::u64> &out)
 {
     const keel::usize n = v.numel();
     out.resize(n);
@@ -60,7 +60,7 @@ inline keel::u64 maskN(keel::u64 x, int N)
     return x & ((N == 64) ? ~0ULL : ((1ULL << N) - 1ULL));
 }
 
-void arithenco_argcheck(const Value &counts, std::vector<keel::u64> &cnt)
+void arithenco_argcheck(const Value &counts, keel::Array<keel::u64> &cnt)
 {
     readVecU(counts, cnt);
     if (cnt.empty())
@@ -68,7 +68,7 @@ void arithenco_argcheck(const Value &counts, std::vector<keel::u64> &cnt)
                     0, 0, "arithenco", "", "numkit:arithenco:Counts");
 }
 
-void arithdeco_argcheck(const Value &counts, std::vector<keel::u64> &cnt)
+void arithdeco_argcheck(const Value &counts, keel::Array<keel::u64> &cnt)
 {
     readVecU(counts, cnt);
 }
@@ -78,12 +78,12 @@ void arithdeco_argcheck(const Value &counts, std::vector<keel::u64> &cnt)
 Value arithenco(const Value &seq, const Value &counts,
                 keel::Allocator *mr)
 {
-    std::vector<keel::u64> cnt;
+    keel::Array<keel::u64> cnt(mr);
     arithenco_argcheck(counts, cnt);
     const keel::usize K = cnt.size();
 
     // Cumulative counts: cum[0]=0, cum[i]=sum(cnt[0..i-1])
-    std::vector<keel::u64> cum(K + 1, 0);
+    keel::Array<keel::u64> cum(K + 1, 0, mr);
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
@@ -94,7 +94,7 @@ Value arithenco(const Value &seq, const Value &counts,
     keel::u64 dec_up  = (1ULL << N) - 1;
     keel::u64 E3_count = 0;
 
-    std::vector<keel::u8> bits;
+    keel::Array<keel::u8> bits(mr);
     bits.reserve(seq.numel() * (static_cast<keel::usize>(std::ceil(std::log2(K)) + 2)) + N);
 
     const keel::usize Nseq = seq.numel();
@@ -143,7 +143,7 @@ Value arithenco(const Value &seq, const Value &counts,
 
     // Termination: emit final bits of dec_low (with E3 handling).
     // bin_low MSB-first = N bits of dec_low.
-    std::vector<keel::u8> bin_low(N);
+    keel::Array<keel::u8> bin_low(static_cast<keel::usize>(N), mr);
     for (int i = 0; i < N; ++i)
         bin_low[i] = static_cast<keel::u8>((dec_low >> (N - 1 - i)) & 1ULL);
     if (E3_count == 0) {
@@ -169,10 +169,10 @@ Value arithenco(const Value &seq, const Value &counts,
 Value arithdeco(const Value &code, const Value &counts, keel::usize len,
                 keel::Allocator *mr)
 {
-    std::vector<keel::u64> cnt;
+    keel::Array<keel::u64> cnt(mr);
     arithdeco_argcheck(counts, cnt);
     const keel::usize K = cnt.size();
-    std::vector<keel::u64> cum(K + 1, 0);
+    keel::Array<keel::u64> cum(K + 1, 0, mr);
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
@@ -208,7 +208,7 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
         return 1;
     };
 
-    std::vector<double> dseq(len);
+    keel::Array<double> dseq(len, mr);
     keel::usize k = static_cast<keel::usize>(N);   // next code-bit index (0-based)
     for (keel::usize i = 0; i < len; ++i) {
         const keel::u64 span = dec_up - dec_low + 1;

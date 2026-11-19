@@ -8,14 +8,13 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/eq/compand.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
 #include <numkit/value/value.hpp>
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 namespace detail {
@@ -25,7 +24,7 @@ void compand_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     // R2025b: method optional, default 'mu/compressor' (probed equal).
     argcheck::checkNargin(args.size(), 3, 4, "compand");
-    std::string method = "mu/compressor";
+    keel::String method("mu/compressor");
     if (args.size() >= 4 && !args[3].isEmpty()) {
         if (!args[3].isChar() && !args[3].isString())
             throw Error("compand: method must be a string",

@@ -10,15 +10,15 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/source/base_conversions.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
 #include <numkit/value/value.hpp>
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 
@@ -30,13 +30,13 @@ namespace {
 bool parseMsbFlag(const Value &v, const char *who)
 {
     if (!v.isChar() && !v.isString())
-        throw Error(std::string(who) + ": flag must be 'left-msb' or 'right-msb'",
-                    0, 0, who, "", std::string("numkit:") + who + ":BadFlag");
-    std::string s(v.toString().as_ref());
+        throw Error(keel::format("{}: flag must be 'left-msb' or 'right-msb'", who),
+                    0, 0, who, "", keel::format("numkit:{}:BadFlag", who));
+    const keel::String s = v.toString();
     if (s == "left-msb")  return true;
     if (s == "right-msb") return false;
-    throw Error(std::string(who) + ": unknown flag '" + s + "'",
-                0, 0, who, "", std::string("numkit:") + who + ":BadFlag");
+    throw Error(keel::format("{}: unknown flag '{}'", who, s),
+                0, 0, who, "", keel::format("numkit:{}:BadFlag", who));
 }
 
 } // namespace

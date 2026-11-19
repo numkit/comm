@@ -15,7 +15,9 @@
 //   ring r is the smallest with idx < cum(r);    k = idx - cum(r-1)
 //   point = radii[r] * exp(i * (phaseoffset[r] + 2π·k / M[r]))
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/complex.h>
@@ -27,7 +29,6 @@
 
 #include <cmath>
 #include <limits>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -39,14 +40,15 @@ namespace {
 
 // Build the natural-order constellation: for each ring r, its M[r]
 // points at radii[r] * exp(i * (phaseoffset[r] + 2π·k/M[r])).
-std::vector<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
+keel::Array<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
                                    keel::ArrayRef<double> radii,
-                                   const std::vector<double> &phaseoffset)
+                                   keel::ArrayRef<double> phaseoffset,
+                                   keel::Allocator *mr)
 {
     const keel::usize R = M.size();
     keel::usize N = 0;
     for (keel::usize m : M) N += m;
-    std::vector<keel::c64> C;
+    keel::Array<keel::c64> C(mr);
     C.reserve(N);
     for (keel::usize r = 0; r < R; ++r) {
         const keel::usize Mr = M[r];
@@ -60,7 +62,7 @@ std::vector<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
     return C;
 }
 
-void readVecInt(const Value &v, std::vector<int> &out)
+void readVecInt(const Value &v, keel::Array<int> &out)
 {
     const keel::usize n = v.numel();
     out.resize(n);
@@ -68,7 +70,7 @@ void readVecInt(const Value &v, std::vector<int> &out)
         out[i] = static_cast<int>(v.elemAsDouble(i));
 }
 
-void readVec(const Value &v, std::vector<double> &out)
+void readVec(const Value &v, keel::Array<double> &out)
 {
     const keel::usize n = v.numel();
     out.resize(n);
@@ -79,10 +81,10 @@ void readVec(const Value &v, std::vector<double> &out)
 // to map to constellation point `mapping(idx) + 1` (1-based MATLAB)
 // or `mapping[idx]` (0-based). We invert it so that
 // constellation_index = invMapping[user_index].
-std::vector<int> invertMapping(const std::vector<int> &mapping)
+keel::Array<int> invertMapping(keel::ArrayRef<int> mapping, keel::Allocator *mr)
 {
     const keel::usize N = mapping.size();
-    std::vector<int> inv(N, -1);
+    keel::Array<int> inv(N, -1, mr);
     for (keel::usize i = 0; i < N; ++i) {
         if (mapping[i] < 0 || static_cast<keel::usize>(mapping[i]) >= N)
             throw Error("apsk: SymbolMapping out of range",
@@ -97,18 +99,18 @@ void apsk_argcheck(keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
                    const char *fn)
 {
     if (M.empty() || M.size() != radii.size())
-        throw Error(std::string(fn) + ": M and radii must be vectors of same length",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":DimMismatch");
+        throw Error(keel::format("{}: M and radii must be vectors of same length", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:DimMismatch", fn));
     if (!phaseoffset_v.isEmpty()
         && phaseoffset_v.numel() != 1
         && phaseoffset_v.numel() != M.size())
-        throw Error(std::string(fn) + ": phaseoffset length must match M",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":PhaseLen");
+        throw Error(keel::format("{}: phaseoffset length must match M", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:PhaseLen", fn));
     keel::usize Ntot = 0;
     for (keel::usize m : M) Ntot += m;
     if (!mapping_v.isEmpty() && mapping_v.numel() != Ntot)
-        throw Error(std::string(fn) + ": SymbolMapping length must equal sum(M)",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":MappingLen");
+        throw Error(keel::format("{}: SymbolMapping length must equal sum(M)", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:MappingLen", fn));
 }
 
 } // namespace
@@ -118,7 +120,7 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
               keel::Allocator *mr)
 {
     apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskmod");
-    std::vector<double> phaseoffset(M.size());
+    keel::Array<double> phaseoffset(M.size(), mr);
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
         if (phaseoffset.size() == 1) {
@@ -137,17 +139,17 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
     keel::usize Ntot = 0;
     for (keel::usize m : M) Ntot += m;
 
-    std::vector<keel::c64> C = buildConstellation(M, radii, phaseoffset);
+    keel::Array<keel::c64> C = buildConstellation(M, radii, phaseoffset, mr);
 
     // Mapping: identity by default; otherwise length-Ntot permutation.
-    std::vector<int> invmap;
+    keel::Array<int> invmap(mr);
     if (!mapping_v.isEmpty()) {
-        std::vector<int> mapping;
+        keel::Array<int> mapping(mr);
         readVecInt(mapping_v, mapping);
         if (mapping.size() != Ntot)
             throw Error("apskmod: SymbolMapping length must equal sum(M)",
                         0, 0, "apskmod", "", "numkit:apskmod:MappingLen");
-        invmap = invertMapping(mapping);
+        invmap = invertMapping(mapping, mr);
     } else {
         invmap.resize(Ntot);
         for (keel::usize i = 0; i < Ntot; ++i) invmap[i] = static_cast<int>(i);
@@ -172,7 +174,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
                 keel::Allocator *mr)
 {
     apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskdemod");
-    std::vector<double> phaseoffset(M.size());
+    keel::Array<double> phaseoffset(M.size(), mr);
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
         if (phaseoffset.size() == 1) {
@@ -189,9 +191,9 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
 
     keel::usize Ntot = 0;
     for (keel::usize m : M) Ntot += m;
-    std::vector<keel::c64> C = buildConstellation(M, radii, phaseoffset);
+    keel::Array<keel::c64> C = buildConstellation(M, radii, phaseoffset, mr);
 
-    std::vector<int> mapping;
+    keel::Array<int> mapping(mr);
     if (!mapping_v.isEmpty()) {
         readVecInt(mapping_v, mapping);
         if (mapping.size() != Ntot)

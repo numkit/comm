@@ -8,10 +8,12 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/arena.h>
 #include <keel/array.h>
+#include <keel/string.h>
 #include <numkit/comm/modulation/apsk.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -22,16 +24,14 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
-#include <string>
-#include <vector>
 
 namespace numkit::comm {
 namespace detail {
 
 namespace {
 
-std::string toLowerApsk(keel::StringRef sv) {
-    std::string s(sv.data(), sv.size());
+keel::String toLowerApsk(keel::StringRef sv) {
+    keel::String s(sv);
     for (char &ch : s)
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     return s;
@@ -97,8 +97,8 @@ keel::usize apskBitsPerSymbol(keel::ArrayRef<keel::usize> M, const char *fn)
     keel::usize Ntot = 0;
     for (keel::usize m : M) Ntot += m;
     if (Ntot < 2 || (Ntot & (Ntot - 1)) != 0)
-        throw Error(std::string(fn) + ": sum(M) must be a power of 2 (>= 2) in bit mode",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":NotPow2");
+        throw Error(keel::format("{}: sum(M) must be a power of 2 (>= 2) in bit mode", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:NotPow2", fn));
     keel::usize bps = 0;
     while ((keel::usize(1) << bps) < Ntot) ++bps;
     return bps;
@@ -111,8 +111,8 @@ Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Alloca
     const bool rowVec = (H == 1 && W >= bps && (H % bps != 0));
     const keel::usize bitLen = rowVec ? W : H;
     if (bitLen == 0 || (bitLen % bps) != 0)
-        throw Error(std::string(fn) + ": bit input length must be a positive multiple of log2(sum(M))",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":BitLength");
+        throw Error(keel::format("{}: bit input length must be a positive multiple of log2(sum(M))", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BitLength", fn));
     const keel::usize nSyms = bitLen / bps;
     const keel::usize nCols = rowVec ? 1 : W;
     Value syms = rowVec ? Value::matrix(1, nSyms, ValueType::DOUBLE, mr)
@@ -125,8 +125,8 @@ Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Alloca
                 const keel::usize idx = rowVec ? (s * bps + b) : (c * H + s * bps + b);
                 const double bit = x.elemAsDouble(idx);
                 if (bit != 0.0 && bit != 1.0)
-                    throw Error(std::string(fn) + ": bit input must contain only 0 and 1",
-                                0, 0, fn, "", std::string("numkit:") + fn + ":InvalidBit");
+                    throw Error(keel::format("{}: bit input must contain only 0 and 1", fn),
+                                0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
                 val = (val << 1) | (bit != 0.0 ? 1u : 0u);
             }
             sd[rowVec ? s : (c * nSyms + s)] = static_cast<double>(val);
@@ -176,17 +176,19 @@ void parseApskTail(keel::ArrayRef<Value> args, keel::ArrayRef<keel::usize> M, co
     bool useGray = false;
     for (; i < args.size(); i += 2) {
         if (i + 1 >= args.size() || (!args[i].isChar() && !args[i].isString()))
-            throw Error(std::string(fn) + ": options must be Name-Value pairs",
-                        0, 0, fn, "", std::string("numkit:") + fn + ":BadNV");
-        const std::string key = toLowerApsk(args[i].toString());
+            throw Error(keel::format("{}: options must be Name-Value pairs", fn),
+                        0, 0, fn, "", keel::format("numkit:{}:BadNV", fn));
+        const keel::String rawKey = args[i].toString();
+        const keel::String key = toLowerApsk(rawKey);
         const Value &val = args[i + 1];
         if (key == "symbolmapping") {
             if (val.isChar() || val.isString()) {
-                const std::string vs = toLowerApsk(val.toString());
+                const keel::String rawVal = val.toString();
+                const keel::String vs = toLowerApsk(rawVal);
                 if (vs == "gray") useGray = true;
                 else if (vs == "custom" || vs == "bin" || vs == "binary") useGray = false;
-                else throw Error(std::string(fn) + ": SymbolMapping must be 'gray', 'custom', or a numeric vector",
-                                 0, 0, fn, "", std::string("numkit:") + fn + ":BadMapping");
+                else throw Error(keel::format("{}: SymbolMapping must be 'gray', 'custom', or a numeric vector", fn),
+                                 0, 0, fn, "", keel::format("numkit:{}:BadMapping", fn));
             } else {
                 mp = val;
                 useGray = false;
@@ -195,13 +197,15 @@ void parseApskTail(keel::ArrayRef<Value> args, keel::ArrayRef<keel::usize> M, co
             mp = val;
             useGray = false;
         } else if (isMod && key == "inputtype") {
-            const std::string vs = toLowerApsk(val.toString());
+            const keel::String rawVal = val.toString();
+            const keel::String vs = toLowerApsk(rawVal);
             if (vs == "bit") bitMode = true;
             else if (vs == "integer") bitMode = false;
             else throw Error("apskmod: InputType must be 'integer' or 'bit'",
                              0, 0, "apskmod", "", "numkit:apskmod:BadInputType");
         } else if (!isMod && key == "outputtype") {
-            const std::string vs = toLowerApsk(val.toString());
+            const keel::String rawVal = val.toString();
+            const keel::String vs = toLowerApsk(rawVal);
             if (vs == "bit") bitMode = true;
             else if (vs == "integer") bitMode = false;
             else throw Error("apskdemod: OutputType must be 'integer' or 'bit'",
@@ -209,8 +213,8 @@ void parseApskTail(keel::ArrayRef<Value> args, keel::ArrayRef<keel::usize> M, co
         } else if (key == "plotconstellation" || key == "noisevariance") {
             // accept
         } else {
-            throw Error(std::string(fn) + ": unknown option '" + std::string(args[i].toString().as_ref()) + "'",
-                        0, 0, fn, "", std::string("numkit:") + fn + ":BadOption");
+            throw Error(keel::format("{}: unknown option '{}'", fn, rawKey),
+                        0, 0, fn, "", keel::format("numkit:{}:BadOption", fn));
         }
     }
     if (useGray && mp.isEmpty())

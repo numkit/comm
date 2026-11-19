@@ -16,9 +16,11 @@
 // by sorting with stable order (lexicographic by current symbol
 // index), which reproduces MATLAB R2025b on the standard probe set.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/math.h>
+#include <keel/ref.h>
 #include <numkit/comm/source/huffman.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -28,9 +30,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <queue>
 #include <utility>
-#include <vector>
 
 namespace numkit::comm {
 
@@ -97,23 +97,29 @@ huffmandict(const Value &symbols, const Value &probs,
     }
 
     // Reserve tree storage: 2K-1 nodes (K leaves + K-1 internals).
-    std::vector<TreeNode> tree(2 * K - 1);
+    keel::Array<TreeNode> tree(2 * K - 1, mr);
 
-    // Build initial leaves heap.
-    std::priority_queue<HeapNode, std::vector<HeapNode>, std::greater<>> heap;
+    // Build initial leaves min-heap.
+    keel::Array<HeapNode> heap(mr);
+    heap.reserve(K);
+    auto heapCmp = [](const HeapNode &a, const HeapNode &b) { return a > b; };
     int order_seed = 0;
     for (keel::usize k = 0; k < K; ++k) {
-        heap.push({probs.elemAsDouble(k), static_cast<int>(k), order_seed++});
+        heap.push_back({probs.elemAsDouble(k), static_cast<int>(k), order_seed++});
+        std::push_heap(heap.begin(), heap.end(), heapCmp);
     }
 
     int next_id = static_cast<int>(K);
     while (heap.size() > 1) {
-        HeapNode a = heap.top(); heap.pop();
-        HeapNode b = heap.top(); heap.pop();
+        std::pop_heap(heap.begin(), heap.end(), heapCmp);
+        HeapNode a = heap.back(); heap.pop_back();
+        std::pop_heap(heap.begin(), heap.end(), heapCmp);
+        HeapNode b = heap.back(); heap.pop_back();
         // a is the smaller -> assign bit 0; b -> bit 1.
         tree[a.id].parent = next_id;  tree[a.id].bit = 0;
         tree[b.id].parent = next_id;  tree[b.id].bit = 1;
-        heap.push({a.prob + b.prob, next_id, order_seed++});
+        heap.push_back({a.prob + b.prob, next_id, order_seed++});
+        std::push_heap(heap.begin(), heap.end(), heapCmp);
         ++next_id;
     }
     // Heap root is the tree root; tree[root].parent stays -1.
@@ -121,7 +127,7 @@ huffmandict(const Value &symbols, const Value &probs,
     // Walk leaf -> root, collect bits, reverse. Build dict cell.
     Value dict = Value::cell(K, 2, mr);
     double avglen = 0.0;
-    std::vector<double> bits;
+    keel::Array<double> bits(mr);
     for (keel::usize k = 0; k < K; ++k) {
         bits.clear();
         int cur = static_cast<int>(k);
@@ -151,8 +157,8 @@ namespace {
 //   syms[k]      = symbol value
 //   codes[k]     = vector<uint8_t> of 0/1
 struct DictView {
-    std::vector<double>                 syms;
-    std::vector<std::vector<keel::u8>>   codes;
+    keel::Array<double>                 syms;
+    keel::Array<keel::Array<keel::u8>>  codes;
     keel::usize K = 0;
 };
 
@@ -201,9 +207,9 @@ struct DecodeTree {
         int right = -1;
         int sym   = -1;   // index into dv.syms; -1 if internal node.
     };
-    std::vector<Node> nodes{ Node{} };  // start with root.
+    keel::Array<Node> nodes{ Node{} };  // start with root.
 
-    void insert(const std::vector<keel::u8> &code, int sym_idx)
+    void insert(keel::ArrayRef<keel::u8> code, int sym_idx)
     {
         int cur = 0;
         for (keel::u8 bit : code) {
@@ -285,7 +291,7 @@ Value huffmandeco(const Value &bits, const Value &dict,
 
     // Walk bits, emit symbols.
     const keel::usize N = bits.numel();
-    std::vector<double> emitted;
+    keel::Array<double> emitted(mr);
     int cur = 0;
     for (keel::usize i = 0; i < N; ++i) {
         const double v = bits.elemAsDouble(i);

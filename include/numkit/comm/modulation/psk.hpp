@@ -9,9 +9,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-
-#include <string>
 
 namespace numkit::comm {
 
@@ -32,7 +31,7 @@ namespace numkit::comm {
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see pskdemod, dpskmod, qammod
 Value pskmod(const Value &x, int M, keel::f64 ini_phase,
-             const std::string &symbol_order,
+             keel::StringRef symbol_order,
              keel::Allocator *mr = nullptr);
 
 /// @brief M-ary PSK demodulator — nearest-phase decision
@@ -46,7 +45,7 @@ Value pskmod(const Value &x, int M, keel::f64 ini_phase,
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see pskmod
 Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
-               const std::string &symbol_order,
+               keel::StringRef symbol_order,
                keel::Allocator *mr = nullptr);
 
 /// @brief Differential PSK modulator
@@ -64,7 +63,7 @@ Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see dpskdemod, pskmod
 Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
-              const std::string &symbol_order,
+              keel::StringRef symbol_order,
               keel::Allocator *mr = nullptr);
 
 /// @brief Differential PSK demodulator — phase-difference decoder
@@ -78,7 +77,7 @@ Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see dpskmod
 Value dpskdemod(const Value &y, int M, keel::f64 phase_rot,
-                const std::string &symbol_order,
+                keel::StringRef symbol_order,
                 keel::Allocator *mr = nullptr);
 
 

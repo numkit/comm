@@ -11,6 +11,7 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/comm/coding/blockcoding.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -18,7 +19,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <string>
 #include <utility>
 
 namespace numkit::comm {
@@ -59,9 +59,9 @@ void cyclpoly_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 2, 3, "cyclpoly");
     const long long n = static_cast<long long>(args[0].toScalar());
     const long long k = static_cast<long long>(args[1].toScalar());
-    const std::string opt =
+    const keel::String opt =
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
-            ? std::string(args[2].toString().as_ref()) : std::string();
+            ? args[2].toString() : keel::String();
     outs[0] = cyclpoly(n, k, opt, ctx.engine->allocator());
 }
 
@@ -70,9 +70,9 @@ void cyclgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 {
     argcheck::checkNargin(args.size(), 2, 3, "cyclgen");
     const long long n = static_cast<long long>(args[0].toScalar());
-    const std::string opt =
+    const keel::String opt =
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
-            ? std::string(args[2].toString().as_ref()) : std::string("system");
+            ? args[2].toString() : keel::String("system");
     CyclgenResult res = cyclgen(n, args[1], opt, ctx.engine->allocator());
     outs[0] = std::move(res.h);
     if (nargout >= 2) outs[1] = std::move(res.g);
@@ -86,9 +86,9 @@ void encode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 3, 5, "encode");
     const long long n = static_cast<long long>(args[1].toScalar());
     const long long k = static_cast<long long>(args[2].toScalar());
-    const std::string method =
+    const keel::String method =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
-            ? std::string(args[3].toString().as_ref()) : std::string("hamming/binary");
+            ? args[3].toString() : keel::String("hamming/binary");
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     EncodeResult res = encode(args[0], n, k, method, opt, ctx.engine->allocator());
     outs[0] = std::move(res.code);
@@ -102,9 +102,9 @@ void decode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 3, 6, "decode");
     const long long n = static_cast<long long>(args[1].toScalar());
     const long long k = static_cast<long long>(args[2].toScalar());
-    const std::string method =
+    const keel::String method =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
-            ? std::string(args[3].toString().as_ref()) : std::string("hamming/binary");
+            ? args[3].toString() : keel::String("hamming/binary");
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     DecodeResult res = decode(args[0], n, k, method, opt, ctx.engine->allocator());
     outs[0] = std::move(res.msg);

@@ -9,9 +9,9 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
-#include <string>
 #include <tuple>
 
 namespace numkit {
@@ -49,7 +49,7 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, keel::f64 snr_db, kee
 /// @param mr           Memory resource (nullptr → process default).
 /// @return             `m`×`n` matrix of noise samples.
 /// @see awgn
-Value wgn(::numkit::ops::RngContext &rng, int m, int n, keel::f64 p, const std::string &type,
+Value wgn(::numkit::ops::RngContext &rng, int m, int n, keel::f64 p, keel::StringRef type,
           bool complex_out,
           keel::Allocator *mr = nullptr);
 
@@ -104,7 +104,7 @@ Value marcumq(const Value &a, const Value &b, int m,
 /// @param mr       Memory resource (nullptr → process default).
 /// @return         Element-wise BER.
 /// @throws Error   Unknown modulation string or invalid `M`.
-Value berawgn(const Value &EbNo_dB, const std::string &mod, int M,
+Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
               keel::Allocator *mr = nullptr);
 
 /// @brief Equivalent noise bandwidth of an LTI filter
@@ -148,8 +148,8 @@ berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
 /// @return                 Converted SNR (dB) of the same shape as
 ///                         `snr_in`.
 Value convertSNR(const Value &snr_in,
-                 const std::string &in_type,
-                 const std::string &out_type,
+                 keel::StringRef in_type,
+                 keel::StringRef out_type,
                  int bits_per_symbol,
                  keel::Allocator *mr = nullptr);
 
