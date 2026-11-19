@@ -15,6 +15,7 @@
 #include <keel/array.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/comm/coding/convcoding.hpp>
 
 #include <numkit/value/argcheck.hpp>
@@ -22,7 +23,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -199,7 +199,7 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
         for (char &c : s)
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            c = keel::to_ascii_lower(c);
         return s;
     };
     const keel::String dt = lower(dectype);

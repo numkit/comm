@@ -12,15 +12,13 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/comm/modulation/analog.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
 #include <numkit/value/value.hpp>
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
-
 namespace numkit::comm {
 namespace detail {
 
@@ -181,7 +179,7 @@ void mskmod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
         const keel::String enc = args[i].toString();
         keel::String elo;
-        for (char ch : enc) elo.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+        for (char ch : enc) elo.push_back(keel::to_ascii_lower(ch));
         if (elo == "nondiff") nondiff = true;
         else if (elo == "diff") nondiff = false;
         else
@@ -214,7 +212,7 @@ void mskdemod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     if (i < args.size() && (args[i].isChar() || args[i].isString())) {
         const keel::String enc = args[i].toString();
         keel::String elo;
-        for (char ch : enc) elo.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+        for (char ch : enc) elo.push_back(keel::to_ascii_lower(ch));
         if (elo == "nondiff") nondiff = true;
         else if (elo == "diff") nondiff = false;
         else
@@ -251,7 +249,7 @@ void ssbmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "ssbmod", "", "numkit:ssbmod:InvStr");
         keel::String m = args[4].toString();
         // Match MATLAB behaviour: any string containing 'up' selects USB.
-        for (auto &c : m) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        for (auto &c : m) c = keel::to_ascii_lower(c);
         upper = m.contains("up");
         if (!upper && !m.empty())
             throw Error("ssbmod: method must be 'upper'",

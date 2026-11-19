@@ -14,6 +14,7 @@
 #include <keel/arena.h>
 #include <keel/array.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/comm/modulation/apsk.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -22,7 +23,6 @@
 #include <numkit/value/argcheck.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <cstddef>
 
 namespace numkit::comm {
@@ -33,7 +33,7 @@ namespace {
 keel::String toLowerApsk(keel::StringRef sv) {
     keel::String s(sv);
     for (char &ch : s)
-        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        ch = keel::to_ascii_lower(ch);
     return s;
 }
 

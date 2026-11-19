@@ -12,6 +12,7 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/comm/modulation/generic_qam.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, Span, ctx.engine->resource()
@@ -20,7 +21,6 @@
 #include <numkit/value/argcheck.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 
 namespace numkit::comm {
@@ -31,7 +31,7 @@ namespace {
 keel::String toLowerAscii(keel::StringRef sv) {
     keel::String s(sv);
     for (char &ch : s)
-        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        ch = keel::to_ascii_lower(ch);
     return s;
 }
 
