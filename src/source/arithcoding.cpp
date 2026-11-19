@@ -143,7 +143,7 @@ Value arithenco(const Value &seq, const Value &counts,
 
     // Termination: emit final bits of dec_low (with E3 handling).
     // bin_low MSB-first = N bits of dec_low.
-    keel::Array<keel::u8> bin_low(static_cast<keel::usize>(N), mr);
+    keel::Array<keel::u8> bin_low(N, mr);
     for (int i = 0; i < N; ++i)
         bin_low[i] = static_cast<keel::u8>((dec_low >> (N - 1 - i)) & 1ULL);
     if (E3_count == 0) {

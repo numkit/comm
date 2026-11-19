@@ -108,7 +108,7 @@ Value rcosdesign(double beta, int span, int sps,
 
     // Filter length.
     const int N = span * sps + 1;
-    keel::Array<double> h(static_cast<keel::usize>(N), 0.0, mr);
+    keel::Array<double> h(N, 0.0, mr);
 
     // Symbol period T set so that t / T is dimensionless and t runs
     // from -span/2 to +span/2 in steps of 1/sps. (T = 1 here.)
@@ -184,7 +184,7 @@ Value gaussdesign(double BT, int span, int sps,
     const double alpha = std::sqrt(std::log(2.0) / 2.0) / BT;
     const double pre = std::sqrt(M_PI) / alpha;
 
-    keel::Array<double> h(static_cast<keel::usize>(N), mr);
+    keel::Array<double> h(N, mr);
     double s = 0.0;
     for (int k = 1; k <= N; ++k) {
         const double t = (static_cast<double>(k) - centre) / sps;

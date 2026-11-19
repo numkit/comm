@@ -75,7 +75,7 @@ void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
                         0, 0, "lloyds", "",
                         "numkit:lloyds:NonPositiveINI_CODEBOOK");
         const double step = (max_train - min_train) / static_cast<double>(K);
-        codebook.resize(static_cast<keel::usize>(K));
+        codebook.resize(K);
         for (long i = 0; i < K; ++i) {
             codebook[static_cast<keel::usize>(i)] =
                 min_train + step * 0.5 + step * static_cast<double>(i);

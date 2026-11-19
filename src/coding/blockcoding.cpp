@@ -371,10 +371,10 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
         // Parity poly h(x) = (x^n + 1) / p(x), degree k.
         keel::Array<int> pc = polyDivMod(pp, p).q;
         pc.resize(static_cast<keel::usize>(k) + 1, 0);
-        keel::Array<int> hrow(static_cast<keel::usize>(n), 0);
+        keel::Array<int> hrow(n, 0);
         for (long long j = 0; j <= k; ++j) hrow[j] = pc[k - j];   // fliplr(pc)
         res.h = shiftMatrix(hrow, n - k, n, mr);
-        keel::Array<int> grow(static_cast<keel::usize>(n), 0);
+        keel::Array<int> grow(n, 0);
         for (keel::usize j = 0; j < p.size(); ++j) grow[j] = p[j];
         res.g = shiftMatrix(grow, k, n, mr);
     } else {
@@ -384,7 +384,7 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
             keel::Array<int> xpow(static_cast<keel::usize>(m + i) + 1, 0);
             xpow[static_cast<keel::usize>(m + i)] = 1;
             auto rem = polyMod(xpow, p);
-            rem.resize(static_cast<keel::usize>(m), 0);
+            rem.resize(m, 0);
             b[static_cast<keel::usize>(i)] = keel::move(rem);
         }
         const keel::usize M = static_cast<keel::usize>(m);
@@ -504,20 +504,20 @@ buildSyndTable(const keel::Array<keel::Array<int>> &h, long long n, long long m)
 {
     const long long T = 1LL << m;
     keel::Array<keel::Array<int>> table(static_cast<keel::usize>(T));
-    keel::Array<char> filled(static_cast<keel::usize>(T), 0);
+    keel::Array<char> filled(T, 0);
     long long remaining = T;
 
-    keel::Array<int> e(static_cast<keel::usize>(n), 0);
+    keel::Array<int> e(n, 0);
     const long long s0 = syndromeInt(h, e, m, n);
     table[static_cast<keel::usize>(s0)] = keel::move(e);
     filled[static_cast<keel::usize>(s0)] = 1;
     --remaining;
 
     for (long long w = 1; w <= n && remaining > 0; ++w) {
-        keel::Array<long long> idx(static_cast<keel::usize>(w));
+        keel::Array<long long> idx(w);
         for (long long t = 0; t < w; ++t) idx[static_cast<keel::usize>(t)] = t;
         while (true) {
-            keel::Array<int> ep(static_cast<keel::usize>(n), 0);
+            keel::Array<int> ep(n, 0);
             for (long long t = 0; t < w; ++t) ep[static_cast<keel::usize>(idx[t])] = 1;
             const long long s = syndromeInt(h, ep, m, n);
             if (!filled[static_cast<keel::usize>(s)]) {
@@ -575,7 +575,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
                 throw Error("encode: decimal message entries must be integers "
                             "in [0, 2^K-1]",
                             0, 0, "encode", "", "numkit:encode:msgint");
-            keel::Array<int> word(static_cast<keel::usize>(k), 0);
+            keel::Array<int> word(k, 0);
             const unsigned long long xi = static_cast<unsigned long long>(x);
             for (long long p = 0; p < k; ++p)
                 word[static_cast<keel::usize>(p)] = static_cast<int>((xi >> p) & 1ULL);
@@ -595,7 +595,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
             const keel::usize numWords = (nel + static_cast<keel::usize>(added))
                                          / static_cast<keel::usize>(k);
             for (keel::usize w = 0; w < numWords; ++w) {
-                keel::Array<int> word(static_cast<keel::usize>(k), 0);
+                keel::Array<int> word(k, 0);
                 for (long long p = 0; p < k; ++p) {
                     const keel::usize idx = w * static_cast<keel::usize>(k) + p;
                     if (idx < nel) word[static_cast<keel::usize>(p)] =
@@ -609,7 +609,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
                             0, 0, "encode", "", "numkit:encode:cols");
             typeFlag = 0;
             for (keel::usize w = 0; w < R; ++w) {
-                keel::Array<int> word(static_cast<keel::usize>(k));
+                keel::Array<int> word(k);
                 for (long long p = 0; p < k; ++p)
                     word[static_cast<keel::usize>(p)] = matBit(msg, w, static_cast<keel::usize>(p));
                 words.push_back(keel::move(word));
