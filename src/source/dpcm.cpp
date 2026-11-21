@@ -1,75 +1,32 @@
 // toolboxes/comm/src/source/dpcm.cpp
 //
-// Differential Pulse Code Modulation: encoder + decoder.
-//
-//   [indx, quanterr] = dpcmenco(sig, codebook, partition, predictor)
-//   [sig,  quanterr] = dpcmdeco(indx, codebook, predictor)
-//
-// dpcmopt deferred -- it is a training-set optimisation step that
-// alternates Lloyd-Max quantizer design with predictor estimation.
-// Heavier than the encoder/decoder; will get its own cycle.
-//
-// Predictor format mirrors MATLAB: `[0, n1, n2, ..., nM]` (length
-// M+1). The leading 0 is a placeholder; the M-tap FIR predictor
-// uses elements (2:end). Prediction step: out = predictor[1..M] · x
-// where x is the most-recent M reconstructed samples (newest first).
+// Differential Pulse Code Modulation encoder + decoder delegating to keel::comm.
 
+#include <keel/arena.h>
 #include <keel/array.h>
+#include <keel/comm.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <numkit/comm/source/dpcm.hpp>
 
-#include <numkit/value/argcheck.hpp>
-#include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
-
-#include <utility>
+#include <numkit/value/value.hpp>
 
 namespace numkit::comm {
 
 namespace {
-
-// Find quantization bin index: smallest i such that e < partition[i],
-// or K-1 if e >= partition[K-2] (K-1 thresholds for K bins).
-keel::usize partitionBin(const Value &partition, keel::f64 e)
-{
-    const keel::usize M = partition.numel();
-    keel::usize i = 0;
-    while (i < M && partition.elemAsDouble(i) < e) ++i;
-    return i;
-}
-
-void readPredictor(const Value &predictor, keel::Array<keel::f64> &p)
-{
-    const keel::usize L = predictor.numel();
-    if (L < 2)
-        throw Error("dpcm: predictor must have at least 2 elements",
-                    0, 0, "dpcm", "", "numkit:dpcm:InvalidPredictor");
-    p.resize(L - 1);
-    // Skip the leading 0 (predictor[0] in MATLAB's 1-based form).
-    for (keel::usize k = 0; k < L - 1; ++k)
-        p[k] = predictor.elemAsDouble(k + 1);
-}
 
 bool isRow(const Value &v)
 {
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
-void dpcmenco_argcheck(const Value &codebook, const Value &partition,
-                       const Value &predictor, keel::Array<keel::f64> &pred)
+keel::Array<keel::f64> readVec(const Value &v, keel::Allocator *alloc)
 {
-    if (codebook.numel() != partition.numel() + 1)
-        throw Error("dpcmenco: length(codebook) must equal "
-                    "length(partition) + 1",
-                    0, 0, "dpcmenco", "",
-                    "numkit:dpcmenco:InvalidPartitionSize");
-    readPredictor(predictor, pred);
-}
-
-void dpcmdeco_argcheck(const Value &predictor, keel::Array<keel::f64> &pred)
-{
-    readPredictor(predictor, pred);
+    const keel::usize n = v.numel();
+    keel::Array<keel::f64> out(n, 0.0, alloc);
+    for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+    return out;
 }
 
 } // namespace
@@ -79,72 +36,64 @@ dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
          keel::Allocator *mr)
 {
-    keel::Array<keel::f64> pred(mr);
-    dpcmenco_argcheck(codebook, partition, predictor, pred);
-    const keel::usize M = pred.size();
+    if (codebook.numel() != partition.numel() + 1)
+        throw Error("dpcmenco: length(codebook) must equal length(partition) + 1",
+                    0, 0, "dpcmenco", "", "numkit:dpcmenco:InvalidPartitionSize");
+    if (predictor.numel() < 2)
+        throw Error("dpcm: predictor must have at least 2 elements",
+                    0, 0, "dpcm", "", "numkit:dpcm:InvalidPredictor");
 
     const keel::usize N = sig.numel();
-    const bool row = isRow(sig);
-    Value indx_v     = Value::matrix(row ? 1 : N, row ? N : 1,
-                                     ValueType::DOUBLE, mr);
-    Value quanterr_v = Value::matrix(row ? 1 : N, row ? N : 1,
-                                     ValueType::DOUBLE, mr);
-    keel::f64 *o_indx = indx_v.doubleDataMut();
-    keel::f64 *o_qerr = quanterr_v.doubleDataMut();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    const auto sv = readVec(sig, scratch.allocator());
+    const auto cv = readVec(codebook, scratch.allocator());
+    const auto pv = readVec(partition, scratch.allocator());
+    const auto pr = readVec(predictor, scratch.allocator());
+    keel::Array<keel::usize> idx(N, 0u, scratch.allocator());
 
-    keel::Array<keel::f64> x(M, 0.0, mr);  // predictor state (newest first)
-    for (keel::usize i = 0; i < N; ++i) {
-        keel::f64 out = 0.0;
-        for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
-        const keel::f64 e   = sig.elemAsDouble(i) - out;
-        const keel::usize bin = partitionBin(partition, e);
-        const keel::f64 q   = codebook.elemAsDouble(bin);
-        o_indx[i] = keel::as<keel::f64>(bin);
-        o_qerr[i] = q;
-        const keel::f64 inp = q + out;
-        // Shift state: x = [inp; x(1..M-1)]
-        for (keel::usize k = M; k-- > 1;) x[k] = x[k - 1];
-        if (M > 0) x[0] = inp;
-    }
+    const bool row = isRow(sig);
+    Value indx_v = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
+    Value quanterr_v = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
+    (void)keel::comm::dpcm_encode(sv.as_ref(), cv.as_ref(), pv.as_ref(), pr.as_ref(),
+                                  idx.as_mut_ref(),
+                                  keel::MutArrayRef<keel::f64>(quanterr_v.doubleDataMut(), N),
+                                  scratch.allocator());
+
+    keel::f64 *oi = indx_v.doubleDataMut();
+    for (keel::usize i = 0; i < N; ++i) oi[i] = keel::as<keel::f64>(idx[i]);
     return {std::move(indx_v), std::move(quanterr_v)};
 }
 
 std::pair<Value, Value>
 dpcmdeco(const Value &indx, const Value &codebook,
-         const Value &predictor,
-         keel::Allocator *mr)
+         const Value &predictor, keel::Allocator *mr)
 {
-    keel::Array<keel::f64> pred(mr);
-    dpcmdeco_argcheck(predictor, pred);
-    const keel::usize M = pred.size();
+    if (predictor.numel() < 2)
+        throw Error("dpcm: predictor must have at least 2 elements",
+                    0, 0, "dpcm", "", "numkit:dpcm:InvalidPredictor");
 
     const keel::usize K = codebook.numel();
     const keel::usize N = indx.numel();
-    const bool row = isRow(indx);
-    Value sig_v      = Value::matrix(row ? 1 : N, row ? N : 1,
-                                     ValueType::DOUBLE, mr);
-    Value quanterr_v = Value::matrix(row ? 1 : N, row ? N : 1,
-                                     ValueType::DOUBLE, mr);
-    keel::f64 *o_sig  = sig_v.doubleDataMut();
-    keel::f64 *o_qerr = quanterr_v.doubleDataMut();
-
-    // Lookup quanterr first (matches MATLAB ordering of work).
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    keel::Array<keel::usize> iv(N, 0u, scratch.allocator());
     for (keel::usize i = 0; i < N; ++i) {
-        const keel::f64 iv = indx.elemAsDouble(i);
-        if (!(iv >= 0.0) || iv >= keel::as<keel::f64>(K))
+        const keel::f64 v = indx.elemAsDouble(i);
+        if (!(v >= 0.0) || v >= keel::as<keel::f64>(K))
             throw Error("dpcmdeco: index out of codebook range",
                         0, 0, "dpcmdeco", "", "numkit:dpcmdeco:OutOfRange");
-        o_qerr[i] = codebook.elemAsDouble(keel::as<keel::usize>(iv));
+        iv[i] = keel::as<keel::usize>(v);
     }
 
-    keel::Array<keel::f64> x(M, 0.0, mr);
-    for (keel::usize i = 0; i < N; ++i) {
-        keel::f64 out = 0.0;
-        for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
-        o_sig[i] = o_qerr[i] + out;
-        for (keel::usize k = M; k-- > 1;) x[k] = x[k - 1];
-        if (M > 0) x[0] = o_sig[i];
-    }
+    const auto cv = readVec(codebook, scratch.allocator());
+    const auto pr = readVec(predictor, scratch.allocator());
+
+    const bool row = isRow(indx);
+    Value sig_v = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
+    Value quanterr_v = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
+    (void)keel::comm::dpcm_decode(iv.as_ref(), cv.as_ref(), pr.as_ref(),
+                                  keel::MutArrayRef<keel::f64>(sig_v.doubleDataMut(), N),
+                                  keel::MutArrayRef<keel::f64>(quanterr_v.doubleDataMut(), N),
+                                  scratch.allocator());
     return {std::move(sig_v), std::move(quanterr_v)};
 }
 

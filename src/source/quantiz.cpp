@@ -1,24 +1,16 @@
 // toolboxes/comm/src/source/quantiz.cpp
 //
-// Scalar quantizer applier (companion to dpcmenco's inline bin search).
-//
-//   indx                       = quantiz(sig, partition)
-//   [indx, quantv]             = quantiz(sig, partition, codebook)
-//   [indx, quantv, distor]     = quantiz(sig, partition, codebook)
-//
-// indx(i) = sum(partition < sig(i)) ∈ [0, K-1]   (K = numel(codebook))
-// quantv  = codebook(indx + 1)
-// distor  = mean((sig - quantv).^2)
+// Scalar quantizer applier delegating to keel::comm.
 
+#include <keel/arena.h>
+#include <keel/array.h>
+#include <keel/comm.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <numkit/comm/source/quantiz.hpp>
 
-#include <numkit/value/argcheck.hpp>
-#include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
-
-#include <utility>
+#include <numkit/value/value.hpp>
 
 namespace numkit::comm {
 
@@ -29,67 +21,56 @@ bool isRow(const Value &v)
     return v.dims().rows() == 1 && v.dims().cols() >= 1;
 }
 
-void quantiz_indx_argcheck(const Value &sig, const Value &partition)
+keel::Array<keel::f64> readVec(const Value &v, keel::Allocator *alloc)
 {
-    (void)sig;
-    (void)partition;
-}
-
-void quantiz_argcheck(const Value &partition, const Value &codebook)
-{
-    if (codebook.numel() != partition.numel() + 1)
-        throw Error("quantiz: length(codebook) must equal "
-                    "length(partition) + 1",
-                    0, 0, "quantiz", "", "numkit:quantiz:invalidCodebook");
+    const keel::usize n = v.numel();
+    keel::Array<keel::f64> out(n, 0.0, alloc);
+    for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+    return out;
 }
 
 } // namespace
 
-Value quantiz_indx(const Value &sig, const Value &partition,
-                   keel::Allocator *mr)
+Value quantiz_indx(const Value &sig, const Value &partition, keel::Allocator *mr)
 {
-    quantiz_indx_argcheck(sig, partition);
     const keel::usize N = sig.numel();
-    const keel::usize M = partition.numel();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    const auto sv = readVec(sig, scratch.allocator());
+    const auto pv = readVec(partition, scratch.allocator());
+    keel::Array<keel::usize> idx(N, 0u, scratch.allocator());
+    (void)keel::comm::quantiz_index(sv.as_ref(), pv.as_ref(), idx.as_mut_ref());
+
     const bool row = isRow(sig);
-    Value indx = Value::matrix(row ? 1 : N, row ? N : 1,
-                               ValueType::DOUBLE, mr);
+    Value indx = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
     keel::f64 *o = indx.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) {
-        const keel::f64 xi = sig.elemAsDouble(i);
-        keel::usize cnt = 0;
-        for (keel::usize k = 0; k < M; ++k) {
-            if (partition.elemAsDouble(k) < xi) ++cnt;
-            else break;   // partition is monotonic non-decreasing
-        }
-        o[i] = keel::as<keel::f64>(cnt);
-    }
+    for (keel::usize i = 0; i < N; ++i) o[i] = keel::as<keel::f64>(idx[i]);
     return indx;
 }
 
 QuantizResult
-quantiz(const Value &sig, const Value &partition, const Value &codebook,
-        keel::Allocator *mr)
+quantiz(const Value &sig, const Value &partition, const Value &codebook, keel::Allocator *mr)
 {
-    quantiz_argcheck(partition, codebook);
+    if (codebook.numel() != partition.numel() + 1)
+        throw Error("quantiz: length(codebook) must equal length(partition) + 1",
+                    0, 0, "quantiz", "", "numkit:quantiz:invalidCodebook");
+
     const keel::usize N = sig.numel();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    const auto sv = readVec(sig, scratch.allocator());
+    const auto pv = readVec(partition, scratch.allocator());
+    const auto cv = readVec(codebook, scratch.allocator());
+    keel::Array<keel::usize> idx(N, 0u, scratch.allocator());
 
-    Value indx = quantiz_indx(sig, partition, mr);
-    const keel::f64 *idx = indx.doubleData();
+    const bool row = isRow(sig);
+    Value indx = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
+    Value quantv = Value::matrix(row ? 1 : N, row ? N : 1, ValueType::DOUBLE, mr);
+    keel::f64 distor = 0.0;
+    (void)keel::comm::quantiz(sv.as_ref(), pv.as_ref(), cv.as_ref(), idx.as_mut_ref(),
+                              keel::MutArrayRef<keel::f64>(quantv.doubleDataMut(), N), distor);
 
-    Value quantv = Value::matrix(indx.dims().rows(), indx.dims().cols(),
-                                 ValueType::DOUBLE, mr);
-    keel::f64 *q = quantv.doubleDataMut();
-    keel::f64 sse = 0.0;
-    for (keel::usize i = 0; i < N; ++i) {
-        const keel::usize k = keel::as<keel::usize>(idx[i]);
-        const keel::f64 cv = codebook.elemAsDouble(k);
-        q[i] = cv;
-        const keel::f64 d = sig.elemAsDouble(i) - cv;
-        sse += d * d;
-    }
-    return {std::move(indx), std::move(quantv),
-            N > 0 ? sse / keel::as<keel::f64>(N) : 0.0};
+    keel::f64 *oi = indx.doubleDataMut();
+    for (keel::usize i = 0; i < N; ++i) oi[i] = keel::as<keel::f64>(idx[i]);
+    return {std::move(indx), std::move(quantv), distor};
 }
 
 } // namespace numkit::comm

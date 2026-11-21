@@ -1,186 +1,80 @@
 // toolboxes/comm/src/source/dpcmopt.cpp
-// DPCM parameter optimiser — clean-room reimplementation.
-// Designs an FIR linear predictor of order `ord` from a training
-// signal by the autocorrelation method (Yule-Walker normal equations
-// solved by the Levinson-Durbin recursion), and optionally a Lloyd-Max
-// scalar quantiser for the resulting prediction residual.
-// Clean-room implementation written from public references and
-// the public references it cites:
-//  - J. Makhoul, "Linear Prediction: A Tutorial Review",
-//    Proc. IEEE 63(4):561-580, 1975 (autocorrelation method +
-//    Levinson-Durbin recursion);
-//  - J. G. Proakis & D. G. Manolakis, "Digital Signal Processing",
-//    4th ed., 2007 (Levinson-Durbin algorithm);
-//  - N. S. Jayant & P. Noll, "Digital Coding of Waveforms", 1984
-//    (DPCM predictive coding, residual quantisation);
-//  - S. P. Lloyd, "Least Squares Quantization in PCM",
-//    IEEE Trans. Inf. Theory 28(2):129-137, 1982.
+//
+// DPCM parameter optimiser delegating Yule-Walker / Levinson-Durbin
+// and Lloyd-Max residual quantizer design to keel::comm.
 
-#include <keel/core.h>
-#include <keel/memory.h>
 #include <keel/arena.h>
 #include <keel/array.h>
+#include <keel/comm.h>
+#include <keel/core.h>
+#include <keel/math.h>
+#include <keel/memory.h>
 #include <numkit/comm/source/dpcmopt.hpp>
-#include <numkit/comm/source/lloyds.hpp>
 
-#include <numkit/value/argcheck.hpp>
-#include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
+#include <numkit/value/value.hpp>
 
-#include <cstddef>
-#include <tuple>
-#include <utility>
+#include <cstring>
 
 namespace numkit::comm {
 
 namespace {
 
-// Estimate the autocorrelation of `x` (length N) for lags 0..ord using
-// the unbiased, sample-variance-style estimator
-//   r[k] = ( sum_{n=0}^{N-1-k} x[n]*x[n+k] ) / (N - 1 - k)
-// The lag-k sum has N-k terms; the denominator is N-1-k (one less than
-// the term count). The caller guarantees N >= ord + 3 so every
-// denominator (N-1-k for k <= ord) is strictly positive.
-void autocorrelation(const keel::f64 *x, keel::usize N, keel::i32 ord, keel::f64 *r)
+Value packRow(keel::ArrayRef<keel::f64> v, keel::Allocator *mr)
 {
-    for (keel::i32 k = 0; k <= ord; ++k) {
-        keel::f64 acc = 0.0;
-        const keel::usize last = N - keel::as<keel::usize>(k);  // N-k terms
-        for (keel::usize n = 0; n < last; ++n)
-            acc += x[n] * x[n + keel::as<keel::usize>(k)];
-        r[k] = acc / keel::as<keel::f64>(N - 1 - keel::as<keel::usize>(k));
-    }
+    Value out = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
+    if (!v.empty()) std::memcpy(out.doubleDataMut(), v.data(), v.size() * sizeof(keel::f64));
+    return out;
 }
 
-// Levinson-Durbin recursion: solve the order-`ord` Yule-Walker normal
-// equations for the prediction-error filter A(z) = [1, a1, ..., a_ord].
-// `a` is initialised to [1, 0, ..., 0] and D <- r[0]; then for
-// m = 0..ord-1:
-//   beta = sum_{j=0}^{m} a[j] * r[m+1-j]
-//   K    = -beta / D
-//   a[1..m+1] += K * reverse(a[0..m])     (update in place)
-//   D    = (1 - K*K) * D
-// Scratch `prev` (length ord+1) holds a snapshot of `a` before the
-// in-place update so the reversed term is read from the pre-update
-// coefficients.
-void levinson_durbin(const keel::f64 *r, keel::i32 ord, keel::f64 *a, keel::f64 *prev)
-{
-    for (keel::i32 i = 0; i <= ord; ++i)
-        a[i] = 0.0;
-    a[0] = 1.0;
+} // namespace
 
-    keel::f64 D = r[0];
-
-    for (keel::i32 m = 0; m < ord; ++m) {
-        keel::f64 beta = 0.0;
-        for (keel::i32 j = 0; j <= m; ++j)
-            beta += a[j] * r[m + 1 - j];
-
-        // D == 0 only for a degenerate (all-zero / constant) signal;
-        // guard against a division by zero — K = 0 leaves `a` and D
-        // unchanged, yielding a zero predictor tail.
-        const keel::f64 K = (D != 0.0) ? (-beta / D) : 0.0;
-
-        for (keel::i32 i = 0; i <= m; ++i)
-            prev[i] = a[i];
-        // a[1..m+1] += K * reverse(a[0..m])
-        for (keel::i32 i = 1; i <= m + 1; ++i)
-            a[i] += K * prev[m + 1 - i];
-
-        D = (1.0 - K * K) * D;
-    }
-}
-
-void dpcmopt_argcheck(const Value &training_set, keel::i32 ord)
+DpcmOptResult dpcmopt(const Value &training_set, keel::i32 ord,
+                      const Value &ini_codebook, keel::Allocator *mr)
 {
     if (ord < 1)
-        throw numkit::Error("The predictor order must be a positive "
-                            "integer.",
+        throw numkit::Error("The predictor order must be a positive integer.",
                             0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidOrd");
 
     const keel::usize N = training_set.numel();
-    // N must be at least ord + 3 so the smallest autocorrelation
-    // denominator (N-1-ord) is >= 2.
     if (N < keel::as<keel::usize>(ord) + 3)
-        throw numkit::Error("The size of the training set is not large "
-                            "enough for the given predictor order.",
+        throw numkit::Error("The size of the training set is not large enough for the given predictor order.",
                             0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidInput");
-}
 
-}  // namespace
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    keel::Array<keel::f64> x(N, 0.0, scratch.allocator());
+    for (keel::usize i = 0; i < N; ++i) x[i] = training_set.elemAsDouble(i);
 
-DpcmOptResult dpcmopt(const Value &training_set, keel::i32 ord,
-                      const Value &ini_codebook,
-                      keel::Allocator *mr)
-{
-    dpcmopt_argcheck(training_set, ord);
-    const keel::usize N = training_set.numel();
-
-    keel::ArenaTemp arena = keel::get_scratch(mr);
-
-    // ── Read the training signal into contiguous scratch ─────────
-    // elemAsDouble accepts a row or column vector.
-    keel::Array<keel::f64> x(N, arena.allocator());
-    for (keel::usize i = 0; i < N; ++i)
-        x[i] = training_set.elemAsDouble(i);
-
-    // ── Autocorrelation estimate, lags 0..ord ────────────────────
-    keel::Array<keel::f64> r(keel::as<keel::usize>(ord) + 1, arena.allocator());
-    autocorrelation(x.data(), N, ord, r.data());
-
-    // ── Levinson-Durbin: prediction-error filter A(z) ────────────
-    // a = [1, a1, ..., a_ord]
-    keel::Array<keel::f64> a(keel::as<keel::usize>(ord) + 1, arena.allocator());
-    keel::Array<keel::f64> prev(keel::as<keel::usize>(ord) + 1,
-                                    arena.allocator());
-    levinson_durbin(r.data(), ord, a.data(), prev.data());
-
-    // ── Predictor = [0, -a1, -a2, ..., -a_ord] ───────────────────
-    // The leading 0 occupies the "current sample" slot; predictor[k]
-    // is the weight on x[n-k].
-    DpcmOptResult result;
-    result.predictor = Value::matrix(1, keel::as<keel::usize>(ord) + 1,
-                                     ValueType::DOUBLE, mr);
-    {
-        keel::f64 *p = result.predictor.doubleDataMut();
-        p[0] = 0.0;
-        for (keel::i32 k = 1; k <= ord; ++k)
-            p[k] = -a[k];
-    }
-
-    // ── Optional quantiser on the prediction residual ────────────
-    if (ini_codebook.isEmpty()) {
-        // No third argument: codebook / partition stay empty.
-        return result;
-    }
-
-    // Prediction residual, length N - ord:
-    //   e[i-ord] = x[i] - sum_{k=1}^{ord} predictor[k] * x[i-k]
-    const keel::usize resLen = N - keel::as<keel::usize>(ord);
-    const keel::f64 *p = result.predictor.doubleData();
-
-    Value residual = Value::matrix(1, resLen, ValueType::DOUBLE, mr);
-    {
-        keel::f64 *e = residual.doubleDataMut();
-        for (keel::usize i = keel::as<keel::usize>(ord); i < N; ++i) {
-            keel::f64 pred = 0.0;
-            for (keel::i32 k = 1; k <= ord; ++k)
-                pred += p[k] * x[i - keel::as<keel::usize>(k)];
-            e[i - keel::as<keel::usize>(ord)] = x[i] - pred;
+    keel::Array<keel::f64> init_cb(scratch.allocator());
+    keel::usize init_k = 0;
+    if (!ini_codebook.isEmpty()) {
+        if (ini_codebook.numel() == 1) {
+            const keel::i64 K = keel::as<keel::i64>(keel::floor(ini_codebook.toScalar()));
+            if (K < 1)
+                throw Error("lloyds: ini_codebook count must be positive",
+                            0, 0, "lloyds", "", "numkit:lloyds:NonPositiveINI_CODEBOOK");
+            init_k = keel::as<keel::usize>(K);
+        } else {
+            init_cb.resize(ini_codebook.numel());
+            for (keel::usize i = 0; i < ini_codebook.numel(); ++i)
+                init_cb[i] = ini_codebook.elemAsDouble(i);
         }
     }
 
-    // Lloyd-Max quantiser. `lloyds` returns (partition, codebook,
-    // distor, rel); ini_codebook is forwarded as-is — lloyds itself
-    // disambiguates a scalar codebook-length from an explicit codebook.
-    auto [partition, codebook, distor, rel] =
-        numkit::comm::lloyds(residual, ini_codebook, 1e-7, mr);
-    (void)distor;
-    (void)rel;
+    keel::comm::DpcmOptResult res;
+    const auto st = keel::comm::dpcm_opt(x.as_ref(), ord, init_cb.as_ref(), init_k, res,
+                                         scratch.allocator());
+    if (st != keel::comm::CommStatus::kOk)
+        throw Error("lloyds: training set must span a positive range",
+                    0, 0, "lloyds", "", "numkit:lloyds:InvalidTRAINING_SET");
 
-    result.partition = std::move(partition);
-    result.codebook = std::move(codebook);
-    return result;
+    DpcmOptResult out;
+    out.predictor = packRow(res.predictor.as_ref(), mr);
+    if (!ini_codebook.isEmpty()) {
+        out.partition = packRow(res.partition.as_ref(), mr);
+        out.codebook = packRow(res.codebook.as_ref(), mr);
+    }
+    return out;
 }
 
 } // namespace numkit::comm

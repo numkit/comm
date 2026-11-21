@@ -1,126 +1,88 @@
 // toolboxes/comm/src/modulation/generic_qam.cpp
 //
-// Generic constellation modulation/demodulation:
-//   y = genqammod(x, constellation)   -- index -> constellation point
-//   x = genqamdemod(y, constellation) -- nearest-point demodulation
-//
-// Default 'integer' input mode only. Bit-input mode
-// (`'InputType','bit'`) is documented as deferred -- requires
-// bit-grouping by log2(M) which we'll add when called for.
+// Generic constellation modulation/demodulation delegating to keel::comm.
 
+#include <keel/arena.h>
+#include <keel/array.h>
+#include <keel/comm.h>
+#include <keel/complex.h>
 #include <keel/core.h>
 #include <keel/memory.h>
-#include <keel/complex.h>
 #include <numkit/comm/modulation/generic_qam.hpp>
 
-#include <numkit/value/argcheck.hpp>
-#include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
-
-#include <limits>
+#include <numkit/value/value.hpp>
 
 namespace numkit::comm {
 
-// Read constellation point k as Cd.
-static keel::c64 constAt(const Value &c, keel::usize k) {
-    if (c.isComplex())
-        return c.complexData()[k];
-    return keel::c64(c.elemAsDouble(k), 0.0);
-}
-
 namespace {
 
-void genqammod_argcheck(const Value &x, const Value &constellation)
+keel::Array<keel::c64> readComplex(const Value &v, keel::Allocator *alloc)
+{
+    const keel::usize n = v.numel();
+    keel::Array<keel::c64> out(n, keel::c64(0.0, 0.0), alloc);
+    if (v.isComplex()) {
+        const keel::c64 *src = v.complexData();
+        for (keel::usize i = 0; i < n; ++i) out[i] = src[i];
+    } else {
+        for (keel::usize i = 0; i < n; ++i) out[i] = keel::c64(v.elemAsDouble(i), 0.0);
+    }
+    return out;
+}
+
+} // namespace
+
+Value genqammod(const Value &x, const Value &constellation, keel::Allocator *mr)
 {
     const keel::usize M = constellation.numel();
     if (M == 0)
         throw Error("genqammod: constellation must be non-empty",
                     0, 0, "genqammod", "", "numkit:genqammod:EmptyConst");
+
     const keel::usize N = x.numel();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    keel::Array<keel::i32> syms(N, 0, scratch.allocator());
     for (keel::usize i = 0; i < N; ++i) {
         const keel::f64 xi = x.elemAsDouble(i);
         if (xi < 0.0 || xi >= keel::as<keel::f64>(M))
             throw Error("genqammod: index out of range [0, M-1]",
-                        0, 0, "genqammod", "",
-                        "numkit:genqammod:OutOfRange");
+                        0, 0, "genqammod", "", "numkit:genqammod:OutOfRange");
+        syms[i] = keel::as<keel::i32>(xi);
     }
-}
 
-void genqamdemod_argcheck(const Value &constellation)
-{
-    if (constellation.numel() == 0)
-        throw Error("genqamdemod: constellation must be non-empty",
-                    0, 0, "genqamdemod", "", "numkit:genqamdemod:EmptyConst");
-}
-
-} // namespace
-
-Value genqammod(const Value &x, const Value &constellation,
-                keel::Allocator *mr)
-{
-    genqammod_argcheck(x, constellation);
-
-    const auto &d = x.dims();
-    const keel::usize H = d.rows();
-    const keel::usize W = d.cols();
-    const keel::usize N = H * W;
-
-    // Output type: complex iff constellation is complex.
+    const auto C = readComplex(constellation, scratch.allocator());
     const bool out_complex = constellation.isComplex();
-    Value out = Value::matrix(H, W,
-                              out_complex ? ValueType::COMPLEX
-                                          : ValueType::DOUBLE,
-                              mr);
-
+    Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
+                              out_complex ? ValueType::COMPLEX : ValueType::DOUBLE, mr);
     if (out_complex) {
-        keel::c64 *o = out.complexDataMut();
-        for (keel::usize i = 0; i < N; ++i) {
-            const keel::usize k = keel::as<keel::usize>(x.elemAsDouble(i));
-            o[i] = constellation.complexData()[k];
-        }
+        (void)keel::comm::genqam_mod(syms.as_ref(), C.as_ref(),
+                                     keel::MutArrayRef<keel::c64>(out.complexDataMut(), N));
     } else {
+        keel::Array<keel::c64> tmp(N, keel::c64(0.0, 0.0), scratch.allocator());
+        (void)keel::comm::genqam_mod(syms.as_ref(), C.as_ref(), tmp.as_mut_ref());
         keel::f64 *o = out.doubleDataMut();
-        for (keel::usize i = 0; i < N; ++i) {
-            const keel::usize k = keel::as<keel::usize>(x.elemAsDouble(i));
-            o[i] = constellation.elemAsDouble(k);
-        }
+        for (keel::usize i = 0; i < N; ++i) o[i] = tmp[i].real();
     }
     return out;
 }
 
-Value genqamdemod(const Value &y, const Value &constellation,
-                  keel::Allocator *mr)
+Value genqamdemod(const Value &y, const Value &constellation, keel::Allocator *mr)
 {
-    genqamdemod_argcheck(constellation);
-    const keel::usize M = constellation.numel();
+    if (constellation.numel() == 0)
+        throw Error("genqamdemod: constellation must be non-empty",
+                    0, 0, "genqamdemod", "", "numkit:genqamdemod:EmptyConst");
 
-    const auto &d = y.dims();
-    const keel::usize H = d.rows();
-    const keel::usize W = d.cols();
-    const keel::usize N = H * W;
+    const keel::usize N = y.numel();
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    const auto C = readComplex(constellation, scratch.allocator());
+    const auto samples = readComplex(y, scratch.allocator());
 
-    Value out = Value::matrix(H, W, ValueType::DOUBLE, mr);
+    keel::Array<keel::i32> idx(N, 0, scratch.allocator());
+    (void)keel::comm::genqam_demod(samples.as_ref(), C.as_ref(), idx.as_mut_ref());
+
+    Value out = Value::matrix(y.dims().rows(), y.dims().cols(), ValueType::DOUBLE, mr);
     keel::f64 *o = out.doubleDataMut();
-    const bool y_complex = y.isComplex();
-
-    for (keel::usize i = 0; i < N; ++i) {
-        const keel::c64 yi = y_complex
-                          ? y.complexData()[i]
-                          : keel::c64(y.elemAsDouble(i), 0.0);
-        keel::usize best_k = 0;
-        keel::f64 best_d2 = std::numeric_limits<keel::f64>::infinity();
-        for (keel::usize k = 0; k < M; ++k) {
-            const keel::c64 ck = constAt(constellation, k);
-            const keel::f64 dr = yi.real() - ck.real();
-            const keel::f64 di = yi.imag() - ck.imag();
-            const keel::f64 d2 = dr * dr + di * di;
-            if (d2 < best_d2) {
-                best_d2 = d2;
-                best_k  = k;
-            }
-        }
-        o[i] = keel::as<keel::f64>(best_k);
-    }
+    for (keel::usize i = 0; i < N; ++i) o[i] = keel::as<keel::f64>(idx[i]);
     return out;
 }
 
