@@ -43,7 +43,7 @@ struct DpcmOptResult {
 ///                      (optionally) codebook + partition.
 /// @see dpcmenco, dpcmdeco, lloyds
 DpcmOptResult
-dpcmopt(const Value &training_set, int ord,
+dpcmopt(const Value &training_set, keel::i32 ord,
         const Value &ini_codebook = Value::Empty,
         keel::Allocator *mr = nullptr);
 

@@ -34,7 +34,7 @@ void pskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 10, "pskmod");
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     const keel::f64 ini = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
@@ -46,7 +46,7 @@ void pskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, "pskdemod");  // no max: name-value tail in the reference (no count wall to 12 args)
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     const keel::f64 ini = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
@@ -58,7 +58,7 @@ void dpskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, "dpskmod");  // no max: name-value tail in the reference (no count wall to 12 args)
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     const keel::f64 rot = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
@@ -70,7 +70,7 @@ void dpskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                    keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, "dpskdemod");  // no max: name-value tail in the reference (no count wall to 12 args)
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     const keel::f64 rot = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;

@@ -30,7 +30,7 @@ namespace numkit::comm {
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see pskdemod, dpskmod, qammod
-Value pskmod(const Value &x, int M, keel::f64 ini_phase,
+Value pskmod(const Value &x, keel::i32 M, keel::f64 ini_phase,
              keel::StringRef symbol_order,
              keel::Allocator *mr = nullptr);
 
@@ -44,7 +44,7 @@ Value pskmod(const Value &x, int M, keel::f64 ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see pskmod
-Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
+Value pskdemod(const Value &y, keel::i32 M, keel::f64 ini_phase,
                keel::StringRef symbol_order,
                keel::Allocator *mr = nullptr);
 
@@ -62,7 +62,7 @@ Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see dpskdemod, pskmod
-Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
+Value dpskmod(const Value &x, keel::i32 M, keel::f64 phase_rot,
               keel::StringRef symbol_order,
               keel::Allocator *mr = nullptr);
 
@@ -76,7 +76,7 @@ Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see dpskmod
-Value dpskdemod(const Value &y, int M, keel::f64 phase_rot,
+Value dpskdemod(const Value &y, keel::i32 M, keel::f64 phase_rot,
                 keel::StringRef symbol_order,
                 keel::Allocator *mr = nullptr);
 

@@ -47,8 +47,8 @@ Value gen2par(const Value &mat, keel::Allocator *mr = nullptr);
 struct HammgenResult {
     Value     h;  ///< Parity-check matrix, `m × n`.
     Value     g;  ///< Generator matrix, `k × n`.
-    long long n;  ///< Codeword length `2^m - 1`.
-    long long k;  ///< Message length `n - m`.
+    keel::i64 n;  ///< Codeword length `2^m - 1`.
+    keel::i64 k;  ///< Message length `n - m`.
 };
 
 /// @brief Parity-check and generator matrices for a Hamming code
@@ -69,7 +69,7 @@ struct HammgenResult {
 /// @return          @ref HammgenResult (h, g, n, k).
 /// @throws Error if `m < 2`, or `primPoly` (when supplied) is not a binary
 ///         row of length `m+1`.
-HammgenResult hammgen(long long m, const Value &primPoly = Value::Empty,
+HammgenResult hammgen(keel::i64 m, const Value &primPoly = Value::Empty,
                       keel::Allocator *mr = nullptr);
 
 /// @brief Generator polynomial(s) for an `(n, k)` cyclic code
@@ -93,7 +93,7 @@ HammgenResult hammgen(long long m, const Value &primPoly = Value::Empty,
 ///             no valid generator polynomial exists.
 /// @throws Error on non-integer / out-of-range `n` or `k`, or an unknown
 ///         `opt`.
-Value cyclpoly(long long n, long long k, keel::StringRef opt = "",
+Value cyclpoly(keel::i64 n, keel::i64 k, keel::StringRef opt = "",
                keel::Allocator *mr = nullptr);
 
 /// @brief Result of @ref cyclgen: parity-check / generator matrices and
@@ -101,7 +101,7 @@ Value cyclpoly(long long n, long long k, keel::StringRef opt = "",
 struct CyclgenResult {
     Value     h;  ///< Parity-check matrix, `(n-k) × n`.
     Value     g;  ///< Generator matrix, `k × n`.
-    long long k;  ///< Message length `n - (deg genpoly)`.
+    keel::i64 k;  ///< Message length `n - (deg genpoly)`.
 };
 
 /// @brief Parity-check and generator matrices for a cyclic code
@@ -124,7 +124,7 @@ struct CyclgenResult {
 /// @return         @ref CyclgenResult (h, g, k).
 /// @throws Error if `genpoly` does not divide `x^n - 1`, or `opt` is
 ///         unknown.
-CyclgenResult cyclgen(long long n, const Value &genpoly,
+CyclgenResult cyclgen(keel::i64 n, const Value &genpoly,
                       keel::StringRef opt = "system",
                       keel::Allocator *mr = nullptr);
 
@@ -132,7 +132,7 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
 /// added.
 struct EncodeResult {
     Value     code;   ///< Encoded codewords (same orientation as `msg`).
-    long long added;  ///< Number of zero message bits padded before coding.
+    keel::i64 added;  ///< Number of zero message bits padded before coding.
 };
 
 /// @brief Encode a message with a linear block code
@@ -160,7 +160,7 @@ struct EncodeResult {
 /// @throws Error on a bad `n`/`k`, an unknown method, or a missing /
 ///         malformed `opt` where the method requires one.
 /// @see decode, hammgen, cyclgen
-EncodeResult encode(const Value &msg, long long n, long long k,
+EncodeResult encode(const Value &msg, keel::i64 n, keel::i64 k,
                     keel::StringRef method = "hamming/binary",
                     const Value &opt = Value::Empty,
                     keel::Allocator *mr = nullptr);
@@ -193,7 +193,7 @@ struct DecodeResult {
 /// @throws Error on a bad `n`/`k`, an unknown method, or a missing /
 ///         malformed `opt`.
 /// @see encode, hammgen, cyclgen
-DecodeResult decode(const Value &code, long long n, long long k,
+DecodeResult decode(const Value &code, keel::i64 n, keel::i64 k,
                     keel::StringRef method = "hamming/binary",
                     const Value &opt = Value::Empty,
                     keel::Allocator *mr = nullptr);

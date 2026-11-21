@@ -414,7 +414,7 @@ constexpr keel::c64 kMil256[256] = {
     keel::c64(  -0.282166,   -0.282166),
 };
 
-const keel::c64 *constellationFor(int M, keel::usize &len_out)
+const keel::c64 *constellationFor(keel::i32 M, keel::usize &len_out)
 {
     switch (M) {
         case 16:
@@ -442,7 +442,7 @@ const keel::c64 *constellationFor(int M, keel::usize &len_out)
 // <fn>_argcheck for the MIL-STD QAM pair: the M-set contract lives
 // here so the interpreter and direct C++ calls answer with ONE
 // identifier per function (bugs/opened/lang/reg-domain-logic.md).
-void mil188MSetArgcheck(int M, keel::StringRef fn)
+void mil188MSetArgcheck(keel::i32 M, keel::StringRef fn)
 {
     argcheck::expectedOneOf(keel::as<keel::f64>(M), {16, 32, 64, 256},
                             2, "M", fn);
@@ -450,7 +450,7 @@ void mil188MSetArgcheck(int M, keel::StringRef fn)
 
 } // namespace
 
-Value mil188qammod(const Value &x, int M, keel::Allocator *mr)
+Value mil188qammod(const Value &x, keel::i32 M, keel::Allocator *mr)
 {
     mil188MSetArgcheck(M, "mil188qammod");
     keel::usize N = 0;
@@ -471,7 +471,7 @@ Value mil188qammod(const Value &x, int M, keel::Allocator *mr)
     return out;
 }
 
-Value mil188qamdemod(const Value &y, int M, keel::Allocator *mr)
+Value mil188qamdemod(const Value &y, keel::i32 M, keel::Allocator *mr)
 {
     mil188MSetArgcheck(M, "mil188qamdemod");
     keel::usize N = 0;

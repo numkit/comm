@@ -41,9 +41,9 @@ namespace {
 // The lag-k sum has N-k terms; the denominator is N-1-k (one less than
 // the term count). The caller guarantees N >= ord + 3 so every
 // denominator (N-1-k for k <= ord) is strictly positive.
-void autocorrelation(const keel::f64 *x, keel::usize N, int ord, keel::f64 *r)
+void autocorrelation(const keel::f64 *x, keel::usize N, keel::i32 ord, keel::f64 *r)
 {
-    for (int k = 0; k <= ord; ++k) {
+    for (keel::i32 k = 0; k <= ord; ++k) {
         keel::f64 acc = 0.0;
         const keel::usize last = N - keel::as<keel::usize>(k);  // N-k terms
         for (keel::usize n = 0; n < last; ++n)
@@ -63,17 +63,17 @@ void autocorrelation(const keel::f64 *x, keel::usize N, int ord, keel::f64 *r)
 // Scratch `prev` (length ord+1) holds a snapshot of `a` before the
 // in-place update so the reversed term is read from the pre-update
 // coefficients.
-void levinson_durbin(const keel::f64 *r, int ord, keel::f64 *a, keel::f64 *prev)
+void levinson_durbin(const keel::f64 *r, keel::i32 ord, keel::f64 *a, keel::f64 *prev)
 {
-    for (int i = 0; i <= ord; ++i)
+    for (keel::i32 i = 0; i <= ord; ++i)
         a[i] = 0.0;
     a[0] = 1.0;
 
     keel::f64 D = r[0];
 
-    for (int m = 0; m < ord; ++m) {
+    for (keel::i32 m = 0; m < ord; ++m) {
         keel::f64 beta = 0.0;
-        for (int j = 0; j <= m; ++j)
+        for (keel::i32 j = 0; j <= m; ++j)
             beta += a[j] * r[m + 1 - j];
 
         // D == 0 only for a degenerate (all-zero / constant) signal;
@@ -81,17 +81,17 @@ void levinson_durbin(const keel::f64 *r, int ord, keel::f64 *a, keel::f64 *prev)
         // unchanged, yielding a zero predictor tail.
         const keel::f64 K = (D != 0.0) ? (-beta / D) : 0.0;
 
-        for (int i = 0; i <= m; ++i)
+        for (keel::i32 i = 0; i <= m; ++i)
             prev[i] = a[i];
         // a[1..m+1] += K * reverse(a[0..m])
-        for (int i = 1; i <= m + 1; ++i)
+        for (keel::i32 i = 1; i <= m + 1; ++i)
             a[i] += K * prev[m + 1 - i];
 
         D = (1.0 - K * K) * D;
     }
 }
 
-void dpcmopt_argcheck(const Value &training_set, int ord)
+void dpcmopt_argcheck(const Value &training_set, keel::i32 ord)
 {
     if (ord < 1)
         throw numkit::Error("The predictor order must be a positive "
@@ -109,7 +109,7 @@ void dpcmopt_argcheck(const Value &training_set, int ord)
 
 }  // namespace
 
-DpcmOptResult dpcmopt(const Value &training_set, int ord,
+DpcmOptResult dpcmopt(const Value &training_set, keel::i32 ord,
                       const Value &ini_codebook,
                       keel::Allocator *mr)
 {
@@ -144,7 +144,7 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
     {
         keel::f64 *p = result.predictor.doubleDataMut();
         p[0] = 0.0;
-        for (int k = 1; k <= ord; ++k)
+        for (keel::i32 k = 1; k <= ord; ++k)
             p[k] = -a[k];
     }
 
@@ -164,7 +164,7 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
         keel::f64 *e = residual.doubleDataMut();
         for (keel::usize i = keel::as<keel::usize>(ord); i < N; ++i) {
             keel::f64 pred = 0.0;
-            for (int k = 1; k <= ord; ++k)
+            for (keel::i32 k = 1; k <= ord; ++k)
                 pred += p[k] * x[i - keel::as<keel::usize>(k)];
             e[i - keel::as<keel::usize>(ord)] = x[i] - pred;
         }

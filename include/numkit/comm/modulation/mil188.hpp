@@ -28,7 +28,7 @@ namespace numkit::comm {
 /// @return    Complex baseband samples, same shape as `x`.
 /// @throws Error  Unsupported `M`.
 /// @see mil188qamdemod
-Value mil188qammod(const Value &x, int M,
+Value mil188qammod(const Value &x, keel::i32 M,
                    keel::Allocator *mr = nullptr);
 
 /// @brief MIL-STD-188-110 QAM demodulator
@@ -42,7 +42,7 @@ Value mil188qammod(const Value &x, int M,
 /// @return    Integer symbol indices, same shape as `y`.
 /// @throws Error  Unsupported `M`.
 /// @see mil188qammod
-Value mil188qamdemod(const Value &y, int M,
+Value mil188qamdemod(const Value &y, keel::i32 M,
                      keel::Allocator *mr = nullptr);
 
 

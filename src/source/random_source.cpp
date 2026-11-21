@@ -195,7 +195,7 @@ Value randsrc(::numkit::ops::RngContext &rng, keel::usize m, keel::usize n, cons
 namespace {
 
 void parseErrspec(const Value &e, keel::Allocator *mr,
-                  int **counts_out, keel::f64 **prob_out, keel::usize *len_out,
+                  keel::i32 **counts_out, keel::f64 **prob_out, keel::usize *len_out,
                   keel::usize n)
 {
     const keel::usize R = e.dims().rows();
@@ -203,8 +203,8 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
 
     if (R == 1 && C >= 1) {
         const keel::usize K = C;
-        auto *cs = static_cast<int *>(
-            mr->alloc_bytes(K * sizeof(int), alignof(int)));
+        auto *cs = static_cast<keel::i32 *>(
+            mr->alloc_bytes(K * sizeof(keel::i32), alignof(keel::i32)));
         auto *pr = static_cast<keel::f64 *>(
             mr->alloc_bytes(K * sizeof(keel::f64), alignof(keel::f64)));
         for (keel::usize k = 0; k < K; ++k) {
@@ -217,7 +217,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
                 throw Error("randerr: error count exceeds n",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsForm");
-            cs[k] = keel::as<int>(v);
+            cs[k] = keel::as<keel::i32>(v);
             pr[k] = keel::as<keel::f64>(k + 1) / keel::as<keel::f64>(K);
         }
         *counts_out = cs;
@@ -228,8 +228,8 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
 
     if (R == 2 && C >= 1) {
         const keel::usize K = C;
-        auto *cs = static_cast<int *>(
-            mr->alloc_bytes(K * sizeof(int), alignof(int)));
+        auto *cs = static_cast<keel::i32 *>(
+            mr->alloc_bytes(K * sizeof(keel::i32), alignof(keel::i32)));
         auto *pr = static_cast<keel::f64 *>(
             mr->alloc_bytes(K * sizeof(keel::f64), alignof(keel::f64)));
         keel::f64 sum = 0.0;
@@ -248,7 +248,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
                 throw Error("randerr: probabilities must be in [0, 1]",
                             0, 0, "randerr", "",
                             "numkit:randerr:Invalid2ndRowErrorsVal");
-            cs[k] = keel::as<int>(v);
+            cs[k] = keel::as<keel::i32>(v);
             sum += p;
             pr[k] = sum;
         }
@@ -267,7 +267,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
 }
 
 void randerr_argcheck(const Value &e, keel::Allocator *mr,
-                      int **counts_out, keel::f64 **prob_out, keel::usize *len_out,
+                      keel::i32 **counts_out, keel::f64 **prob_out, keel::usize *len_out,
                       keel::usize n)
 {
     parseErrspec(e, mr, counts_out, prob_out, len_out, n);
@@ -275,14 +275,14 @@ void randerr_argcheck(const Value &e, keel::Allocator *mr,
 
 template <typename Rng>
 void fillOneRow(keel::f64 *o_col_major, keel::usize i, keel::usize m, keel::usize n,
-                const int *counts, const keel::f64 *prob, keel::usize K, Rng &rng,
+                const keel::i32 *counts, const keel::f64 *prob, keel::usize K, Rng &rng,
                 keel::Array<keel::f64> &rs, keel::Array<keel::usize> &p)
 {
     // 1) Pick error count from CDF.
     const keel::f64 u = rng.genRes53();
     keel::usize k = 0;
     while (k < K - 1 && u >= prob[k]) ++k;
-    const int num = counts[k];
+    const keel::i32 num = counts[k];
 
     // 2) n random values + sort permutation.
     for (keel::usize j = 0; j < n; ++j) rs[j] = rng.genRes53();
@@ -305,7 +305,7 @@ Value randerr(::numkit::ops::RngContext &rng, keel::usize m, keel::usize n, cons
 {
     using ::numkit::ops::MatlabMT19937;
 
-    int    *counts = nullptr;
+    keel::i32    *counts = nullptr;
     keel::f64 *prob   = nullptr;
     keel::usize  K      = 0;
     randerr_argcheck(errspec, mr, &counts, &prob, &K, n);

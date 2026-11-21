@@ -25,9 +25,9 @@ void rcosdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 3, 4, "rcosdesign");
     const keel::f64 beta = args[0].toScalar();
-    const int span    = argcheck::expectedPositiveInteger(
+    const keel::i32 span    = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "span", "rcosdesign"), 2, "span", "rcosdesign");
-    const int sps     = argcheck::expectedPositiveInteger(
+    const keel::i32 sps     = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "sps", "rcosdesign"), 3, "sps", "rcosdesign");
     keel::String shape("normal");
     if (args.size() >= 4 && !args[3].isEmpty()) {
@@ -45,12 +45,12 @@ void gaussdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     // R2025b defaults: span 3, sps 2 — both optional.
     argcheck::checkNargin(args.size(), 1, 3, "gaussdesign");
     const keel::f64 BT = args[0].toScalar();
-    const int span = (args.size() >= 2 && !args[1].isEmpty())
+    const keel::i32 span = (args.size() >= 2 && !args[1].isEmpty())
         ? argcheck::expectedPositiveInteger(
               argcheck::expectedReal(args[1], 2, "span", "gaussdesign"),
               2, "span", "gaussdesign")
         : 3;
-    const int sps = (args.size() >= 3 && !args[2].isEmpty())
+    const keel::i32 sps = (args.size() >= 3 && !args[2].isEmpty())
         ? argcheck::expectedPositiveInteger(
               argcheck::expectedReal(args[2], 3, "sps", "gaussdesign"),
               3, "sps", "gaussdesign")
@@ -62,7 +62,7 @@ void rectpulse_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                    keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "rectpulse");
-    const int n = argcheck::expectedPositiveInteger(
+    const keel::i32 n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "rectpulse"), 2, "n", "rectpulse");
     outs[0] = rectpulse(args[0], n, ctx.engine->allocator());
 }
@@ -71,7 +71,7 @@ void intdump_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "intdump");
-    const int n = argcheck::expectedPositiveInteger(
+    const keel::i32 n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "intdump"), 2, "n", "intdump");
     outs[0] = intdump(args[0], n, ctx.engine->allocator());
 }

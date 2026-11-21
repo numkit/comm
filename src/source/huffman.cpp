@@ -38,8 +38,8 @@ namespace {
 
 struct HeapNode {
     keel::f64 prob;
-    int    id;        // Node id; leaves are 0..K-1, internals are K..2K-2.
-    int    order;     // Insertion order to break ties stably.
+    keel::i32    id;        // Node id; leaves are 0..K-1, internals are K..2K-2.
+    keel::i32    order;     // Insertion order to break ties stably.
     bool operator>(const HeapNode &b) const {
         if (prob != b.prob) return prob > b.prob;
         return order > b.order;
@@ -47,8 +47,8 @@ struct HeapNode {
 };
 
 struct TreeNode {
-    int parent  = -1;
-    int bit     = 0;  // 0 if this is the "first/lower" child, 1 otherwise.
+    keel::i32 parent  = -1;
+    keel::i32 bit     = 0;  // 0 if this is the "first/lower" child, 1 otherwise.
 };
 
 void huffmandict_argcheck(const Value &symbols, const Value &probs)
@@ -103,13 +103,13 @@ huffmandict(const Value &symbols, const Value &probs,
     keel::Array<HeapNode> heap(mr);
     heap.reserve(K);
     auto heapCmp = [](const HeapNode &a, const HeapNode &b) { return a > b; };
-    int order_seed = 0;
+    keel::i32 order_seed = 0;
     for (keel::usize k = 0; k < K; ++k) {
-        heap.push_back({probs.elemAsDouble(k), keel::as<int>(k), order_seed++});
+        heap.push_back({probs.elemAsDouble(k), keel::as<keel::i32>(k), order_seed++});
         std::push_heap(heap.begin(), heap.end(), heapCmp);
     }
 
-    int next_id = keel::as<int>(K);
+    keel::i32 next_id = keel::as<keel::i32>(K);
     while (heap.size() > 1) {
         std::pop_heap(heap.begin(), heap.end(), heapCmp);
         HeapNode a = heap.back(); heap.pop_back();
@@ -130,7 +130,7 @@ huffmandict(const Value &symbols, const Value &probs,
     keel::Array<keel::f64> bits(mr);
     for (keel::usize k = 0; k < K; ++k) {
         bits.clear();
-        int cur = keel::as<int>(k);
+        keel::i32 cur = keel::as<keel::i32>(k);
         while (tree[cur].parent != -1) {
             bits.push_back(keel::as<keel::f64>(tree[cur].bit));
             cur = tree[cur].parent;
@@ -191,10 +191,10 @@ DictView readDict(const Value &dict)
 }
 
 // Lookup symbol -> code index. Linear scan; K is small (typically <=256).
-int findSymbolIdx(const DictView &dv, keel::f64 sym)
+keel::i32 findSymbolIdx(const DictView &dv, keel::f64 sym)
 {
     for (keel::usize k = 0; k < dv.K; ++k) {
-        if (dv.syms[k] == sym) return keel::as<int>(k);
+        if (dv.syms[k] == sym) return keel::as<keel::i32>(k);
     }
     return -1;
 }
@@ -203,23 +203,23 @@ int findSymbolIdx(const DictView &dv, keel::f64 sym)
 //   left/right child indices (-1 = none); leaf_sym = >=0 symbol index.
 struct DecodeTree {
     struct Node {
-        int left  = -1;
-        int right = -1;
-        int sym   = -1;   // index into dv.syms; -1 if internal node.
+        keel::i32 left  = -1;
+        keel::i32 right = -1;
+        keel::i32 sym   = -1;   // index into dv.syms; -1 if internal node.
     };
     keel::Array<Node> nodes{ Node{} };  // start with root.
 
-    void insert(keel::ArrayRef<keel::u8> code, int sym_idx)
+    void insert(keel::ArrayRef<keel::u8> code, keel::i32 sym_idx)
     {
-        int cur = 0;
+        keel::i32 cur = 0;
         for (keel::u8 bit : code) {
-            int child = (bit == 0) ? nodes[cur].left
+            keel::i32 child = (bit == 0) ? nodes[cur].left
                                    : nodes[cur].right;
             if (child < 0) {
                 // push_back may reallocate -> read by value above, then
                 // write back via index after the push completes.
                 nodes.push_back(Node{});
-                child = keel::as<int>(nodes.size() - 1);
+                child = keel::as<keel::i32>(nodes.size() - 1);
                 if (bit == 0) nodes[cur].left  = child;
                 else          nodes[cur].right = child;
             }
@@ -256,7 +256,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
     keel::usize total_bits = 0;
     for (keel::usize i = 0; i < N; ++i) {
         const keel::f64 s = sig.elemAsDouble(i);
-        const int k = findSymbolIdx(dv, s);
+        const keel::i32 k = findSymbolIdx(dv, s);
         if (k < 0)
             throw Error("huffmanenco: symbol not in dict",
                         0, 0, "huffmanenco", "",
@@ -272,7 +272,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
 
     keel::usize pos = 0;
     for (keel::usize i = 0; i < N; ++i) {
-        const int k = findSymbolIdx(dv, sig.elemAsDouble(i));
+        const keel::i32 k = findSymbolIdx(dv, sig.elemAsDouble(i));
         for (keel::u8 bit : dv.codes[k])
             o[pos++] = keel::as<keel::f64>(bit);
     }
@@ -287,19 +287,19 @@ Value huffmandeco(const Value &bits, const Value &dict,
     // Build decode tree.
     DecodeTree tree;
     for (keel::usize k = 0; k < dv.K; ++k)
-        tree.insert(dv.codes[k], keel::as<int>(k));
+        tree.insert(dv.codes[k], keel::as<keel::i32>(k));
 
     // Walk bits, emit symbols.
     const keel::usize N = bits.numel();
     keel::Array<keel::f64> emitted(mr);
-    int cur = 0;
+    keel::i32 cur = 0;
     for (keel::usize i = 0; i < N; ++i) {
         const keel::f64 v = bits.elemAsDouble(i);
         if (v != 0.0 && v != 1.0)
             throw Error("huffmandeco: input bits must be 0 or 1",
                         0, 0, "huffmandeco", "",
                         "numkit:huffmandeco:NonBit");
-        const int next = (v == 0.0) ? tree.nodes[cur].left
+        const keel::i32 next = (v == 0.0) ? tree.nodes[cur].left
                                     : tree.nodes[cur].right;
         if (next < 0)
             throw Error("huffmandeco: bit pattern does not match dict",

@@ -49,7 +49,7 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, keel::f64 snr_db, kee
 /// @param mr           Memory resource (nullptr → process default).
 /// @return             `m`×`n` matrix of noise samples.
 /// @see awgn
-Value wgn(::numkit::ops::RngContext &rng, int m, int n, keel::f64 p, keel::StringRef type,
+Value wgn(::numkit::ops::RngContext &rng, keel::i32 m, keel::i32 n, keel::f64 p, keel::StringRef type,
           bool complex_out,
           keel::Allocator *mr = nullptr);
 
@@ -92,7 +92,7 @@ Value qfuncinv(const Value &p,
 /// @param m   Order (positive integer, default 1).
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Element-wise Marcum Q values, broadcasting `a` & `b`.
-Value marcumq(const Value &a, const Value &b, int m,
+Value marcumq(const Value &a, const Value &b, keel::i32 m,
               keel::Allocator *mr = nullptr);
 
 /// @brief Analytical bit-error rate over AWGN
@@ -104,7 +104,7 @@ Value marcumq(const Value &a, const Value &b, int m,
 /// @param mr       Memory resource (nullptr → process default).
 /// @return         Element-wise BER.
 /// @throws Error   Unknown modulation string or invalid `M`.
-Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
+Value berawgn(const Value &EbNo_dB, keel::StringRef mod, keel::i32 M,
               keel::Allocator *mr = nullptr);
 
 /// @brief Equivalent noise bandwidth of an LTI filter
@@ -116,7 +116,7 @@ Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
 /// @param fs     Sample rate in Hz.
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       Scalar noise bandwidth in Hz.
-Value noisebw(const Value &num, const Value &den, int Nsamp,
+Value noisebw(const Value &num, const Value &den, keel::i32 Nsamp,
               keel::f64 fs,
               keel::Allocator *mr = nullptr);
 
@@ -150,7 +150,7 @@ berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
 Value convertSNR(const Value &snr_in,
                  keel::StringRef in_type,
                  keel::StringRef out_type,
-                 int bits_per_symbol,
+                 keel::i32 bits_per_symbol,
                  keel::Allocator *mr = nullptr);
 
 

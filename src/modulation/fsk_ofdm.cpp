@@ -24,21 +24,21 @@ namespace numkit::comm {
 
 namespace {
 
-inline int to_gray(int b) { return b ^ (b >> 1); }
-inline int from_gray(int g) {
-    int b = g;
+inline keel::i32 to_gray(keel::i32 b) { return b ^ (b >> 1); }
+inline keel::i32 from_gray(keel::i32 g) {
+    keel::i32 b = g;
     while (g >>= 1) b ^= g;
     return b;
 }
 
-inline int symbol_to_freq_idx(int s, int /*M*/, keel::StringRef order) {
+inline keel::i32 symbol_to_freq_idx(keel::i32 s, keel::i32 /*M*/, keel::StringRef order) {
     return (order == "bin") ? s : to_gray(s);
 }
-inline int freq_idx_to_symbol(int k, int /*M*/, keel::StringRef order) {
+inline keel::i32 freq_idx_to_symbol(keel::i32 k, keel::i32 /*M*/, keel::StringRef order) {
     return (order == "bin") ? k : from_gray(k);
 }
 
-void fskmod_argcheck(int M, keel::f64 freq_sep, int nsamp, keel::f64 fs)
+void fskmod_argcheck(keel::i32 M, keel::f64 freq_sep, keel::i32 nsamp, keel::f64 fs)
 {
     if (M < 2)
         throw Error("fskmod: M must be ≥ 2", 0, 0, "fskmod", "",
@@ -48,7 +48,7 @@ void fskmod_argcheck(int M, keel::f64 freq_sep, int nsamp, keel::f64 fs)
                     0, 0, "fskmod", "", "numkit:fskmod:badparam");
 }
 
-void fskdemod_argcheck(int M, keel::f64 freq_sep, int nsamp, keel::f64 fs)
+void fskdemod_argcheck(keel::i32 M, keel::f64 freq_sep, keel::i32 nsamp, keel::f64 fs)
 {
     if (M < 2)
         throw Error("fskdemod: M must be ≥ 2", 0, 0, "fskdemod", "",
@@ -58,17 +58,17 @@ void fskdemod_argcheck(int M, keel::f64 freq_sep, int nsamp, keel::f64 fs)
                     0, 0, "fskdemod", "", "numkit:fskdemod:badparam");
 }
 
-void ofdmmod_argcheck(const Value &in, int nfft, int cplen)
+void ofdmmod_argcheck(const Value &in, keel::i32 nfft, keel::i32 cplen)
 {
     if (nfft <= 0 || cplen < 0)
         throw Error("ofdmmod: bad nfft / cplen", 0, 0, "ofdmmod", "",
                     "numkit:ofdmmod:badparam");
-    if ((int)in.dims().rows() != nfft)
+    if ((keel::i32)in.dims().rows() != nfft)
         throw Error("ofdmmod: in must have nfft rows", 0, 0, "ofdmmod", "",
                     "numkit:ofdmmod:size");
 }
 
-void ofdmdemod_argcheck(const Value &in, int nfft, int cplen)
+void ofdmdemod_argcheck(const Value &in, keel::i32 nfft, keel::i32 cplen)
 {
     if (nfft <= 0 || cplen < 0)
         throw Error("ofdmdemod: bad nfft / cplen", 0, 0, "ofdmdemod", "",
@@ -81,7 +81,7 @@ void ofdmdemod_argcheck(const Value &in, int nfft, int cplen)
 
 } // anonymous
 
-Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
+Value fskmod(const Value &x, keel::i32 M, keel::f64 freq_sep, keel::i32 nsamp,
              keel::f64 fs, keel::StringRef phase_continuity,
              keel::StringRef symbol_order,
              keel::Allocator *mr)
@@ -98,12 +98,12 @@ Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
 
     keel::f64 phase = 0.0;
     for (keel::usize s = 0; s < Nsym; ++s) {
-        const int sym = (int)x.elemAsDouble(s);
-        const int k = symbol_to_freq_idx(sym, M, symbol_order);
+        const keel::i32 sym = (keel::i32)x.elemAsDouble(s);
+        const keel::i32 k = symbol_to_freq_idx(sym, M, symbol_order);
         // Tone frequency, centered around 0 (symmetric tones).
         const keel::f64 f = (keel::f64(k) - 0.5 * (M - 1)) * freq_sep;
         const keel::f64 dphi = 2.0 * M_PI * f / fs;
-        for (int n = 0; n < nsamp; ++n) {
+        for (keel::i32 n = 0; n < nsamp; ++n) {
             if (cont) {
                 od[s * nsamp + (keel::usize)n] = keel::c64(std::cos(phase), std::sin(phase));
                 phase += dphi;
@@ -116,7 +116,7 @@ Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
     return out;
 }
 
-Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
+Value fskdemod(const Value &y, keel::i32 M, keel::f64 freq_sep, keel::i32 nsamp,
                keel::f64 fs, keel::StringRef symbol_order,
                keel::Allocator *mr)
 {
@@ -131,10 +131,10 @@ Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
     // Pre-compute reference tone phasors.
     const keel::usize ns = keel::as<keel::usize>(nsamp);
     keel::Array<keel::c64> ref(keel::as<keel::usize>(M) * ns, mr);
-    for (int k = 0; k < M; ++k) {
+    for (keel::i32 k = 0; k < M; ++k) {
         const keel::f64 f = (keel::f64(k) - 0.5 * (M - 1)) * freq_sep;
         const keel::f64 dphi = 2.0 * M_PI * f / fs;
-        for (int n = 0; n < nsamp; ++n) {
+        for (keel::i32 n = 0; n < nsamp; ++n) {
             const keel::f64 th = dphi * keel::f64(n);
             ref[keel::as<keel::usize>(k) * ns + keel::as<keel::usize>(n)] = keel::c64(std::cos(th), std::sin(th));
         }
@@ -143,11 +143,11 @@ Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
     for (keel::usize s = 0; s < Nsym; ++s) {
         // Correlate the segment against each candidate tone (conjugate
         // multiply + sum, take magnitude).
-        int bestK = 0;
+        keel::i32 bestK = 0;
         keel::f64 bestE = -1.0;
-        for (int k = 0; k < M; ++k) {
+        for (keel::i32 k = 0; k < M; ++k) {
             keel::c64 acc(0.0, 0.0);
-            for (int n = 0; n < nsamp; ++n) {
+            for (keel::i32 n = 0; n < nsamp; ++n) {
                 keel::c64 yi;
                 if (y.type() == ValueType::COMPLEX)
                     yi = y.complexData()[s * nsamp + (keel::usize)n];
@@ -167,7 +167,7 @@ Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
 // ofdmmod / ofdmdemod
 // ════════════════════════════════════════════════════════════════════
 
-Value ofdmmod(const Value &in, int nfft, int cplen,
+Value ofdmmod(const Value &in, keel::i32 nfft, keel::i32 cplen,
               keel::Allocator *mr)
 {
     ofdmmod_argcheck(in, nfft, cplen);
@@ -184,7 +184,7 @@ Value ofdmmod(const Value &in, int nfft, int cplen,
         // Extract column s into a 1×nfft Value, ifft along dim 1.
         Value col = Value::matrix((keel::usize)nfft, 1, ValueType::COMPLEX, mr);
         keel::c64 *cd = col.complexDataMut();
-        for (int i = 0; i < nfft; ++i) {
+        for (keel::i32 i = 0; i < nfft; ++i) {
             if (in.type() == ValueType::COMPLEX)
                 cd[i] = in.complexData()[s * (keel::usize)nfft + (keel::usize)i];
             else
@@ -198,21 +198,21 @@ Value ofdmmod(const Value &in, int nfft, int cplen,
             txd = const_cast<keel::c64*>(tx.complexData());
         } else {
             tmp.resize((keel::usize)nfft);
-            for (int i = 0; i < nfft; ++i) tmp[(keel::usize)i] = keel::c64(tx.elemAsDouble(i), 0.0);
+            for (keel::i32 i = 0; i < nfft; ++i) tmp[(keel::usize)i] = keel::c64(tx.elemAsDouble(i), 0.0);
             txd = tmp.data();
         }
 
         // CP = last cplen samples of the IFFT output.
-        for (int i = 0; i < cplen; ++i)
+        for (keel::i32 i = 0; i < cplen; ++i)
             od[s * out_per_sym + (keel::usize)i] = txd[(keel::usize)nfft - (keel::usize)cplen + (keel::usize)i];
         // Body = full IFFT.
-        for (int i = 0; i < nfft; ++i)
+        for (keel::i32 i = 0; i < nfft; ++i)
             od[s * out_per_sym + (keel::usize)cplen + (keel::usize)i] = txd[(keel::usize)i];
     }
     return out;
 }
 
-Value ofdmdemod(const Value &in, int nfft, int cplen, int symoffset,
+Value ofdmdemod(const Value &in, keel::i32 nfft, keel::i32 cplen, keel::i32 symoffset,
                 keel::Allocator *mr)
 {
     ofdmdemod_argcheck(in, nfft, cplen);
@@ -230,7 +230,7 @@ Value ofdmdemod(const Value &in, int nfft, int cplen, int symoffset,
         // Drop the CP region (size symoffset, default cplen).
         Value col = Value::matrix((keel::usize)nfft, 1, ValueType::COMPLEX, mr);
         keel::c64 *cd = col.complexDataMut();
-        for (int i = 0; i < nfft; ++i) {
+        for (keel::i32 i = 0; i < nfft; ++i) {
             const keel::usize src = s * out_per_sym + (keel::usize)symoffset + (keel::usize)i;
             if (in.type() == ValueType::COMPLEX) cd[i] = in.complexData()[src];
             else                                  cd[i] = keel::c64(in.elemAsDouble(src), 0.0);
@@ -238,7 +238,7 @@ Value ofdmdemod(const Value &in, int nfft, int cplen, int symoffset,
         Value rx = ::numkit::signal::fft(col, -1, 1, mr);
         // Pack into the output column.
         const keel::c64 *rxd = rx.complexData();
-        for (int i = 0; i < nfft; ++i)
+        for (keel::i32 i = 0; i < nfft; ++i)
             od[s * (keel::usize)nfft + (keel::usize)i] = rxd[i];
     }
     return out;

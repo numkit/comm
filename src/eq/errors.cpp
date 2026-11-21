@@ -22,7 +22,7 @@ namespace numkit::comm {
 
 namespace {
 
-void biterr_argcheck(const Value &x, const Value &y, int k)
+void biterr_argcheck(const Value &x, const Value &y, keel::i32 k)
 {
     const keel::usize n = x.numel();
     if (y.numel() != n)
@@ -64,7 +64,7 @@ keel::String symerr_argcheck(const Value &x, const Value &y, keel::StringRef flg
 
 } // anonymous namespace
 
-std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
+std::pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k,
                                keel::Allocator *mr)
 {
     biterr_argcheck(x, y, k);

@@ -124,15 +124,15 @@ Value nondiffEncodeBits(const Value &x, keel::Allocator *mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
     keel::f64 *o = out.doubleDataMut();
     for (keel::usize c = 0; c < W; ++c) {
-        int prevA = 1; // initial I-rail state +1
+        keel::i32 prevA = 1; // initial I-rail state +1
         for (keel::usize r = 0; r < H; ++r) {
             const keel::usize idx = was_row ? r : (c * H + r);
             const keel::f64 xi = x.elemAsDouble(idx);
             if (xi != 0.0 && xi != 1.0)
                 throw Error("mskmod: input must be binary (0 or 1)",
                             0, 0, "mskmod", "", "numkit:mskmod:NotBinary");
-            const int ak = (xi != 0.0) ? 1 : -1;
-            const int dk = ((r % 2) == 0) ? (prevA * ak) : (-prevA * ak);
+            const keel::i32 ak = (xi != 0.0) ? 1 : -1;
+            const keel::i32 dk = ((r % 2) == 0) ? (prevA * ak) : (-prevA * ak);
             o[idx] = (dk > 0) ? 1.0 : 0.0;
             prevA = ak;
         }
@@ -152,11 +152,11 @@ Value nondiffDecodeBits(const Value &diffBits, keel::Allocator *mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
     keel::f64 *o = out.doubleDataMut();
     for (keel::usize c = 0; c < W; ++c) {
-        int prevA = 1;
+        keel::i32 prevA = 1;
         for (keel::usize r = 0; r < H; ++r) {
             const keel::usize idx = was_row ? r : (c * H + r);
-            const int dk = (diffBits.elemAsDouble(idx) != 0.0) ? 1 : -1;
-            const int ak = ((r % 2) == 0) ? (prevA * dk) : (-prevA * dk);
+            const keel::i32 dk = (diffBits.elemAsDouble(idx) != 0.0) ? 1 : -1;
+            const keel::i32 ak = ((r % 2) == 0) ? (prevA * dk) : (-prevA * dk);
             o[idx] = (ak > 0) ? 1.0 : 0.0;
             prevA = ak;
         }
@@ -170,7 +170,7 @@ void mskmod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "mskmod");
-    const int nSamp = argcheck::expectedPositiveInteger(
+    const keel::i32 nSamp = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "nSamp", "mskmod"), 2, "nSamp", "mskmod");
     auto *mr = ctx.engine->allocator();
     bool nondiff = false;
@@ -203,7 +203,7 @@ void mskdemod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 5, "mskdemod");
-    const int nSamp = argcheck::expectedPositiveInteger(
+    const keel::i32 nSamp = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "nSamp", "mskdemod"), 2, "nSamp", "mskdemod");
     auto *mr = ctx.engine->allocator();
     bool nondiff = false;

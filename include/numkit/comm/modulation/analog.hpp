@@ -176,7 +176,7 @@ Value ssbmod(const Value &x, keel::f64 fc, keel::f64 fs, keel::f64 ini_phase,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Complex baseband waveform of length
 ///                   `numel(x) · nSamp`.
-Value mskmod(const Value &x, int nSamp, keel::f64 ini_phase,
+Value mskmod(const Value &x, keel::i32 nSamp, keel::f64 ini_phase,
              keel::Allocator *mr = nullptr);
 
 /// @brief Minimum-shift-keying demodulator (differential variant)
@@ -197,7 +197,7 @@ Value mskmod(const Value &x, int nSamp, keel::f64 ini_phase,
 /// @param phase_out  If non-null, receives the final phase state in [0, 2π).
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Demodulated bit stream ({0,1}).
-Value mskdemod(const Value &y, int nSamp, keel::f64 ini_phase,
+Value mskdemod(const Value &y, keel::i32 nSamp, keel::f64 ini_phase,
                keel::f64 *phase_out = nullptr,
                keel::Allocator *mr = nullptr);
 

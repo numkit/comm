@@ -40,29 +40,29 @@ Value alloc_double_like(keel::Allocator *mr, const Value &x) {
     return Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
 }
 
-void pskmod_argcheck(int M) {
+void pskmod_argcheck(keel::i32 M) {
     if (M < 2)
         throw Error("pskmod: M must be ≥ 2", 0, 0, "pskmod", "", "numkit:pskmod:badM");
 }
 
-void pskdemod_argcheck(int M) {
+void pskdemod_argcheck(keel::i32 M) {
     if (M < 2)
         throw Error("pskdemod: M must be ≥ 2", 0, 0, "pskdemod", "", "numkit:pskdemod:badM");
 }
 
-void dpskmod_argcheck(int M) {
+void dpskmod_argcheck(keel::i32 M) {
     if (M < 2)
         throw Error("dpskmod: M must be ≥ 2", 0, 0, "dpskmod", "", "numkit:dpskmod:badM");
 }
 
-void dpskdemod_argcheck(int M) {
+void dpskdemod_argcheck(keel::i32 M) {
     if (M < 2)
         throw Error("dpskdemod: M must be ≥ 2", 0, 0, "dpskdemod", "", "numkit:dpskdemod:badM");
 }
 
 } // anonymous
 
-Value pskmod(const Value &x, int M, keel::f64 ini_phase,
+Value pskmod(const Value &x, keel::i32 M, keel::f64 ini_phase,
              keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pskmod_argcheck(M);
@@ -77,7 +77,7 @@ Value pskmod(const Value &x, int M, keel::f64 ini_phase,
     return out;
 }
 
-Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
+Value pskdemod(const Value &y, keel::i32 M, keel::f64 ini_phase,
                keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pskdemod_argcheck(M);
@@ -100,7 +100,7 @@ Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
     return out;
 }
 
-Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
+Value dpskmod(const Value &x, keel::i32 M, keel::f64 phase_rot,
               keel::StringRef symbol_order, keel::Allocator *mr)
 {
     dpskmod_argcheck(M);
@@ -115,7 +115,7 @@ Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
     return out;
 }
 
-Value dpskdemod(const Value &y, int M, keel::f64 phase_rot,
+Value dpskdemod(const Value &y, keel::i32 M, keel::f64 phase_rot,
                 keel::StringRef symbol_order, keel::Allocator *mr)
 {
     dpskdemod_argcheck(M);

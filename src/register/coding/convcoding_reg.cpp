@@ -46,7 +46,7 @@ void vitdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 5, 11, "vitdec");
-    const long long tblen = keel::as<long long>(args[2].toScalar());
+    const keel::i64 tblen = keel::as<keel::i64>(args[2].toScalar());
     const keel::String opmode =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
             ? args[3].toString() : keel::String("trunc");

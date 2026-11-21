@@ -62,12 +62,12 @@ keel::Array<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
     return C;
 }
 
-void readVecInt(const Value &v, keel::Array<int> &out)
+void readVecInt(const Value &v, keel::Array<keel::i32> &out)
 {
     const keel::usize n = v.numel();
     out.resize(n);
     for (keel::usize i = 0; i < n; ++i)
-        out[i] = keel::as<int>(v.elemAsDouble(i));
+        out[i] = keel::as<keel::i32>(v.elemAsDouble(i));
 }
 
 void readVec(const Value &v, keel::Array<keel::f64> &out)
@@ -81,15 +81,15 @@ void readVec(const Value &v, keel::Array<keel::f64> &out)
 // to map to constellation point `mapping(idx) + 1` (1-based MATLAB)
 // or `mapping[idx]` (0-based). We invert it so that
 // constellation_index = invMapping[user_index].
-keel::Array<int> invertMapping(keel::ArrayRef<int> mapping, keel::Allocator *mr)
+keel::Array<keel::i32> invertMapping(keel::ArrayRef<keel::i32> mapping, keel::Allocator *mr)
 {
     const keel::usize N = mapping.size();
-    keel::Array<int> inv(N, -1, mr);
+    keel::Array<keel::i32> inv(N, -1, mr);
     for (keel::usize i = 0; i < N; ++i) {
         if (mapping[i] < 0 || keel::as<keel::usize>(mapping[i]) >= N)
             throw Error("apsk: SymbolMapping out of range",
                         0, 0, "apsk", "", "numkit:apsk:Mapping");
-        inv[keel::as<keel::usize>(mapping[i])] = keel::as<int>(i);
+        inv[keel::as<keel::usize>(mapping[i])] = keel::as<keel::i32>(i);
     }
     return inv;
 }
@@ -142,9 +142,9 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<keel
     keel::Array<keel::c64> C = buildConstellation(M, radii, phaseoffset, mr);
 
     // Mapping: identity by default; otherwise length-Ntot permutation.
-    keel::Array<int> invmap(mr);
+    keel::Array<keel::i32> invmap(mr);
     if (!mapping_v.isEmpty()) {
-        keel::Array<int> mapping(mr);
+        keel::Array<keel::i32> mapping(mr);
         readVecInt(mapping_v, mapping);
         if (mapping.size() != Ntot)
             throw Error("apskmod: SymbolMapping length must equal sum(M)",
@@ -152,7 +152,7 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<keel
         invmap = invertMapping(mapping, mr);
     } else {
         invmap.resize(Ntot);
-        for (keel::usize i = 0; i < Ntot; ++i) invmap[i] = keel::as<int>(i);
+        for (keel::usize i = 0; i < Ntot; ++i) invmap[i] = keel::as<keel::i32>(i);
     }
 
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
@@ -160,7 +160,7 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<keel
     keel::c64 *o = out.complexDataMut();
     const keel::usize Nx = x.numel();
     for (keel::usize i = 0; i < Nx; ++i) {
-        const long xi = keel::as<long>(x.elemAsDouble(i));
+        const keel::i64 xi = keel::as<keel::i64>(x.elemAsDouble(i));
         if (xi < 0 || keel::as<keel::usize>(xi) >= Ntot)
             throw Error("apskmod: input index out of range [0, sum(M)-1]",
                         0, 0, "apskmod", "", "numkit:apskmod:OutOfRange");
@@ -193,7 +193,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<ke
     for (keel::usize m : M) Ntot += m;
     keel::Array<keel::c64> C = buildConstellation(M, radii, phaseoffset, mr);
 
-    keel::Array<int> mapping(mr);
+    keel::Array<keel::i32> mapping(mr);
     if (!mapping_v.isEmpty()) {
         readVecInt(mapping_v, mapping);
         if (mapping.size() != Ntot)
@@ -201,7 +201,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<ke
                         0, 0, "apskdemod", "", "numkit:apskdemod:MappingLen");
     } else {
         mapping.resize(Ntot);
-        for (keel::usize i = 0; i < Ntot; ++i) mapping[i] = keel::as<int>(i);
+        for (keel::usize i = 0; i < Ntot; ++i) mapping[i] = keel::as<keel::i32>(i);
     }
 
     Value out = Value::matrix(y.dims().rows(), y.dims().cols(),

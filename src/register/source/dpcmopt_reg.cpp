@@ -26,7 +26,7 @@ void dpcmopt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 {
     argcheck::checkNargin(args.size(), 2, 3, "dpcmopt");
     auto *mr = ctx.engine->allocator();
-    const int ord = argcheck::expectedPositiveInteger(
+    const keel::i32 ord = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "ord", "dpcmopt"), 2, "ord", "dpcmopt");
 
     const Value &ini = (args.size() >= 3 && !args[2].isEmpty())

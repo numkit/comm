@@ -31,7 +31,7 @@ namespace numkit::comm {
 /// @return                  Complex baseband waveform of length
 ///                          `numel(x)·nsamp`.
 /// @see fskdemod
-Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
+Value fskmod(const Value &x, keel::i32 M, keel::f64 freq_sep, keel::i32 nsamp,
              keel::f64 fs, keel::StringRef phase_continuity,
              keel::StringRef symbol_order,
              keel::Allocator *mr = nullptr);
@@ -51,7 +51,7 @@ Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
 /// @return              Integer symbol vector of length
 ///                      `numel(y) / nsamp`.
 /// @see fskmod
-Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
+Value fskdemod(const Value &y, keel::i32 M, keel::f64 freq_sep, keel::i32 nsamp,
                keel::f64 fs, keel::StringRef symbol_order,
                keel::Allocator *mr = nullptr);
 
@@ -64,7 +64,7 @@ Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       Column vector of length `(nfft + cplen)·Nsymbols`.
 /// @see ofdmdemod
-Value ofdmmod(const Value &in, int nfft, int cplen,
+Value ofdmmod(const Value &in, keel::i32 nfft, keel::i32 cplen,
               keel::Allocator *mr = nullptr);
 
 /// @brief Basic OFDM demodulator
@@ -80,7 +80,7 @@ Value ofdmmod(const Value &in, int nfft, int cplen,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           `nfft`×Nsymbols complex matrix of subcarriers.
 /// @see ofdmmod
-Value ofdmdemod(const Value &in, int nfft, int cplen, int symoffset,
+Value ofdmdemod(const Value &in, keel::i32 nfft, keel::i32 cplen, keel::i32 symoffset,
                 keel::Allocator *mr = nullptr);
 
 

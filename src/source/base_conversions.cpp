@@ -43,7 +43,7 @@ inline keel::i64 getI64(const Value &v, keel::usize i)
 // ── bit2int ───────────────────────────────────────────────────────────
 // Pack column-vector of bits (length divisible by n) into an integer
 // vector of length numel(b) / n. MSB-first by default.
-Value bit2int(const Value &b, int n, bool msbfirst,
+Value bit2int(const Value &b, keel::i32 n, bool msbfirst,
               keel::Allocator *mr)
 {
     if (n <= 0 || n > 64)
@@ -59,7 +59,7 @@ Value bit2int(const Value &b, int n, bool msbfirst,
     keel::f64 *od = out.doubleDataMut();
     for (keel::usize k = 0; k < M; ++k) {
         keel::u64 v = 0;
-        for (int j = 0; j < n; ++j) {
+        for (keel::i32 j = 0; j < n; ++j) {
             const keel::usize bitIdx = k * n + (msbfirst ? j : (n - 1 - j));
             v = (v << 1) | (getI64(b, bitIdx) & 1);
         }
@@ -71,7 +71,7 @@ Value bit2int(const Value &b, int n, bool msbfirst,
 // ── int2bit ───────────────────────────────────────────────────────────
 // Inverse of bit2int. d is a row/col vector of integers; returns
 // (n × numel(d)) bit matrix (each input contributes one column of n bits).
-Value int2bit(const Value &d, int n, bool msbfirst,
+Value int2bit(const Value &d, keel::i32 n, bool msbfirst,
               keel::Allocator *mr)
 {
     if (n <= 0 || n > 64)
@@ -83,9 +83,9 @@ Value int2bit(const Value &d, int n, bool msbfirst,
     keel::f64 *od = out.doubleDataMut();
     for (keel::usize k = 0; k < M; ++k) {
         const keel::u64 v = keel::as<keel::u64>(getI64(d, k));
-        for (int j = 0; j < n; ++j) {
+        for (keel::i32 j = 0; j < n; ++j) {
             // out(j, k) = j-th MSB-first bit of v (or LSB-first).
-            const int bitPos = msbfirst ? (n - 1 - j) : j;
+            const keel::i32 bitPos = msbfirst ? (n - 1 - j) : j;
             od[k * n + j] = keel::as<keel::f64>((v >> bitPos) & 1);
         }
     }
@@ -100,7 +100,7 @@ namespace {
 // bi2de_argcheck: the digit-group contract crossed by every call path
 // (the reg marshals base/msbfirst extraction only — the base check used
 // to live reg-side, diverging for direct C++ callers).
-void bi2de_argcheck(const Value &b, int base)
+void bi2de_argcheck(const Value &b, keel::i32 base)
 {
     if (base < 2)
         throw Error("bi2de: base must be >= 2",
@@ -112,7 +112,7 @@ void bi2de_argcheck(const Value &b, int base)
 
 } // namespace
 
-Value bi2de(const Value &b, int base, bool msbfirst,
+Value bi2de(const Value &b, keel::i32 base, bool msbfirst,
             keel::Allocator *mr)
 {
     bi2de_argcheck(b, base);
@@ -123,12 +123,12 @@ Value bi2de(const Value &b, int base, bool msbfirst,
     keel::f64 *od = out.doubleDataMut();
     for (keel::usize r = 0; r < R; ++r) {
         // b is column-major; element (r, c) at idx r + c*R.
-        long double v = 0.0L;
-        long double pwr = 1.0L;
+        long double v = 0.0L; // keel-lint: ignore
+        long double pwr = 1.0L; // keel-lint: ignore
         for (keel::usize c = 0; c < C; ++c) {
             const keel::usize idx = msbfirst ? (C - 1 - c) : c;
-            v += keel::as<long double>(getI64(b, r + idx * R)) * pwr;
-            pwr *= keel::as<long double>(base);
+            v += keel::as<long double>(getI64(b, r + idx * R)) * pwr; // keel-lint: ignore
+            pwr *= keel::as<long double>(base); // keel-lint: ignore
         }
         od[r] = keel::as<keel::f64>(v);
     }
@@ -139,7 +139,7 @@ Value bi2de(const Value &b, int base, bool msbfirst,
 // Legacy inverse: each input integer becomes one row of digit values
 // (default LSB-first 'right-msb', default base = 2). Width n is the
 // minimum number of digits; if not given, computed from the largest input.
-Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
+Value de2bi(const Value &d, keel::i32 n_user, keel::i32 base, bool msbfirst,
             keel::Allocator *mr)
 {
     if (base < 2)
@@ -147,7 +147,7 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
                     0, 0, "de2bi", "", "numkit:de2bi:BadBase");
     const keel::usize R = d.numel();
     // Auto-width: ceil(log_base(max(d)+1)).
-    int n = n_user;
+    keel::i32 n = n_user;
     if (n <= 0) {
         keel::u64 mx = 0;
         for (keel::usize i = 0; i < R; ++i) {
@@ -164,8 +164,8 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
     keel::f64 *od = out.doubleDataMut();
     for (keel::usize r = 0; r < R; ++r) {
         keel::u64 v = keel::as<keel::u64>(getI64(d, r));
-        for (int j = 0; j < n; ++j) {
-            const int col = msbfirst ? (n - 1 - j) : j;
+        for (keel::i32 j = 0; j < n; ++j) {
+            const keel::i32 col = msbfirst ? (n - 1 - j) : j;
             od[r + keel::as<keel::usize>(col) * R] =
                 keel::as<keel::f64>(v % keel::as<keel::u64>(base));
             v /= keel::as<keel::u64>(base);
@@ -178,8 +178,8 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
 // Reshape vector into N-column matrix with row-major fill, padding the
 // last row to width N with `padval` (default 0). Returns the matrix and
 // the count of pad entries added.
-std::pair<Value, int>
-vec2mat(const Value &v, int n, keel::f64 padval, keel::Allocator *mr)
+std::pair<Value, keel::i32>
+vec2mat(const Value &v, keel::i32 n, keel::f64 padval, keel::Allocator *mr)
 {
     if (n <= 0)
         throw Error("vec2mat: n must be positive",
@@ -199,7 +199,7 @@ vec2mat(const Value &v, int n, keel::f64 padval, keel::Allocator *mr)
             od[r + c * rows] = (lin < L) ? v.elemAsDouble(lin) : padval;
         }
     }
-    return {out, keel::as<int>(pad)};
+    return {out, keel::as<keel::i32>(pad)};
 }
 
 } // namespace numkit::comm

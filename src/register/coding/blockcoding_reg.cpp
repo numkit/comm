@@ -42,7 +42,7 @@ void hammgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 2, "hammgen");
-    const long long m = keel::as<long long>(args[0].toScalar());
+    const keel::i64 m = keel::as<keel::i64>(args[0].toScalar());
     const Value &prim = (args.size() >= 2) ? args[1] : Value::Empty;
     HammgenResult res = hammgen(m, prim, ctx.engine->allocator());
     outs[0] = std::move(res.h);
@@ -57,8 +57,8 @@ void cyclpoly_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "cyclpoly");
-    const long long n = keel::as<long long>(args[0].toScalar());
-    const long long k = keel::as<long long>(args[1].toScalar());
+    const keel::i64 n = keel::as<keel::i64>(args[0].toScalar());
+    const keel::i64 k = keel::as<keel::i64>(args[1].toScalar());
     const keel::String opt =
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
             ? args[2].toString() : keel::String();
@@ -69,7 +69,7 @@ void cyclgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "cyclgen");
-    const long long n = keel::as<long long>(args[0].toScalar());
+    const keel::i64 n = keel::as<keel::i64>(args[0].toScalar());
     const keel::String opt =
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
             ? args[2].toString() : keel::String("system");
@@ -84,8 +84,8 @@ void encode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "encode");
-    const long long n = keel::as<long long>(args[1].toScalar());
-    const long long k = keel::as<long long>(args[2].toScalar());
+    const keel::i64 n = keel::as<keel::i64>(args[1].toScalar());
+    const keel::i64 k = keel::as<keel::i64>(args[2].toScalar());
     const keel::String method =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
             ? args[3].toString() : keel::String("hamming/binary");
@@ -100,8 +100,8 @@ void decode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 6, "decode");
-    const long long n = keel::as<long long>(args[1].toScalar());
-    const long long k = keel::as<long long>(args[2].toScalar());
+    const keel::i64 n = keel::as<keel::i64>(args[1].toScalar());
+    const keel::i64 k = keel::as<keel::i64>(args[2].toScalar());
     const keel::String method =
         (args.size() >= 4 && (args[3].isChar() || args[3].isString()))
             ? args[3].toString() : keel::String("hamming/binary");

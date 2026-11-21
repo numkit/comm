@@ -38,7 +38,7 @@ namespace numkit::comm {
 /// @return       Row vector of length `span·sps + 1`.
 /// @throws Error On invalid β, span, sps, or unknown shape.
 /// @see gaussdesign
-Value rcosdesign(keel::f64 beta, int span, int sps,
+Value rcosdesign(keel::f64 beta, keel::i32 span, keel::i32 sps,
                  keel::StringRef shape = "normal",
                  keel::Allocator *mr = nullptr);
 
@@ -58,7 +58,7 @@ Value rcosdesign(keel::f64 beta, int span, int sps,
 /// @return      Row vector of length `span·sps + 1`, sum-normalised.
 /// @throws Error On invalid BT, span, or sps.
 /// @see rcosdesign
-Value gaussdesign(keel::f64 BT, int span, int sps,
+Value gaussdesign(keel::f64 BT, keel::i32 span, keel::i32 sps,
                   keel::Allocator *mr = nullptr);
 
 /// @brief Rectangular pulse shaping (`y = rectpulse(x, n)`).
@@ -74,7 +74,7 @@ Value gaussdesign(keel::f64 BT, int span, int sps,
 /// @return    Expanded signal with same orientation as `x`.
 /// @throws Error On non-positive `n`.
 /// @see intdump
-Value rectpulse(const Value &x, int n,
+Value rectpulse(const Value &x, keel::i32 n,
                 keel::Allocator *mr = nullptr);
 
 /// @brief Integrate-and-dump (`y = intdump(x, n)`).
@@ -90,7 +90,7 @@ Value rectpulse(const Value &x, int n,
 /// @throws Error If the relevant dimension is not divisible by `n`,
 ///               or `n` is non-positive.
 /// @see rectpulse
-Value intdump(const Value &x, int n,
+Value intdump(const Value &x, keel::i32 n,
               keel::Allocator *mr = nullptr);
 
 

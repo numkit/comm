@@ -69,14 +69,14 @@ void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
 
     if (ini_codebook.numel() == 1) {
         const keel::f64 Kd = ini_codebook.toScalar();
-        const long K = keel::as<long>(std::floor(Kd));
+        const keel::i64 K = keel::as<keel::i64>(std::floor(Kd));
         if (K < 1)
             throw Error("lloyds: ini_codebook count must be positive",
                         0, 0, "lloyds", "",
                         "numkit:lloyds:NonPositiveINI_CODEBOOK");
         const keel::f64 step = (max_train - min_train) / keel::as<keel::f64>(K);
         codebook.resize(K);
-        for (long i = 0; i < K; ++i) {
+        for (keel::i64 i = 0; i < K; ++i) {
             codebook[keel::as<keel::usize>(i)] =
                 min_train + step * 0.5 + step * keel::as<keel::f64>(i);
         }

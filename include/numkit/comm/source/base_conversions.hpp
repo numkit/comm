@@ -32,7 +32,7 @@ namespace numkit::comm {
 /// @return          Column vector of `numel(b) / n` packed integers.
 /// @throws Error if `n ∉ 1..64` or `numel(b)` is not divisible by `n`.
 /// @see int2bit
-Value bit2int(const Value &b, int n, bool msbfirst = true,
+Value bit2int(const Value &b, keel::i32 n, bool msbfirst = true,
               keel::Allocator *mr = nullptr);
 
 /// @brief Unpack integers into a bit matrix — `b = int2bit(d, n)`.
@@ -48,7 +48,7 @@ Value bit2int(const Value &b, int n, bool msbfirst = true,
 /// @return          `n × numel(d)` bit matrix.
 /// @throws Error if `n ∉ 1..64`.
 /// @see bit2int
-Value int2bit(const Value &d, int n, bool msbfirst = true,
+Value int2bit(const Value &d, keel::i32 n, bool msbfirst = true,
               keel::Allocator *mr = nullptr);
 
 /// @brief Convert digit-rows to decimal — `d = bi2de(b)` (legacy).
@@ -66,7 +66,7 @@ Value int2bit(const Value &d, int n, bool msbfirst = true,
 /// @return          Column vector of per-row decimal values.
 /// @throws Error if `b` is not 2-D or `base < 2`.
 /// @see de2bi, bit2int
-Value bi2de(const Value &b, int base = 2, bool msbfirst = false,
+Value bi2de(const Value &b, keel::i32 base = 2, bool msbfirst = false,
             keel::Allocator *mr = nullptr);
 
 /// @brief Convert integers to digit-rows — `b = de2bi(d)` (legacy).
@@ -85,7 +85,7 @@ Value bi2de(const Value &b, int base = 2, bool msbfirst = false,
 /// @return          `numel(d) × n` matrix of digit rows.
 /// @throws Error if `base < 2`.
 /// @see bi2de, int2bit
-Value de2bi(const Value &d, int n = -1, int base = 2, bool msbfirst = false,
+Value de2bi(const Value &d, keel::i32 n = -1, keel::i32 base = 2, bool msbfirst = false,
             keel::Allocator *mr = nullptr);
 
 /// @brief Reshape a vector into an N-column matrix with padding —
@@ -103,8 +103,8 @@ Value de2bi(const Value &d, int n = -1, int base = 2, bool msbfirst = false,
 /// @return        `{ matrix, padCount }` — the reshaped matrix and the
 ///                number of pad entries added to fill the final row.
 /// @throws Error if `n <= 0`.
-std::pair<Value, int>
-vec2mat(const Value &v, int n, keel::f64 padval = 0.0,
+std::pair<Value, keel::i32>
+vec2mat(const Value &v, keel::i32 n, keel::f64 padval = 0.0,
         keel::Allocator *mr = nullptr);
 
 

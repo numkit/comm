@@ -32,7 +32,7 @@ namespace numkit::comm {
 
 namespace {
 
-void rcosdesign_argcheck(keel::f64 beta, int span, int sps, keel::StringRef shape)
+void rcosdesign_argcheck(keel::f64 beta, keel::i32 span, keel::i32 sps, keel::StringRef shape)
 {
     if (!(beta >= 0.0 && beta <= 1.0))
         throw Error("rcosdesign: beta must be in [0, 1]",
@@ -51,7 +51,7 @@ void rcosdesign_argcheck(keel::f64 beta, int span, int sps, keel::StringRef shap
                     0, 0, "rcosdesign", "", "numkit:rcosdesign:shape");
 }
 
-void gaussdesign_argcheck(keel::f64 BT, int span, int sps)
+void gaussdesign_argcheck(keel::f64 BT, keel::i32 span, keel::i32 sps)
 {
     if (!(BT > 0.0))
         throw Error("gaussdesign: BT must be positive",
@@ -64,14 +64,14 @@ void gaussdesign_argcheck(keel::f64 BT, int span, int sps)
                     0, 0, "gaussdesign", "", "numkit:gaussdesign:sps");
 }
 
-void rectpulse_argcheck(int n)
+void rectpulse_argcheck(keel::i32 n)
 {
     if (n <= 0)
         throw Error("rectpulse: n must be a positive integer",
                     0, 0, "rectpulse", "", "numkit:rectpulse:n");
 }
 
-void intdump_argcheck(const Value &x, int n)
+void intdump_argcheck(const Value &x, keel::i32 n)
 {
     if (n <= 0)
         throw Error("intdump: n must be a positive integer",
@@ -94,7 +94,7 @@ void intdump_argcheck(const Value &x, int n)
 
 } // anonymous
 
-Value rcosdesign(keel::f64 beta, int span, int sps,
+Value rcosdesign(keel::f64 beta, keel::i32 span, keel::i32 sps,
                  keel::StringRef shape,
                  keel::Allocator *mr)
 {
@@ -109,7 +109,7 @@ Value rcosdesign(keel::f64 beta, int span, int sps,
     return r;
 }
 
-Value gaussdesign(keel::f64 BT, int span, int sps,
+Value gaussdesign(keel::f64 BT, keel::i32 span, keel::i32 sps,
                   keel::Allocator *mr)
 {
     gaussdesign_argcheck(BT, span, sps);
@@ -125,7 +125,7 @@ Value gaussdesign(keel::f64 BT, int span, int sps,
 // rectpulse(x, n) repeats each sample of x n times along the leading
 // non-singleton dimension. Vector inputs preserve orientation; matrix
 // inputs repeat each row n times (column count unchanged).
-Value rectpulse(const Value &x, int n, keel::Allocator *mr)
+Value rectpulse(const Value &x, keel::i32 n, keel::Allocator *mr)
 {
     rectpulse_argcheck(n);
 
@@ -141,7 +141,7 @@ Value rectpulse(const Value &x, int n, keel::Allocator *mr)
         keel::f64 *od = out.doubleDataMut();
         for (keel::usize c = 0; c < W; ++c) {
             const keel::f64 v = x.elemAsDouble(c);
-            for (int k = 0; k < n; ++k)
+            for (keel::i32 k = 0; k < n; ++k)
                 od[c * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
         }
     } else if (is_col) {
@@ -149,7 +149,7 @@ Value rectpulse(const Value &x, int n, keel::Allocator *mr)
         keel::f64 *od = out.doubleDataMut();
         for (keel::usize r = 0; r < H; ++r) {
             const keel::f64 v = x.elemAsDouble(r);
-            for (int k = 0; k < n; ++k)
+            for (keel::i32 k = 0; k < n; ++k)
                 od[r * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
         }
     } else {
@@ -159,7 +159,7 @@ Value rectpulse(const Value &x, int n, keel::Allocator *mr)
         for (keel::usize c = 0; c < W; ++c) {
             for (keel::usize r = 0; r < H; ++r) {
                 const keel::f64 v = x.elemAsDouble(c * H + r);
-                for (int k = 0; k < n; ++k)
+                for (keel::i32 k = 0; k < n; ++k)
                     od[c * Nh + r * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
             }
         }
@@ -171,7 +171,7 @@ Value rectpulse(const Value &x, int n, keel::Allocator *mr)
 // Inverse of rectpulse: average each n consecutive samples along the
 // leading non-singleton dimension. Length along that axis must be
 // divisible by n.
-Value intdump(const Value &x, int n, keel::Allocator *mr)
+Value intdump(const Value &x, keel::i32 n, keel::Allocator *mr)
 {
     intdump_argcheck(x, n);
 

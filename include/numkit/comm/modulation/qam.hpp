@@ -31,7 +31,7 @@ namespace numkit::comm {
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Real amplitudes, same shape as `x`.
 /// @see pamdemod, qammod
-Value pammod(const Value &x, int M, keel::f64 ini_phase,
+Value pammod(const Value &x, keel::i32 M, keel::f64 ini_phase,
              keel::StringRef symbol_order,
              keel::Allocator *mr = nullptr);
 
@@ -45,7 +45,7 @@ Value pammod(const Value &x, int M, keel::f64 ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see pammod
-Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
+Value pamdemod(const Value &y, keel::i32 M, keel::f64 ini_phase,
                keel::StringRef symbol_order,
                keel::Allocator *mr = nullptr);
 
@@ -64,7 +64,7 @@ Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Complex baseband samples, same shape as `x`.
 /// @see qamdemod, pammod, genqammod
-Value qammod(const Value &x, int M, keel::StringRef symbol_order,
+Value qammod(const Value &x, keel::i32 M, keel::StringRef symbol_order,
              bool unit_power,
              keel::Allocator *mr = nullptr);
 
@@ -79,7 +79,7 @@ Value qammod(const Value &x, int M, keel::StringRef symbol_order,
 /// @param mr            Memory resource (nullptr → process default).
 /// @return              Integer symbol indices, same shape as `y`.
 /// @see qammod
-Value qamdemod(const Value &y, int M, keel::StringRef symbol_order,
+Value qamdemod(const Value &y, keel::i32 M, keel::StringRef symbol_order,
                bool unit_power,
                keel::Allocator *mr = nullptr);
 

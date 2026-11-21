@@ -49,13 +49,13 @@ void readVecU(const Value &v, keel::Array<keel::u64> &out)
 }
 
 // Bit at position p (1-based from LSB), matching MATLAB's bitget(x, p).
-inline keel::u64 bitget(keel::u64 x, int p)
+inline keel::u64 bitget(keel::u64 x, keel::i32 p)
 {
     return (x >> (p - 1)) & 1ULL;
 }
 
 // Mask x to N low bits (clear bits N+1 and above).
-inline keel::u64 maskN(keel::u64 x, int N)
+inline keel::u64 maskN(keel::u64 x, keel::i32 N)
 {
     return x & ((N == 64) ? ~0ULL : ((1ULL << N) - 1ULL));
 }
@@ -87,7 +87,7 @@ Value arithenco(const Value &seq, const Value &counts,
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
-    const int N = keel::as<int>(std::ceil(std::log2(keel::as<keel::f64>(total)))) + 2;
+    const keel::i32 N = keel::as<keel::i32>(std::ceil(std::log2(keel::as<keel::f64>(total)))) + 2;
     const keel::u64 topMask = 1ULL << (N - 1);
 
     keel::u64 dec_low = 0;
@@ -144,16 +144,16 @@ Value arithenco(const Value &seq, const Value &counts,
     // Termination: emit final bits of dec_low (with E3 handling).
     // bin_low MSB-first = N bits of dec_low.
     keel::Array<keel::u8> bin_low(N, mr);
-    for (int i = 0; i < N; ++i)
+    for (keel::i32 i = 0; i < N; ++i)
         bin_low[i] = keel::as<keel::u8>((dec_low >> (N - 1 - i)) & 1ULL);
     if (E3_count == 0) {
-        for (int i = 0; i < N; ++i) bits.push_back(bin_low[i]);
+        for (keel::i32 i = 0; i < N; ++i) bits.push_back(bin_low[i]);
     } else {
         const keel::u8 b = bin_low[0];
         bits.push_back(b);
         for (keel::u64 i = 0; i < E3_count; ++i)
             bits.push_back(keel::as<keel::u8>(b ^ 1));
-        for (int i = 1; i < N; ++i) bits.push_back(bin_low[i]);
+        for (keel::i32 i = 1; i < N; ++i) bits.push_back(bin_low[i]);
     }
 
     // Output preserves seq orientation.
@@ -176,7 +176,7 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
-    const int N = keel::as<int>(std::ceil(std::log2(keel::as<keel::f64>(total)))) + 2;
+    const keel::i32 N = keel::as<keel::i32>(std::ceil(std::log2(keel::as<keel::f64>(total)))) + 2;
     const keel::u64 topMask = 1ULL << (N - 1);
 
     // Read code bits.
@@ -195,7 +195,7 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
     keel::u64 dec_low = 0;
     keel::u64 dec_up  = (1ULL << N) - 1;
     keel::u64 dec_tag = 0;
-    for (int i = 0; i < N; ++i)
+    for (keel::i32 i = 0; i < N; ++i)
         dec_tag = (dec_tag << 1) | readBit(keel::as<keel::usize>(i));
 
     // Find bin index `ptr` (1..K) such that cum[ptr-1] <= value < cum[ptr].

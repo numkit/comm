@@ -78,7 +78,7 @@ void fmmod_argcheck(keel::f64 fc, keel::f64 fs, keel::f64 freqdev)
                     0, 0, "fmmod", "", "numkit:fmmod:InvalidFreqdev");
 }
 
-void mskmod_argcheck(const Value &x, int nSamp)
+void mskmod_argcheck(const Value &x, keel::i32 nSamp)
 {
     if (nSamp <= 0)
         throw Error("mskmod: nSamp must be a positive integer",
@@ -92,7 +92,7 @@ void mskmod_argcheck(const Value &x, int nSamp)
     }
 }
 
-void mskdemod_argcheck(const Value &y, int nSamp)
+void mskdemod_argcheck(const Value &y, keel::i32 nSamp)
 {
     if (nSamp <= 0)
         throw Error("mskdemod: nSamp must be a positive integer",
@@ -306,7 +306,7 @@ Value fmmod(const Value &x, keel::f64 fc, keel::f64 fs, keel::f64 freqdev,
 // KNOWN GAP: non-differential MSK path is deferred -- it requires
 // rectpulse + circshift on the I/Q rails (we have rectpulse but the
 // arrangement is more involved; will get its own cycle).
-Value mskmod(const Value &x, int nSamp, keel::f64 ini_phase,
+Value mskmod(const Value &x, keel::i32 nSamp, keel::f64 ini_phase,
              keel::Allocator *mr)
 {
     mskmod_argcheck(x, nSamp);
@@ -368,7 +368,7 @@ Value mskmod(const Value &x, int nSamp, keel::f64 ini_phase,
 // phase rotation (and robust to noise), so ini_phase only feeds the
 // returned final-phase state. Matches MATLAB R2025b mskdemod (default
 // 'diff'); the non-differential path is deferred, as for mskmod.
-Value mskdemod(const Value &y, int nSamp, keel::f64 ini_phase,
+Value mskdemod(const Value &y, keel::i32 nSamp, keel::f64 ini_phase,
                keel::f64 *phase_out, keel::Allocator *mr)
 {
     mskdemod_argcheck(y, nSamp);
@@ -392,7 +392,7 @@ Value mskdemod(const Value &y, int nSamp, keel::f64 ini_phase,
 
     keel::f64 lastPhase = ini_phase;
     for (keel::usize c = 0; c < W; ++c) {
-        long long cumSum = 0;
+        keel::i64 cumSum = 0;
         for (keel::usize k = 0; k < N; ++k) {
             const keel::usize start = k * keel::as<keel::usize>(nSamp);
             keel::f64 acc = 0.0;
@@ -400,7 +400,7 @@ Value mskdemod(const Value &y, int nSamp, keel::f64 ini_phase,
                 const keel::c64 p = getC(c, n) * keel::conj(getC(c, n - 1));
                 acc += std::atan2(p.imag(), p.real());
             }
-            const int bit = (acc > 0.0) ? 1 : 0;
+            const keel::i32 bit = (acc > 0.0) ? 1 : 0;
             o[c * N + k] = keel::as<keel::f64>(bit);
             cumSum += (2 * bit - 1);
         }

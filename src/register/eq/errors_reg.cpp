@@ -27,7 +27,7 @@ void biterr_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "biterr");
-    int k = 0;  // 0 -> auto width
+    keel::i32 k = 0;  // 0 -> auto width
     if (args.size() >= 3 && !args[2].isEmpty()) {
         k = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "k", "biterr"), 3, "k", "biterr");

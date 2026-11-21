@@ -54,8 +54,8 @@ void wgn_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
              keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 7, "wgn");
-    const int m = (int)args[0].toScalar();
-    const int n = (int)args[1].toScalar();
+    const keel::i32 m = (keel::i32)args[0].toScalar();
+    const keel::i32 n = (keel::i32)args[1].toScalar();
     const keel::f64 p = args[2].toScalar();
     keel::String type("dBW");
     bool complex_out = false;
@@ -95,8 +95,8 @@ void marcumq_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "marcumq");
-    const int m = (args.size() >= 3 && !args[2].isEmpty())
-                  ? (int)args[2].toScalar() : 1;
+    const keel::i32 m = (args.size() >= 3 && !args[2].isEmpty())
+                  ? (keel::i32)args[2].toScalar() : 1;
     outs[0] = marcumq(args[0], args[1], m, ctx.engine->allocator());
 }
 
@@ -105,7 +105,7 @@ void berawgn_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 3, "berawgn");  // no max: option tail in the reference (no count wall to 12 args)
     keel::String mod = args[1].toString();
-    const int M = (int)args[2].toScalar();
+    const keel::i32 M = (keel::i32)args[2].toScalar();
     outs[0] = berawgn(args[0], mod, M, ctx.engine->allocator());
 }
 
@@ -113,7 +113,7 @@ void noisebw_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 4, "noisebw");
-    const int    n  = (int)args[2].toScalar();
+    const keel::i32    n  = (keel::i32)args[2].toScalar();
     const keel::f64 fs = args[3].toScalar();
     outs[0] = noisebw(args[0], args[1], n, fs, ctx.engine->allocator());
 }
@@ -172,7 +172,7 @@ void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         throw Error("convertSNR: Name-Value arguments must occur in pairs",
                     0, 0, "convertSNR", "", "numkit:convertSNR:unpairedNameValue");
 
-    int k = 1;
+    keel::i32 k = 1;
     for (keel::usize i = nvStart; i + 1 < args.size(); i += 2) {
         if (!(args[i].isChar() || args[i].isString()))
             throw Error("convertSNR: parameter name must be a string",
@@ -180,12 +180,12 @@ void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         const keel::String rawKey = args[i].toString();
         const keel::String key = toLower(rawKey);
         if (key == "bitspersymbol") {
-            k = keel::as<int>(argcheck::expectedPositiveInteger(
-                argcheck::expectedReal(args[i + 1], int(i + 2), "BitsPerSymbol", "convertSNR"),
-                int(i + 2), "BitsPerSymbol", "convertSNR"));
+            k = keel::as<keel::i32>(argcheck::expectedPositiveInteger(
+                argcheck::expectedReal(args[i + 1], keel::i32(i + 2), "BitsPerSymbol", "convertSNR"),
+                keel::i32(i + 2), "BitsPerSymbol", "convertSNR"));
         } else if (key == "codingrate" || key == "samplespersymbol" ||
                    key == "bandwidth" || key == "symbolrate") {
-            (void)argcheck::expectedReal(args[i + 1], int(i + 2), rawKey, "convertSNR");
+            (void)argcheck::expectedReal(args[i + 1], keel::i32(i + 2), rawKey, "convertSNR");
         } else {
             throw Error(keel::format("convertSNR: unknown parameter '{}'", rawKey),
                         0, 0, "convertSNR", "", "numkit:convertSNR:badParamName");

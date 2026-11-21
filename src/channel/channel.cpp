@@ -69,7 +69,7 @@ void awgn_argcheck(const Value &x, keel::f64 snr_db, keel::f64 sigpower_db)
     (void)sigpower_db;
 }
 
-void wgn_argcheck(int m, int n, keel::f64 p, keel::StringRef type)
+void wgn_argcheck(keel::i32 m, keel::i32 n, keel::f64 p, keel::StringRef type)
 {
     (void)m;
     (void)n;
@@ -95,21 +95,21 @@ void qfuncinv_argcheck(const Value &p)
     (void)p;
 }
 
-void marcumq_argcheck(const Value &a_v, const Value &b_v, int m)
+void marcumq_argcheck(const Value &a_v, const Value &b_v, keel::i32 m)
 {
     (void)a_v;
     (void)b_v;
     (void)m;
 }
 
-void berawgn_argcheck(const Value &EbNo_dB, keel::StringRef mod, int M)
+void berawgn_argcheck(const Value &EbNo_dB, keel::StringRef mod, keel::i32 M)
 {
     (void)EbNo_dB;
     (void)mod;
     (void)M;
 }
 
-void noisebw_argcheck(const Value &num, const Value &den, int Nsamp, keel::f64 fs)
+void noisebw_argcheck(const Value &num, const Value &den, keel::i32 Nsamp, keel::f64 fs)
 {
     (void)num;
     (void)den;
@@ -131,7 +131,7 @@ void berconfint_argcheck(keel::f64 numErrs, keel::f64 numBits, keel::f64 level)
 }
 
 void convertSNR_argcheck(const Value &snr_in, keel::StringRef in_type,
-                         keel::StringRef out_type, int bits_per_symbol)
+                         keel::StringRef out_type, keel::i32 bits_per_symbol)
 {
     (void)snr_in;
     (void)in_type;
@@ -178,7 +178,7 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, keel::f64 snr_db, kee
     return out;
 }
 
-Value wgn(::numkit::ops::RngContext &rng, int m, int n, keel::f64 p, keel::StringRef type,
+Value wgn(::numkit::ops::RngContext &rng, keel::i32 m, keel::i32 n, keel::f64 p, keel::StringRef type,
           bool complex_out, keel::Allocator *mr)
 {
     wgn_argcheck(m, n, p, type);
@@ -218,7 +218,7 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, keel::f64 p, keel::All
     else              out = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
     keel::f64 *od = out.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) {
-        const int b = (int)x.elemAsDouble(i) & 1;
+        const keel::i32 b = (keel::i32)x.elemAsDouble(i) & 1;
         od[i] = keel::f64(rng.nextUniform() < p ? (b ^ 1) : b);
     }
     return out;
@@ -276,7 +276,7 @@ Value qfuncinv(const Value &p, keel::Allocator *mr) {
     });
 }
 
-Value marcumq(const Value &a_v, const Value &b_v, int m,
+Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
               keel::Allocator *mr)
 {
     marcumq_argcheck(a_v, b_v, m);
@@ -303,7 +303,7 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
             // For small m we can sum directly: Q_m(0, b) = Σ_{k=0..m-1} y^k e^{-y} / k!
             keel::f64 acc = 0.0;
             keel::f64 term = std::exp(-y);
-            for (int k = 0; k < m; ++k) {
+            for (keel::i32 k = 0; k < m; ++k) {
                 acc += term;
                 term *= y / keel::f64(k + 1);
             }
@@ -314,27 +314,27 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
         //   Q_m(a, b) = ∫_b^∞ x · (x/a)^(m-1) · exp(-(x²+a²)/2) · I_{m-1}(a·x) dx
         // Adaptive trapezoidal up to a sensible upper limit.
         const keel::f64 upper = std::max(b + 20.0, a + 20.0);
-        const int N_int = 4096;
+        const keel::i32 N_int = 4096;
         const keel::f64 dx = (upper - b) / keel::f64(N_int);
         // Modified Bessel I_{m-1}(z) via series: I_n(z) = Σ_{k=0..} (z/2)^(2k+n)/(k!(k+n)!).
-        auto besselI = [&](int n, keel::f64 z) {
+        auto besselI = [&](keel::i32 n, keel::f64 z) {
             if (z == 0.0) return n == 0 ? 1.0 : 0.0;
             const keel::f64 half = z / 2.0;
             keel::f64 term = 1.0;
-            for (int k = 1; k <= n; ++k) term *= half / keel::f64(k);
+            for (keel::i32 k = 1; k <= n; ++k) term *= half / keel::f64(k);
             term *= std::pow(half, n) / std::pow(half, n);
             // Correction: term should be (z/2)^n / n!. The above sequence gives
             // exactly that, but to be safe rebuild explicitly:
             term = 1.0;
-            for (int k = 1; k <= n; ++k) term *= half / keel::f64(k);
+            for (keel::i32 k = 1; k <= n; ++k) term *= half / keel::f64(k);
             term *= std::pow(half, n);
             // Hmm — replace with simpler explicit form:
             term = std::pow(half, n);
             keel::f64 fact = 1.0;
-            for (int k = 1; k <= n; ++k) fact *= keel::f64(k);
+            for (keel::i32 k = 1; k <= n; ++k) fact *= keel::f64(k);
             term /= fact;
             keel::f64 acc = term;
-            for (int k = 1; k < 100; ++k) {
+            for (keel::i32 k = 1; k < 100; ++k) {
                 term *= half * half / (keel::f64(k) * keel::f64(k + n));
                 acc += term;
                 if (std::fabs(term) < 1e-18 * std::fabs(acc)) break;
@@ -342,7 +342,7 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
             return acc;
         };
         keel::f64 sum = 0.0;
-        for (int k = 0; k <= N_int; ++k) {
+        for (keel::i32 k = 0; k <= N_int; ++k) {
             const keel::f64 xv = b + keel::f64(k) * dx;
             const keel::f64 w = (k == 0 || k == N_int) ? 0.5 : 1.0;
             const keel::f64 f = xv * std::pow(xv / a, m - 1)
@@ -355,7 +355,7 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
     return out;
 }
 
-Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
+Value berawgn(const Value &EbNo_dB, keel::StringRef mod, keel::i32 M,
               keel::Allocator *mr)
 {
     berawgn_argcheck(EbNo_dB, mod, M);
@@ -393,7 +393,7 @@ Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
     });
 }
 
-Value noisebw(const Value &num, const Value &den, int Nsamp,
+Value noisebw(const Value &num, const Value &den, keel::i32 Nsamp,
               keel::f64 fs, keel::Allocator *mr)
 {
     noisebw_argcheck(num, den, Nsamp, fs);
@@ -410,7 +410,7 @@ Value noisebw(const Value &num, const Value &den, int Nsamp,
 
     keel::f64 Hmax2 = 0.0;
     keel::f64 sum_H2 = 0.0;
-    for (int k = 0; k < Nsamp; ++k) {
+    for (keel::i32 k = 0; k < Nsamp; ++k) {
         const keel::f64 w = M_PI * keel::f64(k) / keel::f64(Nsamp);
         const keel::c64 z = keel::polar(1.0, -w);
         keel::c64 np(0.0, 0.0), dp(0.0, 0.0);
@@ -470,7 +470,7 @@ berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
 Value convertSNR(const Value &snr_in,
                  keel::StringRef in_type,
                  keel::StringRef out_type,
-                 int bits_per_symbol,
+                 keel::i32 bits_per_symbol,
                  keel::Allocator *mr)
 {
     convertSNR_argcheck(snr_in, in_type, out_type, bits_per_symbol);

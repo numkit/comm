@@ -95,7 +95,7 @@ Value convenc(const Value &msg, const Value &trellis,
 /// @throws Error on an invalid trellis, `numel(code)` not a multiple of n,
 ///         or an unsupported opmode/dectype.
 /// @see convenc, poly2trellis
-Value vitdec(const Value &code, const Value &trellis, long long tblen,
+Value vitdec(const Value &code, const Value &trellis, keel::i64 tblen,
              keel::StringRef opmode = "trunc",
              keel::StringRef dectype = "hard",
              keel::Allocator *mr = nullptr);

@@ -47,7 +47,7 @@ void bit2int_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 5, "bit2int");
-    const int n = argcheck::expectedPositiveInteger(
+    const keel::i32 n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "bit2int"), 2, "n", "bit2int");
     bool msb = true;
     if (args.size() >= 3) msb = (args[2].toScalar() != 0.0);
@@ -58,7 +58,7 @@ void int2bit_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "int2bit");
-    const int n = argcheck::expectedPositiveInteger(
+    const keel::i32 n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "int2bit"), 2, "n", "int2bit");
     bool msb = true;
     if (args.size() >= 3) msb = (args[2].toScalar() != 0.0);
@@ -69,15 +69,15 @@ void bi2de_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "bi2de");
-    int base = 2;
+    keel::i32 base = 2;
     bool msb = false;  // default 'right-msb' = LSB-first
     for (keel::usize i = 1; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString())
             msb = parseMsbFlag(args[i], "bi2de");
         else if (!args[i].isEmpty())  // empty [] base -> keep default 2
             base = argcheck::expectedInteger(
-                argcheck::expectedReal(args[i], int(i) + 1, "base", "bi2de"),
-                int(i) + 1, "base", "bi2de");
+                argcheck::expectedReal(args[i], keel::i32(i) + 1, "base", "bi2de"),
+                keel::i32(i) + 1, "base", "bi2de");
     }
     // Marshal-only: the base >= 2 domain check lives in the compute-side
     // bi2de_argcheck (crossed by direct C++ calls too).
@@ -88,10 +88,10 @@ void de2bi_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 4, "de2bi");
-    int n = -1;       // -1 = auto
-    int base = 2;
+    keel::i32 n = -1;       // -1 = auto
+    keel::i32 base = 2;
     bool msb = false; // default 'right-msb'
-    int numericFound = 0;
+    keel::i32 numericFound = 0;
     for (keel::usize i = 1; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString())
             msb = parseMsbFlag(args[i], "de2bi");
@@ -100,14 +100,14 @@ void de2bi_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
             // (MATLAB: de2bi(d, [], base)) — keep n = -1, don't toScalar([]).
             if (!args[i].isEmpty())
                 n = argcheck::expectedPositiveInteger(
-                    argcheck::expectedReal(args[i], int(i) + 1, "n", "de2bi"),
-                    int(i) + 1, "n", "de2bi");
+                    argcheck::expectedReal(args[i], keel::i32(i) + 1, "n", "de2bi"),
+                    keel::i32(i) + 1, "n", "de2bi");
             ++numericFound;
         } else {
             if (!args[i].isEmpty())
                 base = argcheck::expectedInteger(
-                    argcheck::expectedReal(args[i], int(i) + 1, "base", "de2bi"),
-                    int(i) + 1, "base", "de2bi");
+                    argcheck::expectedReal(args[i], keel::i32(i) + 1, "base", "de2bi"),
+                    keel::i32(i) + 1, "base", "de2bi");
             ++numericFound;
         }
     }
@@ -118,7 +118,7 @@ void vec2mat_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "vec2mat");
-    const int n = argcheck::expectedPositiveInteger(
+    const keel::i32 n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "vec2mat"), 2, "n", "vec2mat");
     keel::f64 padval = 0.0;
     if (args.size() >= 3) padval = args[2].toScalar();

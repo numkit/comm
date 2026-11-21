@@ -40,22 +40,22 @@ Value alloc_complex_like(keel::Allocator *mr, const Value &x) {
     return Value::matrix(d.rows(), d.cols(), ValueType::COMPLEX, mr);
 }
 
-void pammod_argcheck(int M) {
+void pammod_argcheck(keel::i32 M) {
     if (M < 2)
         throw Error("pammod: M must be ≥ 2", 0, 0, "pammod", "", "numkit:pammod:badM");
 }
 
-void pamdemod_argcheck(int M) {
+void pamdemod_argcheck(keel::i32 M) {
     if (M < 2)
         throw Error("pamdemod: M must be ≥ 2", 0, 0, "pamdemod", "", "numkit:pamdemod:badM");
 }
 
-void qammod_argcheck(int M) {
+void qammod_argcheck(keel::i32 M) {
     if (M < 4)
         throw Error("qammod: M must be ≥ 4", 0, 0, "qammod", "", "numkit:qammod:badM");
 }
 
-void qamdemod_argcheck(int M) {
+void qamdemod_argcheck(keel::i32 M) {
     if (M < 4)
         throw Error("qamdemod: M must be ≥ 4", 0, 0, "qamdemod", "", "numkit:qamdemod:badM");
 }
@@ -68,7 +68,7 @@ void modnorm_argcheck(const Value &ref, keel::StringRef type, keel::f64 target) 
 
 } // anonymous
 
-Value pammod(const Value &x, int M, keel::f64 ini_phase,
+Value pammod(const Value &x, keel::i32 M, keel::f64 ini_phase,
              keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pammod_argcheck(M);
@@ -83,7 +83,7 @@ Value pammod(const Value &x, int M, keel::f64 ini_phase,
     return out;
 }
 
-Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
+Value pamdemod(const Value &y, keel::i32 M, keel::f64 ini_phase,
                keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pamdemod_argcheck(M);
@@ -106,7 +106,7 @@ Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
     return out;
 }
 
-Value qammod(const Value &x, int M, keel::StringRef symbol_order,
+Value qammod(const Value &x, keel::i32 M, keel::StringRef symbol_order,
              bool unit_power, keel::Allocator *mr)
 {
     qammod_argcheck(M);
@@ -121,7 +121,7 @@ Value qammod(const Value &x, int M, keel::StringRef symbol_order,
     return out;
 }
 
-Value qamdemod(const Value &y, int M, keel::StringRef symbol_order,
+Value qamdemod(const Value &y, keel::i32 M, keel::StringRef symbol_order,
                bool unit_power, keel::Allocator *mr)
 {
     qamdemod_argcheck(M);

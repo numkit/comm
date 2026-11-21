@@ -47,7 +47,7 @@ void pammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "pammod");
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     const keel::f64 ini = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
@@ -59,7 +59,7 @@ void pamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "pamdemod");
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     const keel::f64 ini = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
@@ -71,7 +71,7 @@ void qammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 11, "qammod");
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     auto order = parse_order(args, 2, "gray");
     bool up = parse_unit_power(args, 2);
     outs[0] = qammod(args[0], M, order, up, ctx.engine->allocator());
@@ -81,7 +81,7 @@ void qamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, "qamdemod");  // no max: name-value tail in the reference (no count wall to 12 args)
-    const int M = (int)args[1].toScalar();
+    const keel::i32 M = (keel::i32)args[1].toScalar();
     auto order = parse_order(args, 2, "gray");
     bool up = parse_unit_power(args, 2);
     outs[0] = qamdemod(args[0], M, order, up, ctx.engine->allocator());

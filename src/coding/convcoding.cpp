@@ -50,9 +50,9 @@ keel::u64 octalToDecimal(keel::u64 oct, const char *who)
     return result;
 }
 
-inline int bitParity(keel::u64 x)
+inline keel::i32 bitParity(keel::u64 x)
 {
-    int p = 0;
+    keel::i32 p = 0;
     while (x) { p ^= 1; x &= (x - 1); }
     return p;
 }
@@ -63,7 +63,7 @@ inline int bitParity(keel::u64 x)
 struct TrellisView {
     keel::usize numStates        = 0;
     keel::usize numOutputSymbols = 0;
-    int         n                = 0;   // output bits per step
+    keel::i32         n                = 0;   // output bits per step
     const keel::f64 *nextStates     = nullptr;  // numStates × 2, column-major
     const keel::f64 *outputs        = nullptr;
 };
@@ -84,7 +84,7 @@ TrellisView readTrellis(const Value &t, const char *who)
     TrellisView tv;
     tv.numStates        = keel::as<keel::usize>(field("numStates").toScalar());
     tv.numOutputSymbols = keel::as<keel::usize>(field("numOutputSymbols").toScalar());
-    tv.n = keel::as<int>(std::lround(std::log2(
+    tv.n = keel::as<keel::i32>(std::lround(std::log2(
         keel::as<keel::f64>(tv.numOutputSymbols))));
     tv.nextStates = field("nextStates").doubleData();
     tv.outputs    = field("outputs").doubleData();
@@ -100,7 +100,7 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
         throw Error("poly2trellis: only a scalar ConstraintLength (rate 1/n) "
                     "is supported in this revision (rate k/n deferred)",
                     0, 0, "poly2trellis", "", "numkit:poly2trellis:rate");
-    const long long K = keel::as<long long>(constraintLength.toScalar());
+    const keel::i64 K = keel::as<keel::i64>(constraintLength.toScalar());
     if (K < 1)
         throw Error("poly2trellis: ConstraintLength must be >= 1",
                     0, 0, "poly2trellis", "", "numkit:poly2trellis:K");
@@ -158,7 +158,7 @@ Value convenc(const Value &msg, const Value &trellis,
 {
     const TrellisView tv = readTrellis(trellis, "convenc");
     const keel::usize L = msg.numel();
-    const int n = tv.n;
+    const keel::i32 n = tv.n;
     const keel::usize outLen = L * keel::as<keel::usize>(n);
     // Output takes msg's orientation (column input -> column output).
     const bool col = (msg.dims().cols() == 1 && msg.dims().rows() > 1);
@@ -169,11 +169,11 @@ Value convenc(const Value &msg, const Value &trellis,
     keel::f64 *od = out.doubleDataMut();
     keel::usize state = 0, oi = 0;
     for (keel::usize i = 0; i < L; ++i) {
-        const int bit = (msg.elemAsDouble(i) != 0.0) ? 1 : 0;
+        const keel::i32 bit = (msg.elemAsDouble(i) != 0.0) ? 1 : 0;
         // Column-major (numStates × 2): element (state, bit).
         const keel::usize idx = keel::as<keel::usize>(bit) * tv.numStates + state;
         const keel::u64 outWord = keel::as<keel::u64>(tv.outputs[idx]);
-        for (int j = n - 1; j >= 0; --j)                 // MSB (g1) first
+        for (keel::i32 j = n - 1; j >= 0; --j)                 // MSB (g1) first
             od[oi++] = keel::as<keel::f64>((outWord >> j) & 1u);
         state = keel::as<keel::usize>(tv.nextStates[idx]);
     }
@@ -184,7 +184,7 @@ namespace {
 
 struct VitdecPlan {
     TrellisView tv;
-    int n;
+    keel::i32 n;
     keel::usize L;
     keel::usize S;
     keel::String mode;   // normalized opmode ('trunc' | 'term')
@@ -214,7 +214,7 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
                     0, 0, "vitdec", "", "numkit:vitdec:opmode");
 
     const TrellisView tv = readTrellis(trellis, "vitdec");
-    const int n = tv.n;
+    const keel::i32 n = tv.n;
     const keel::usize total = code.numel();
     if (n <= 0 || (total % keel::as<keel::usize>(n)) != 0)
         throw Error("vitdec: code length must be a multiple of "
@@ -225,13 +225,13 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
 
 } // namespace
 
-Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
+Value vitdec(const Value &code, const Value &trellis, keel::i64 /*tblen*/,
              keel::StringRef opmode, keel::StringRef dectype,
              keel::Allocator *mr)
 {
     const VitdecPlan p = vitdec_argcheck(code, trellis, opmode, dectype);
     const TrellisView &tv = p.tv;
-    const int n = p.n;
+    const keel::i32 n = p.n;
     const keel::usize L = p.L;
     const keel::usize S = p.S;
     const keel::String &mode = p.mode;
@@ -245,7 +245,7 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
     keel::Array<keel::u64> rsym(L, scratch.allocator());
     for (keel::usize t = 0; t < L; ++t) {
         keel::u64 w = 0;
-        for (int j = 0; j < n; ++j)
+        for (keel::i32 j = 0; j < n; ++j)
             w = (w << 1) | (code.elemAsDouble(t * n + j) != 0.0 ? 1u : 0u);
         rsym[t] = w;
     }
@@ -255,12 +255,12 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
     keel::Array<keel::f64> newMetric(S, scratch.allocator());
     for (keel::usize s = 0; s < S; ++s) metric[s] = INF;
     metric[0] = 0.0;
-    keel::Array<int>          prevState(L * S, scratch.allocator());
+    keel::Array<keel::i32>          prevState(L * S, scratch.allocator());
     keel::Array<keel::u8> decBit(L * S, scratch.allocator());
 
     auto hamming = [](keel::u64 a, keel::u64 b) {
         keel::u64 x = a ^ b;
-        int c = 0;
+        keel::i32 c = 0;
         while (x) { ++c; x &= (x - 1); }
         return c;
     };
@@ -277,7 +277,7 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
                 const keel::f64 cand = metric[s] + hamming(rsym[t], ow);
                 if (cand < newMetric[ns]) {
                     newMetric[ns] = cand;
-                    prevState[t * S + ns] = keel::as<int>(s);
+                    prevState[t * S + ns] = keel::as<keel::i32>(s);
                     decBit[t * S + ns]    = keel::as<keel::u8>(u);
                 }
             }
@@ -298,7 +298,7 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
     keel::usize st = endState;
     for (keel::usize ti = L; ti-- > 0;) {
         od[ti] = keel::as<keel::f64>(decBit[ti * S + st]);
-        const int p = prevState[ti * S + st];
+        const keel::i32 p = prevState[ti * S + st];
         st = (p >= 0) ? keel::as<keel::usize>(p) : 0;
     }
     return out;

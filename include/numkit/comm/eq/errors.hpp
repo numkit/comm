@@ -31,7 +31,7 @@ namespace numkit::comm {
 /// @return     Pair `{ number, ratio }` (total bit errors and error rate).
 /// @throws Error on numel mismatch, or negative inputs on the auto-`k` path.
 /// @see symerr
-std::pair<Value, Value> biterr(const Value &x, const Value &y, int k = 0,
+std::pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k = 0,
                                keel::Allocator *mr = nullptr);
 
 /// @brief Symbol-error count and rate (`[number, ratio] = symerr(x, y)`).

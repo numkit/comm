@@ -33,9 +33,9 @@ void fskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     // R2025b: fs optional, default 1 (4-arg form probed equal to fs=1).
     argcheck::checkNargin(args.size(), 4, 7, "fskmod");
-    const int    M   = (int)args[1].toScalar();
+    const keel::i32    M   = (keel::i32)args[1].toScalar();
     const keel::f64 sep = args[2].toScalar();
-    const int    n   = (int)args[3].toScalar();
+    const keel::i32    n   = (keel::i32)args[3].toScalar();
     const keel::f64 fs  = (args.size() >= 5 && !args[4].isEmpty())
                        ? args[4].toScalar() : 1.0;
     auto cont  = parse_str(args, 5, "cont");
@@ -56,9 +56,9 @@ void fskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     // R2025b: fs optional, default 1 (4-arg form probed equal to fs=1).
     argcheck::checkNargin(args.size(), 4, 6, "fskdemod");
-    const int    M   = (int)args[1].toScalar();
+    const keel::i32    M   = (keel::i32)args[1].toScalar();
     const keel::f64 sep = args[2].toScalar();
-    const int    n   = (int)args[3].toScalar();
+    const keel::i32    n   = (keel::i32)args[3].toScalar();
     const keel::f64 fs  = (args.size() >= 5 && !args[4].isEmpty())
                        ? args[4].toScalar() : 1.0;
     auto order = parse_str(args, 5, "gray");
@@ -69,8 +69,8 @@ void ofdmmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 8, "ofdmmod");
-    const int nfft  = (int)args[1].toScalar();
-    const int cplen = (int)args[2].toScalar();
+    const keel::i32 nfft  = (keel::i32)args[1].toScalar();
+    const keel::i32 cplen = (keel::i32)args[2].toScalar();
     outs[0] = ofdmmod(args[0], nfft, cplen, ctx.engine->allocator());
 }
 
@@ -78,10 +78,10 @@ void ofdmdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                    keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 8, "ofdmdemod");
-    const int nfft  = (int)args[1].toScalar();
-    const int cplen = (int)args[2].toScalar();
-    const int sym   = (args.size() >= 4 && !args[3].isEmpty())
-                      ? (int)args[3].toScalar() : cplen;
+    const keel::i32 nfft  = (keel::i32)args[1].toScalar();
+    const keel::i32 cplen = (keel::i32)args[2].toScalar();
+    const keel::i32 sym   = (args.size() >= 4 && !args[3].isEmpty())
+                      ? (keel::i32)args[3].toScalar() : cplen;
     outs[0] = ofdmdemod(args[0], nfft, cplen, sym, ctx.engine->allocator());
 }
 
