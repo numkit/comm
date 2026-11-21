@@ -44,7 +44,7 @@ keel::String symerr_argcheck(const Value &x, const Value &y, keel::StringRef flg
 {
     keel::String mode(flg);
     for (char &ch : mode) {
-        if (ch >= 'A' && ch <= 'Z') ch = static_cast<char>(ch - 'A' + 'a');
+        if (ch >= 'A' && ch <= 'Z') ch = keel::as<char>(ch - 'A' + 'a');
     }
     if (mode.empty() || mode == "overall") {
         if (y.numel() != x.numel())
@@ -76,11 +76,11 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
     keel::Array<keel::u64> a(n, scratch.allocator());
     keel::Array<keel::u64> b(n, scratch.allocator());
     for (keel::usize i = 0; i < n; ++i) {
-        a[i] = static_cast<keel::u64>(xd[i]);
-        b[i] = static_cast<keel::u64>(yd[i]);
+        a[i] = keel::as<keel::u64>(xd[i]);
+        b[i] = keel::as<keel::u64>(yd[i]);
     }
-    const auto stats = keel::comm::bit_error_rate(a, b, static_cast<keel::i32>(k));
-    return {Value::scalar(static_cast<double>(stats.count), mr),
+    const auto stats = keel::comm::bit_error_rate(a, b, keel::as<keel::i32>(k));
+    return {Value::scalar(keel::as<double>(stats.count), mr),
             Value::scalar(stats.ratio, mr)};
 }
 
@@ -92,7 +92,7 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
     if (mode == "overall") {
         const keel::usize n = x.numel();
         const auto stats = keel::comm::sym_error_rate({x.doubleData(), n}, {y.doubleData(), n});
-        return {Value::scalar(static_cast<double>(stats.count), mr),
+        return {Value::scalar(keel::as<double>(stats.count), mr),
                 Value::scalar(stats.ratio, mr)};
     }
 
@@ -107,7 +107,7 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
         double *rd = ratios.doubleDataMut();
         for (keel::usize j = 0; j < c; ++j) {
             const auto stats = keel::comm::sym_error_rate({xd + j * r, r}, {yd + j * r, r});
-            cd[j] = static_cast<double>(stats.count);
+            cd[j] = keel::as<double>(stats.count);
             rd[j] = stats.ratio;
         }
         return {std::move(counts), std::move(ratios)};
@@ -126,8 +126,8 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
         for (keel::usize j = 0; j < c; ++j) {
             if (xd[j * r + i] != yd[j * r + i]) ++cnt;
         }
-        cd[i] = static_cast<double>(cnt);
-        rd[i] = (c > 0) ? static_cast<double>(cnt) / static_cast<double>(c) : 0.0;
+        cd[i] = keel::as<double>(cnt);
+        rd[i] = (c > 0) ? keel::as<double>(cnt) / keel::as<double>(c) : 0.0;
     }
     return {std::move(counts), std::move(ratios)};
 }

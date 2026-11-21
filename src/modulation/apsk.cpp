@@ -55,7 +55,7 @@ keel::Array<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
         const double radr = radii[r];
         const double pho  = phaseoffset[r];
         for (keel::usize k = 0; k < Mr; ++k) {
-            const double theta = pho + 2.0 * M_PI * static_cast<double>(k) / static_cast<double>(Mr);
+            const double theta = pho + 2.0 * M_PI * keel::as<double>(k) / keel::as<double>(Mr);
             C.emplace_back(radr * std::cos(theta), radr * std::sin(theta));
         }
     }
@@ -67,7 +67,7 @@ void readVecInt(const Value &v, keel::Array<int> &out)
     const keel::usize n = v.numel();
     out.resize(n);
     for (keel::usize i = 0; i < n; ++i)
-        out[i] = static_cast<int>(v.elemAsDouble(i));
+        out[i] = keel::as<int>(v.elemAsDouble(i));
 }
 
 void readVec(const Value &v, keel::Array<double> &out)
@@ -86,10 +86,10 @@ keel::Array<int> invertMapping(keel::ArrayRef<int> mapping, keel::Allocator *mr)
     const keel::usize N = mapping.size();
     keel::Array<int> inv(N, -1, mr);
     for (keel::usize i = 0; i < N; ++i) {
-        if (mapping[i] < 0 || static_cast<keel::usize>(mapping[i]) >= N)
+        if (mapping[i] < 0 || keel::as<keel::usize>(mapping[i]) >= N)
             throw Error("apsk: SymbolMapping out of range",
                         0, 0, "apsk", "", "numkit:apsk:Mapping");
-        inv[static_cast<keel::usize>(mapping[i])] = static_cast<int>(i);
+        inv[keel::as<keel::usize>(mapping[i])] = keel::as<int>(i);
     }
     return inv;
 }
@@ -133,7 +133,7 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
         }
     } else {
         for (keel::usize r = 0; r < M.size(); ++r)
-            phaseoffset[r] = M_PI / static_cast<double>(M[r]);
+            phaseoffset[r] = M_PI / keel::as<double>(M[r]);
     }
 
     keel::usize Ntot = 0;
@@ -152,7 +152,7 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
         invmap = invertMapping(mapping, mr);
     } else {
         invmap.resize(Ntot);
-        for (keel::usize i = 0; i < Ntot; ++i) invmap[i] = static_cast<int>(i);
+        for (keel::usize i = 0; i < Ntot; ++i) invmap[i] = keel::as<int>(i);
     }
 
     Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
@@ -160,11 +160,11 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
     keel::c64 *o = out.complexDataMut();
     const keel::usize Nx = x.numel();
     for (keel::usize i = 0; i < Nx; ++i) {
-        const long xi = static_cast<long>(x.elemAsDouble(i));
-        if (xi < 0 || static_cast<keel::usize>(xi) >= Ntot)
+        const long xi = keel::as<long>(x.elemAsDouble(i));
+        if (xi < 0 || keel::as<keel::usize>(xi) >= Ntot)
             throw Error("apskmod: input index out of range [0, sum(M)-1]",
                         0, 0, "apskmod", "", "numkit:apskmod:OutOfRange");
-        o[i] = C[static_cast<keel::usize>(invmap[static_cast<keel::usize>(xi)])];
+        o[i] = C[keel::as<keel::usize>(invmap[keel::as<keel::usize>(xi)])];
     }
     return out;
 }
@@ -186,7 +186,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
         }
     } else {
         for (keel::usize r = 0; r < M.size(); ++r)
-            phaseoffset[r] = M_PI / static_cast<double>(M[r]);
+            phaseoffset[r] = M_PI / keel::as<double>(M[r]);
     }
 
     keel::usize Ntot = 0;
@@ -201,7 +201,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
                         0, 0, "apskdemod", "", "numkit:apskdemod:MappingLen");
     } else {
         mapping.resize(Ntot);
-        for (keel::usize i = 0; i < Ntot; ++i) mapping[i] = static_cast<int>(i);
+        for (keel::usize i = 0; i < Ntot; ++i) mapping[i] = keel::as<int>(i);
     }
 
     Value out = Value::matrix(y.dims().rows(), y.dims().cols(),
@@ -223,7 +223,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
             if (d2 < best_d2) { best_d2 = d2; best_k = k; }
         }
         // Map constellation index back through user mapping.
-        o[i] = static_cast<double>(mapping[best_k]);
+        o[i] = keel::as<double>(mapping[best_k]);
     }
     return out;
 }

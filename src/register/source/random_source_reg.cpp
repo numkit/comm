@@ -50,7 +50,7 @@ void randsrc_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (s < 0.0)
             throw Error("randsrc: state must be a non-negative integer",
                         0, 0, "randsrc", "", "numkit:randsrc:InvalidState");
-        state = static_cast<keel::u32>(s);
+        state = keel::as<keel::u32>(s);
     }
 
     outs[0] = randsrc(ctx.engine->rng(), m, n, *alphabet, have_state, state, mr);
@@ -83,7 +83,7 @@ void randerr_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (s < 0.0)
             throw Error("randerr: state must be a non-negative integer",
                         0, 0, "randerr", "", "numkit:randerr:InvalidState");
-        state = static_cast<keel::u32>(s);
+        state = keel::as<keel::u32>(s);
     }
 
     outs[0] = randerr(ctx.engine->rng(), m, n, *errspec, have_state, state, mr);

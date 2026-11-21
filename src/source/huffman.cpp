@@ -105,11 +105,11 @@ huffmandict(const Value &symbols, const Value &probs,
     auto heapCmp = [](const HeapNode &a, const HeapNode &b) { return a > b; };
     int order_seed = 0;
     for (keel::usize k = 0; k < K; ++k) {
-        heap.push_back({probs.elemAsDouble(k), static_cast<int>(k), order_seed++});
+        heap.push_back({probs.elemAsDouble(k), keel::as<int>(k), order_seed++});
         std::push_heap(heap.begin(), heap.end(), heapCmp);
     }
 
-    int next_id = static_cast<int>(K);
+    int next_id = keel::as<int>(K);
     while (heap.size() > 1) {
         std::pop_heap(heap.begin(), heap.end(), heapCmp);
         HeapNode a = heap.back(); heap.pop_back();
@@ -130,9 +130,9 @@ huffmandict(const Value &symbols, const Value &probs,
     keel::Array<double> bits(mr);
     for (keel::usize k = 0; k < K; ++k) {
         bits.clear();
-        int cur = static_cast<int>(k);
+        int cur = keel::as<int>(k);
         while (tree[cur].parent != -1) {
-            bits.push_back(static_cast<double>(tree[cur].bit));
+            bits.push_back(keel::as<double>(tree[cur].bit));
             cur = tree[cur].parent;
         }
         std::reverse(bits.begin(), bits.end());
@@ -143,7 +143,7 @@ huffmandict(const Value &symbols, const Value &probs,
         if (L > 0)
             std::copy(bits.begin(), bits.end(), code.doubleDataMut());
         dict.cellAt(K + k)       = std::move(code);
-        avglen += probs.elemAsDouble(k) * static_cast<double>(L);
+        avglen += probs.elemAsDouble(k) * keel::as<double>(L);
     }
     return {std::move(dict), avglen};
 }
@@ -184,7 +184,7 @@ DictView readDict(const Value &dict)
             if (v != 0.0 && v != 1.0)
                 throw Error("huffman codec: dict codes must contain 0/1",
                             0, 0, "huffman", "", "numkit:huffman:DictBits");
-            dv.codes[k][b] = static_cast<keel::u8>(v);
+            dv.codes[k][b] = keel::as<keel::u8>(v);
         }
     }
     return dv;
@@ -194,7 +194,7 @@ DictView readDict(const Value &dict)
 int findSymbolIdx(const DictView &dv, double sym)
 {
     for (keel::usize k = 0; k < dv.K; ++k) {
-        if (dv.syms[k] == sym) return static_cast<int>(k);
+        if (dv.syms[k] == sym) return keel::as<int>(k);
     }
     return -1;
 }
@@ -219,7 +219,7 @@ struct DecodeTree {
                 // push_back may reallocate -> read by value above, then
                 // write back via index after the push completes.
                 nodes.push_back(Node{});
-                child = static_cast<int>(nodes.size() - 1);
+                child = keel::as<int>(nodes.size() - 1);
                 if (bit == 0) nodes[cur].left  = child;
                 else          nodes[cur].right = child;
             }
@@ -274,7 +274,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
     for (keel::usize i = 0; i < N; ++i) {
         const int k = findSymbolIdx(dv, sig.elemAsDouble(i));
         for (keel::u8 bit : dv.codes[k])
-            o[pos++] = static_cast<double>(bit);
+            o[pos++] = keel::as<double>(bit);
     }
     return out;
 }
@@ -287,7 +287,7 @@ Value huffmandeco(const Value &bits, const Value &dict,
     // Build decode tree.
     DecodeTree tree;
     for (keel::usize k = 0; k < dv.K; ++k)
-        tree.insert(dv.codes[k], static_cast<int>(k));
+        tree.insert(dv.codes[k], keel::as<int>(k));
 
     // Walk bits, emit symbols.
     const keel::usize N = bits.numel();

@@ -44,7 +44,7 @@ void readVecU(const Value &v, keel::Array<keel::u64> &out)
         if (!(d > 0.0) || std::floor(d) != d)
             throw Error("arithenco: counts must be positive integers",
                         0, 0, "arithenco", "", "numkit:arithenco:Counts");
-        out[i] = static_cast<keel::u64>(d);
+        out[i] = keel::as<keel::u64>(d);
     }
 }
 
@@ -87,7 +87,7 @@ Value arithenco(const Value &seq, const Value &counts,
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
-    const int N = static_cast<int>(std::ceil(std::log2(static_cast<double>(total)))) + 2;
+    const int N = keel::as<int>(std::ceil(std::log2(keel::as<double>(total)))) + 2;
     const keel::u64 topMask = 1ULL << (N - 1);
 
     keel::u64 dec_low = 0;
@@ -95,16 +95,16 @@ Value arithenco(const Value &seq, const Value &counts,
     keel::u64 E3_count = 0;
 
     keel::Array<keel::u8> bits(mr);
-    bits.reserve(seq.numel() * (static_cast<keel::usize>(std::ceil(std::log2(K)) + 2)) + N);
+    bits.reserve(seq.numel() * (keel::as<keel::usize>(std::ceil(std::log2(K)) + 2)) + N);
 
     const keel::usize Nseq = seq.numel();
     for (keel::usize k = 0; k < Nseq; ++k) {
         const double sd = seq.elemAsDouble(k);
         if (!(sd > 0.0) || std::floor(sd) != sd
-            || static_cast<keel::usize>(sd) > K)
+            || keel::as<keel::usize>(sd) > K)
             throw Error("arithenco: symbol out of range [1, length(counts)]",
                         0, 0, "arithenco", "", "numkit:arithenco:Sym");
-        const keel::usize s = static_cast<keel::usize>(sd);
+        const keel::usize s = keel::as<keel::usize>(sd);
 
         const keel::u64 span = dec_up - dec_low + 1;
         const keel::u64 low_new = dec_low + (span * cum[s - 1]) / total;
@@ -115,13 +115,13 @@ Value arithenco(const Value &seq, const Value &counts,
         for (;;) {
             if (bitget(dec_low, N) == bitget(dec_up, N)) {
                 const keel::u64 b = bitget(dec_low, N);
-                bits.push_back(static_cast<keel::u8>(b));
+                bits.push_back(keel::as<keel::u8>(b));
                 dec_low = (dec_low << 1) + 0;
                 dec_up  = (dec_up  << 1) + 1;
                 // Flush queued E3 bits (complement of b).
                 if (E3_count > 0) {
                     for (keel::u64 i = 0; i < E3_count; ++i)
-                        bits.push_back(static_cast<keel::u8>(b ^ 1ULL));
+                        bits.push_back(keel::as<keel::u8>(b ^ 1ULL));
                     E3_count = 0;
                 }
                 dec_low = maskN(dec_low, N);
@@ -145,14 +145,14 @@ Value arithenco(const Value &seq, const Value &counts,
     // bin_low MSB-first = N bits of dec_low.
     keel::Array<keel::u8> bin_low(N, mr);
     for (int i = 0; i < N; ++i)
-        bin_low[i] = static_cast<keel::u8>((dec_low >> (N - 1 - i)) & 1ULL);
+        bin_low[i] = keel::as<keel::u8>((dec_low >> (N - 1 - i)) & 1ULL);
     if (E3_count == 0) {
         for (int i = 0; i < N; ++i) bits.push_back(bin_low[i]);
     } else {
         const keel::u8 b = bin_low[0];
         bits.push_back(b);
         for (keel::u64 i = 0; i < E3_count; ++i)
-            bits.push_back(static_cast<keel::u8>(b ^ 1));
+            bits.push_back(keel::as<keel::u8>(b ^ 1));
         for (int i = 1; i < N; ++i) bits.push_back(bin_low[i]);
     }
 
@@ -162,7 +162,7 @@ Value arithenco(const Value &seq, const Value &counts,
     Value out = Value::matrix(row ? 1 : L, row ? L : 1,
                               ValueType::DOUBLE, mr);
     double *o = out.doubleDataMut();
-    for (keel::usize i = 0; i < L; ++i) o[i] = static_cast<double>(bits[i]);
+    for (keel::usize i = 0; i < L; ++i) o[i] = keel::as<double>(bits[i]);
     return out;
 }
 
@@ -176,7 +176,7 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
-    const int N = static_cast<int>(std::ceil(std::log2(static_cast<double>(total)))) + 2;
+    const int N = keel::as<int>(std::ceil(std::log2(keel::as<double>(total)))) + 2;
     const keel::u64 topMask = 1ULL << (N - 1);
 
     // Read code bits.
@@ -186,9 +186,9 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
         if (d != 0.0 && d != 1.0)
             throw Error("arithdeco: code bits must be 0 or 1",
                         0, 0, "arithdeco", "", "numkit:arithdeco:Bit");
-        return static_cast<keel::u64>(d);
+        return keel::as<keel::u64>(d);
     };
-    if (Lcode < static_cast<keel::usize>(N))
+    if (Lcode < keel::as<keel::usize>(N))
         throw Error("arithdeco: code shorter than required word length",
                     0, 0, "arithdeco", "", "numkit:arithdeco:Short");
 
@@ -196,7 +196,7 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
     keel::u64 dec_up  = (1ULL << N) - 1;
     keel::u64 dec_tag = 0;
     for (int i = 0; i < N; ++i)
-        dec_tag = (dec_tag << 1) | readBit(static_cast<keel::usize>(i));
+        dec_tag = (dec_tag << 1) | readBit(keel::as<keel::usize>(i));
 
     // Find bin index `ptr` (1..K) such that cum[ptr-1] <= value < cum[ptr].
     auto pick = [&](keel::u64 value) -> keel::usize {
@@ -209,12 +209,12 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
     };
 
     keel::Array<double> dseq(len, mr);
-    keel::usize k = static_cast<keel::usize>(N);   // next code-bit index (0-based)
+    keel::usize k = keel::as<keel::usize>(N);   // next code-bit index (0-based)
     for (keel::usize i = 0; i < len; ++i) {
         const keel::u64 span = dec_up - dec_low + 1;
         const keel::u64 dec_tag_new = ((dec_tag - dec_low + 1) * total - 1) / span;
         const keel::usize ptr = pick(dec_tag_new);
-        dseq[i] = static_cast<double>(ptr);
+        dseq[i] = keel::as<double>(ptr);
 
         const keel::u64 low_new = dec_low + (span * cum[ptr - 1]) / total;
         dec_up  = dec_low + (span * cum[ptr]) / total - 1;

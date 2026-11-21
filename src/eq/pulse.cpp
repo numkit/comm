@@ -80,7 +80,7 @@ void intdump_argcheck(const Value &x, int n)
     const keel::usize H = d.rows();
     const keel::usize W = d.cols();
     const bool is_row = (H == 1 && W >= 1);
-    const keel::usize un = static_cast<keel::usize>(n);
+    const keel::usize un = keel::as<keel::usize>(n);
     if (is_row) {
         if (W % un != 0)
             throw Error("intdump: row length must be a multiple of n",
@@ -100,10 +100,10 @@ Value rcosdesign(double beta, int span, int sps,
 {
     rcosdesign_argcheck(beta, span, sps, shape);
     const bool rrc = (shape == "sqrt" || shape == "Sqrt" || shape == "SQRT");
-    const keel::usize N = static_cast<keel::usize>(span) * static_cast<keel::usize>(sps) + 1;
+    const keel::usize N = keel::as<keel::usize>(span) * keel::as<keel::usize>(sps) + 1;
     Value r = Value::matrix(1, N, ValueType::DOUBLE, mr);
-    (void)keel::comm::rcos_design(beta, static_cast<keel::usize>(span),
-                                  static_cast<keel::usize>(sps),
+    (void)keel::comm::rcos_design(beta, keel::as<keel::usize>(span),
+                                  keel::as<keel::usize>(sps),
                                   rrc ? keel::comm::RcosShape::kSqrt : keel::comm::RcosShape::kNormal,
                                   {r.doubleDataMut(), N});
     return r;
@@ -113,10 +113,10 @@ Value gaussdesign(double BT, int span, int sps,
                   keel::Allocator *mr)
 {
     gaussdesign_argcheck(BT, span, sps);
-    const keel::usize N = static_cast<keel::usize>(span) * static_cast<keel::usize>(sps) + 1;
+    const keel::usize N = keel::as<keel::usize>(span) * keel::as<keel::usize>(sps) + 1;
     Value r = Value::matrix(1, N, ValueType::DOUBLE, mr);
-    (void)keel::comm::gauss_design(BT, static_cast<keel::usize>(span),
-                                   static_cast<keel::usize>(sps),
+    (void)keel::comm::gauss_design(BT, keel::as<keel::usize>(span),
+                                   keel::as<keel::usize>(sps),
                                    {r.doubleDataMut(), N});
     return r;
 }
@@ -137,30 +137,30 @@ Value rectpulse(const Value &x, int n, keel::Allocator *mr)
 
     Value out;
     if (is_row) {
-        out = Value::matrix(1, W * static_cast<keel::usize>(n), ValueType::DOUBLE, mr);
+        out = Value::matrix(1, W * keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
         for (keel::usize c = 0; c < W; ++c) {
             const double v = x.elemAsDouble(c);
             for (int k = 0; k < n; ++k)
-                od[c * static_cast<keel::usize>(n) + static_cast<keel::usize>(k)] = v;
+                od[c * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
         }
     } else if (is_col) {
-        out = Value::matrix(H * static_cast<keel::usize>(n), 1, ValueType::DOUBLE, mr);
+        out = Value::matrix(H * keel::as<keel::usize>(n), 1, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
         for (keel::usize r = 0; r < H; ++r) {
             const double v = x.elemAsDouble(r);
             for (int k = 0; k < n; ++k)
-                od[r * static_cast<keel::usize>(n) + static_cast<keel::usize>(k)] = v;
+                od[r * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
         }
     } else {
-        const keel::usize Nh = H * static_cast<keel::usize>(n);
+        const keel::usize Nh = H * keel::as<keel::usize>(n);
         out = Value::matrix(Nh, W, ValueType::DOUBLE, mr);
         double *od = out.doubleDataMut();
         for (keel::usize c = 0; c < W; ++c) {
             for (keel::usize r = 0; r < H; ++r) {
                 const double v = x.elemAsDouble(c * H + r);
                 for (int k = 0; k < n; ++k)
-                    od[c * Nh + r * static_cast<keel::usize>(n) + static_cast<keel::usize>(k)] = v;
+                    od[c * Nh + r * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
             }
         }
     }
@@ -180,7 +180,7 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
     const keel::usize W = d.cols();
     const bool is_row = (H == 1 && W >= 1);
     const bool is_col = (W == 1 && H >= 1);
-    const keel::usize un = static_cast<keel::usize>(n);
+    const keel::usize un = keel::as<keel::usize>(n);
 
     Value out;
     if (is_row) {
@@ -194,7 +194,7 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
             double s = 0.0;
             for (keel::usize k = 0; k < un; ++k)
                 s += x.elemAsDouble(c * un + k);
-            od[c] = s / static_cast<double>(un);
+            od[c] = s / keel::as<double>(un);
         }
     } else if (is_col) {
         if (H % un != 0)
@@ -207,7 +207,7 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
             double s = 0.0;
             for (keel::usize k = 0; k < un; ++k)
                 s += x.elemAsDouble(r * un + k);
-            od[r] = s / static_cast<double>(un);
+            od[r] = s / keel::as<double>(un);
         }
     } else {
         // Matrix: average n consecutive rows per column.
@@ -222,7 +222,7 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
                 double s = 0.0;
                 for (keel::usize k = 0; k < un; ++k)
                     s += x.elemAsDouble(c * H + r * un + k);
-                od[c * Ho + r] = s / static_cast<double>(un);
+                od[c * Ho + r] = s / keel::as<double>(un);
             }
         }
     }

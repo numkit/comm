@@ -76,7 +76,7 @@ inline int matBit(const Value &v, keel::usize i, keel::usize j)
 // Highest set power of a, or -1 for the zero polynomial.
 inline int polyDeg(keel::ArrayRef<int> a)
 {
-    for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i)
+    for (int i = keel::as<int>(a.size()) - 1; i >= 0; --i)
         if (a[i] & 1) return i;
     return -1;
 }
@@ -89,7 +89,7 @@ keel::Array<int> polyMod(keel::ArrayRef<int> aIn, keel::ArrayRef<int> b)
     for (auto &x : a) x &= 1;
     for (int da = polyDeg(a); da >= db && da >= 0; da = polyDeg(a))
         for (int j = 0; j <= db; ++j) a[j + (da - db)] ^= b[j];
-    a.resize(db > 0 ? static_cast<keel::usize>(db) : 0);  // degree < db
+    a.resize(db > 0 ? keel::as<keel::usize>(db) : 0);  // degree < db
     return a;
 }
 
@@ -101,12 +101,12 @@ PolyQR polyDivMod(keel::ArrayRef<int> aIn, keel::ArrayRef<int> b)
     const int db = polyDeg(b);
     for (auto &x : a) x &= 1;
     const int da0 = polyDeg(a);
-    keel::Array<int> q(da0 >= db ? static_cast<keel::usize>(da0 - db + 1) : 1, 0);
+    keel::Array<int> q(da0 >= db ? keel::as<keel::usize>(da0 - db + 1) : 1, 0);
     for (int da = da0; da >= db && da >= 0; da = polyDeg(a)) {
         q[da - db] ^= 1;
         for (int j = 0; j <= db; ++j) a[j + (da - db)] ^= b[j];
     }
-    a.resize(db > 0 ? static_cast<keel::usize>(db) : 1);
+    a.resize(db > 0 ? keel::as<keel::usize>(db) : 1);
     return {keel::move(q), keel::move(a)};
 }
 
@@ -141,8 +141,8 @@ Value shiftMatrix(keel::ArrayRef<int> rowIn, long long rows, long long n,
                   keel::Allocator *mr)
 {
     keel::Array<int> row(rowIn);
-    Value out = Value::matrix(static_cast<keel::usize>(rows),
-                              static_cast<keel::usize>(n), ValueType::DOUBLE, mr);
+    Value out = Value::matrix(keel::as<keel::usize>(rows),
+                              keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
     double *d = out.doubleDataMut();
     for (long long r = 0; r < rows; ++r) {
         for (long long c = 0; c < n; ++c) d[c * rows + r] = row[c];
@@ -227,7 +227,7 @@ HammgenResult hammgen(long long m, const Value &primPoly,
         pmask = defaultPrimMask(m, "hammgen");
     } else {
         const keel::usize len = primPoly.numel();
-        if (static_cast<long long>(len) != m + 1)
+        if (keel::as<long long>(len) != m + 1)
             throw Error("hammgen: P must be a binary row of length M+1",
                         0, 0, "hammgen", "", "numkit:hammgen:P");
         pmask = 0;
@@ -242,8 +242,8 @@ HammgenResult hammgen(long long m, const Value &primPoly,
     const long long k = n - m;
 
     // H(j,i) = bit j of (x^i mod p), i = 0..n-1, j = 0..m-1.
-    Value h = Value::matrix(static_cast<keel::usize>(m),
-                            static_cast<keel::usize>(n), ValueType::DOUBLE, mr);
+    Value h = Value::matrix(keel::as<keel::usize>(m),
+                            keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
     double *hd = h.doubleDataMut();
     const keel::u64 topBit = 1ULL << m;
     keel::u64 r = 1;  // x^0
@@ -279,18 +279,18 @@ Value cyclpoly(long long n, long long k, keel::StringRef opt,
     if (m == 1) return polyToRow({1, 1}, mr);
 
     // x^n + 1 over GF(2).
-    keel::Array<int> pp(static_cast<keel::usize>(n) + 1, 0);
-    pp[0] = 1; pp[static_cast<keel::usize>(n)] = 1;
+    keel::Array<int> pp(keel::as<keel::usize>(n) + 1, 0);
+    pp[0] = 1; pp[keel::as<keel::usize>(n)] = 1;
     const long long nn = (1LL << (m - 1)) - 1;
 
     // Candidate degree-m polynomial 1 + (m-1 inner bits of i) + x^m.
     auto candidate = [&](long long i, bool msbFirst) {
-        keel::Array<int> t(static_cast<keel::usize>(m) + 1, 0);
-        t[0] = 1; t[static_cast<keel::usize>(m)] = 1;
+        keel::Array<int> t(keel::as<keel::usize>(m) + 1, 0);
+        t[0] = 1; t[keel::as<keel::usize>(m)] = 1;
         for (long long p = 0; p < m - 1; ++p)
-            t[static_cast<keel::usize>(1 + p)] =
-                msbFirst ? static_cast<int>((i >> (m - 2 - p)) & 1)
-                         : static_cast<int>((i >> p) & 1);
+            t[keel::as<keel::usize>(1 + p)] =
+                msbFirst ? keel::as<int>((i >> (m - 2 - p)) & 1)
+                         : keel::as<int>((i >> p) & 1);
         return t;
     };
     auto divides = [&](keel::ArrayRef<int> t) {
@@ -329,7 +329,7 @@ Value cyclpoly(long long n, long long k, keel::StringRef opt,
                 return terms(a) < terms(b);
             });
         if (rows.empty()) return Value::matrix(0, 0, ValueType::DOUBLE, mr);
-        Value out = Value::matrix(rows.size(), static_cast<keel::usize>(m) + 1,
+        Value out = Value::matrix(rows.size(), keel::as<keel::usize>(m) + 1,
                                   ValueType::DOUBLE, mr);
         double *d = out.doubleDataMut();
         const keel::usize R = rows.size();
@@ -357,8 +357,8 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
                     0, 0, "cyclgen", "", "numkit:cyclgen:N");
 
     // p must divide x^n + 1.
-    keel::Array<int> pp(static_cast<keel::usize>(n) + 1, 0);
-    pp[0] = 1; pp[static_cast<keel::usize>(n)] = 1;
+    keel::Array<int> pp(keel::as<keel::usize>(n) + 1, 0);
+    pp[0] = 1; pp[keel::as<keel::usize>(n)] = 1;
     if (polyDeg(polyMod(pp, p)) >= 0)
         throw Error("cyclgen: generator polynomial must divide x^N - 1",
                     0, 0, "cyclgen", "", "numkit:cyclgen:P2");
@@ -370,7 +370,7 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
     if (nonsys) {
         // Parity poly h(x) = (x^n + 1) / p(x), degree k.
         keel::Array<int> pc = polyDivMod(pp, p).q;
-        pc.resize(static_cast<keel::usize>(k) + 1, 0);
+        pc.resize(keel::as<keel::usize>(k) + 1, 0);
         keel::Array<int> hrow(n, 0);
         for (long long j = 0; j <= k; ++j) hrow[j] = pc[k - j];   // fliplr(pc)
         res.h = shiftMatrix(hrow, n - k, n, mr);
@@ -379,17 +379,17 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
         res.g = shiftMatrix(grow, k, n, mr);
     } else {
         // Systematic: b(i,:) = x^(m+i) mod p (k×m); h=[I_m | b'], g=[b | I_k].
-        keel::Array<keel::Array<int>> b(static_cast<keel::usize>(k));
+        keel::Array<keel::Array<int>> b(keel::as<keel::usize>(k));
         for (long long i = 0; i < k; ++i) {
-            keel::Array<int> xpow(static_cast<keel::usize>(m + i) + 1, 0);
-            xpow[static_cast<keel::usize>(m + i)] = 1;
+            keel::Array<int> xpow(keel::as<keel::usize>(m + i) + 1, 0);
+            xpow[keel::as<keel::usize>(m + i)] = 1;
             auto rem = polyMod(xpow, p);
             rem.resize(m, 0);
-            b[static_cast<keel::usize>(i)] = keel::move(rem);
+            b[keel::as<keel::usize>(i)] = keel::move(rem);
         }
-        const keel::usize M = static_cast<keel::usize>(m);
-        const keel::usize K = static_cast<keel::usize>(k);
-        const keel::usize N = static_cast<keel::usize>(n);
+        const keel::usize M = keel::as<keel::usize>(m);
+        const keel::usize K = keel::as<keel::usize>(k);
+        const keel::usize N = keel::as<keel::usize>(n);
         res.h = Value::matrix(M, N, ValueType::DOUBLE, mr);
         double *hd = res.h.doubleDataMut();
         for (keel::usize r = 0; r < M; ++r) {
@@ -459,8 +459,8 @@ void buildCode(keel::StringRef base, long long n, long long k,
             throw Error(keel::format("{}: the linear method requires a "
                         "generator matrix", who),
                         0, 0, who, "", keel::format("numkit:{}:genmat", who));
-        if (static_cast<long long>(opt.dims().rows()) != k ||
-            static_cast<long long>(opt.dims().cols()) != n)
+        if (keel::as<long long>(opt.dims().rows()) != k ||
+            keel::as<long long>(opt.dims().cols()) != n)
             throw Error(keel::format("{}: generator matrix must be K x N", who),
                         0, 0, who, "", keel::format("numkit:{}:gendims", who));
         gen = matToRows(opt);
@@ -503,34 +503,34 @@ keel::Array<keel::Array<int>>
 buildSyndTable(const keel::Array<keel::Array<int>> &h, long long n, long long m)
 {
     const long long T = 1LL << m;
-    keel::Array<keel::Array<int>> table(static_cast<keel::usize>(T));
+    keel::Array<keel::Array<int>> table(keel::as<keel::usize>(T));
     keel::Array<char> filled(T, 0);
     long long remaining = T;
 
     keel::Array<int> e(n, 0);
     const long long s0 = syndromeInt(h, e, m, n);
-    table[static_cast<keel::usize>(s0)] = keel::move(e);
-    filled[static_cast<keel::usize>(s0)] = 1;
+    table[keel::as<keel::usize>(s0)] = keel::move(e);
+    filled[keel::as<keel::usize>(s0)] = 1;
     --remaining;
 
     for (long long w = 1; w <= n && remaining > 0; ++w) {
         keel::Array<long long> idx(w);
-        for (long long t = 0; t < w; ++t) idx[static_cast<keel::usize>(t)] = t;
+        for (long long t = 0; t < w; ++t) idx[keel::as<keel::usize>(t)] = t;
         while (true) {
             keel::Array<int> ep(n, 0);
-            for (long long t = 0; t < w; ++t) ep[static_cast<keel::usize>(idx[t])] = 1;
+            for (long long t = 0; t < w; ++t) ep[keel::as<keel::usize>(idx[t])] = 1;
             const long long s = syndromeInt(h, ep, m, n);
-            if (!filled[static_cast<keel::usize>(s)]) {
-                table[static_cast<keel::usize>(s)] = keel::move(ep);
-                filled[static_cast<keel::usize>(s)] = 1;
+            if (!filled[keel::as<keel::usize>(s)]) {
+                table[keel::as<keel::usize>(s)] = keel::move(ep);
+                filled[keel::as<keel::usize>(s)] = 1;
                 if (--remaining == 0) break;
             }
             long long t = w - 1;
-            while (t >= 0 && idx[static_cast<keel::usize>(t)] == n - w + t) --t;
+            while (t >= 0 && idx[keel::as<keel::usize>(t)] == n - w + t) --t;
             if (t < 0) break;
-            ++idx[static_cast<keel::usize>(t)];
+            ++idx[keel::as<keel::usize>(t)];
             for (long long u = t + 1; u < w; ++u)
-                idx[static_cast<keel::usize>(u)] = idx[static_cast<keel::usize>(u - 1)] + 1;
+                idx[keel::as<keel::usize>(u)] = idx[keel::as<keel::usize>(u - 1)] + 1;
         }
     }
     return table;
@@ -568,7 +568,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         if (!isVector)
             throw Error("encode: message must be a vector for the decimal format",
                         0, 0, "encode", "", "numkit:encode:msgvec");
-        const double maxv = std::ldexp(1.0, static_cast<int>(k)) - 1.0;
+        const double maxv = std::ldexp(1.0, keel::as<int>(k)) - 1.0;
         for (keel::usize w = 0; w < nel; ++w) {
             const double x = msg.elemAsDouble(w);
             if (x < 0 || x > maxv || std::floor(x) != x)
@@ -576,9 +576,9 @@ EncodeResult encode(const Value &msg, long long n, long long k,
                             "in [0, 2^K-1]",
                             0, 0, "encode", "", "numkit:encode:msgint");
             keel::Array<int> word(k, 0);
-            const unsigned long long xi = static_cast<unsigned long long>(x);
+            const unsigned long long xi = keel::as<unsigned long long>(x);
             for (long long p = 0; p < k; ++p)
-                word[static_cast<keel::usize>(p)] = static_cast<int>((xi >> p) & 1ULL);
+                word[keel::as<keel::usize>(p)] = keel::as<int>((xi >> p) & 1ULL);
             words.push_back(keel::move(word));
         }
     } else {
@@ -590,28 +590,28 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         }
         if (isVector) {
             typeFlag = 2;
-            added = static_cast<long long>(nel % static_cast<keel::usize>(k));
+            added = keel::as<long long>(nel % keel::as<keel::usize>(k));
             if (added) added = k - added;
-            const keel::usize numWords = (nel + static_cast<keel::usize>(added))
-                                         / static_cast<keel::usize>(k);
+            const keel::usize numWords = (nel + keel::as<keel::usize>(added))
+                                         / keel::as<keel::usize>(k);
             for (keel::usize w = 0; w < numWords; ++w) {
                 keel::Array<int> word(k, 0);
                 for (long long p = 0; p < k; ++p) {
-                    const keel::usize idx = w * static_cast<keel::usize>(k) + p;
-                    if (idx < nel) word[static_cast<keel::usize>(p)] =
+                    const keel::usize idx = w * keel::as<keel::usize>(k) + p;
+                    if (idx < nel) word[keel::as<keel::usize>(p)] =
                         msg.elemAsDouble(idx) != 0.0 ? 1 : 0;
                 }
                 words.push_back(keel::move(word));
             }
         } else {
-            if (static_cast<long long>(C) != k)
+            if (keel::as<long long>(C) != k)
                 throw Error("encode: message matrix must have K columns",
                             0, 0, "encode", "", "numkit:encode:cols");
             typeFlag = 0;
             for (keel::usize w = 0; w < R; ++w) {
                 keel::Array<int> word(k);
                 for (long long p = 0; p < k; ++p)
-                    word[static_cast<keel::usize>(p)] = matBit(msg, w, static_cast<keel::usize>(p));
+                    word[keel::as<keel::usize>(p)] = matBit(msg, w, keel::as<keel::usize>(p));
                 words.push_back(keel::move(word));
             }
         }
@@ -621,7 +621,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
     buildCode(base, n, k, opt, "encode", gen, h, mr);
 
     const keel::usize numWords = words.size();
-    const keel::usize N = static_cast<keel::usize>(n);
+    const keel::usize N = keel::as<keel::usize>(n);
     keel::Array<keel::Array<int>> code;
     code.reserve(numWords);
     for (keel::usize w = 0; w < numWords; ++w) {
@@ -629,8 +629,8 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         for (long long c = 0; c < n; ++c) {
             int b = 0;
             for (long long p = 0; p < k; ++p)
-                b ^= (words[w][static_cast<keel::usize>(p)] & gen[static_cast<keel::usize>(p)][static_cast<keel::usize>(c)]);
-            row[static_cast<keel::usize>(c)] = b & 1;
+                b ^= (words[w][keel::as<keel::usize>(p)] & gen[keel::as<keel::usize>(p)][keel::as<keel::usize>(c)]);
+            row[keel::as<keel::usize>(c)] = b & 1;
         }
         code.push_back(keel::move(row));
     }
@@ -644,7 +644,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         for (keel::usize w = 0; w < numWords; ++w) {
             double v = 0;
             for (long long p = 0; p < n; ++p)
-                if (code[w][static_cast<keel::usize>(p)]) v += std::ldexp(1.0, static_cast<int>(p));
+                if (code[w][keel::as<keel::usize>(p)]) v += std::ldexp(1.0, keel::as<int>(p));
             d[w] = v;
         }
     } else if (typeFlag == 2) {
@@ -683,7 +683,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
     const keel::usize nel = code.numel();
     const bool isVector = (R == 1 || C == 1);
     const bool isRowVector = isVector && (R == 1);
-    const keel::usize N = static_cast<keel::usize>(n);
+    const keel::usize N = keel::as<keel::usize>(n);
 
     keel::Array<keel::Array<int>> wordsIn;
     int typeFlag = 0;
@@ -693,7 +693,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
         if (!isVector)
             throw Error("decode: code must be a vector for the decimal format",
                         0, 0, "decode", "", "numkit:decode:codevec");
-        const double maxv = std::ldexp(1.0, static_cast<int>(n)) - 1.0;
+        const double maxv = std::ldexp(1.0, keel::as<int>(n)) - 1.0;
         for (keel::usize w = 0; w < nel; ++w) {
             const double x = code.elemAsDouble(w);
             if (x < 0 || x > maxv || std::floor(x) != x)
@@ -701,8 +701,8 @@ DecodeResult decode(const Value &code, long long n, long long k,
                             "[0, 2^N-1]",
                             0, 0, "decode", "", "numkit:decode:codeint");
             keel::Array<int> word(N, 0);
-            const unsigned long long xi = static_cast<unsigned long long>(x);
-            for (keel::usize p = 0; p < N; ++p) word[p] = static_cast<int>((xi >> p) & 1ULL);
+            const unsigned long long xi = keel::as<unsigned long long>(x);
+            for (keel::usize p = 0; p < N; ++p) word[p] = keel::as<int>((xi >> p) & 1ULL);
             wordsIn.push_back(keel::move(word));
         }
     } else {
@@ -714,9 +714,9 @@ DecodeResult decode(const Value &code, long long n, long long k,
         }
         if (isVector) {
             typeFlag = 2;
-            long long pad = static_cast<long long>(nel % N);
-            if (pad) pad = static_cast<long long>(N) - pad;
-            const keel::usize numWords = (nel + static_cast<keel::usize>(pad)) / N;
+            long long pad = keel::as<long long>(nel % N);
+            if (pad) pad = keel::as<long long>(N) - pad;
+            const keel::usize numWords = (nel + keel::as<keel::usize>(pad)) / N;
             for (keel::usize w = 0; w < numWords; ++w) {
                 keel::Array<int> word(N, 0);
                 for (keel::usize p = 0; p < N; ++p) {
@@ -726,7 +726,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
                 wordsIn.push_back(keel::move(word));
             }
         } else {
-            if (static_cast<long long>(C) != n)
+            if (keel::as<long long>(C) != n)
                 throw Error("decode: code matrix must have N columns",
                             0, 0, "decode", "", "numkit:decode:cols");
             typeFlag = 0;
@@ -748,8 +748,8 @@ DecodeResult decode(const Value &code, long long n, long long k,
     for (long long i = 0; i < k && (firstK || lastK); ++i)
         for (long long j = 0; j < k; ++j) {
             const int want = (i == j) ? 1 : 0;
-            if (gen[static_cast<keel::usize>(i)][static_cast<keel::usize>(j)] != want) firstK = false;
-            if (gen[static_cast<keel::usize>(i)][static_cast<keel::usize>(n - k + j)] != want) lastK = false;
+            if (gen[keel::as<keel::usize>(i)][keel::as<keel::usize>(j)] != want) firstK = false;
+            if (gen[keel::as<keel::usize>(i)][keel::as<keel::usize>(n - k + j)] != want) lastK = false;
         }
     if (!firstK && !lastK)
         throw Error("decode: generator matrix is not in systematic form",
@@ -757,17 +757,17 @@ DecodeResult decode(const Value &code, long long n, long long k,
     const long long msgOff = firstK ? 0 : (n - k);
 
     const keel::usize numWords = wordsIn.size();
-    const keel::usize K = static_cast<keel::usize>(k);
+    const keel::usize K = keel::as<keel::usize>(k);
     keel::Array<keel::Array<int>> msgRows;
     msgRows.reserve(numWords);
     keel::Array<long long> errCnt(numWords, 0);
     for (keel::usize w = 0; w < numWords; ++w) {
         const long long s = syndromeInt(h, wordsIn[w], m, n);
-        const keel::Array<int> &leader = trt[static_cast<keel::usize>(s)];
+        const keel::Array<int> &leader = trt[keel::as<keel::usize>(s)];
         keel::Array<int> msgRow(K, 0);
         long long cnt = 0;
         for (keel::usize p = 0; p < K; ++p)
-            msgRow[p] = wordsIn[w][static_cast<keel::usize>(msgOff) + p] ^ leader[static_cast<keel::usize>(msgOff) + p];
+            msgRow[p] = wordsIn[w][keel::as<keel::usize>(msgOff) + p] ^ leader[keel::as<keel::usize>(msgOff) + p];
         msgRows.push_back(keel::move(msgRow));
         for (keel::usize p = 0; p < N; ++p) cnt += leader[p];
         errCnt[w] = cnt;
@@ -782,7 +782,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
         for (keel::usize w = 0; w < numWords; ++w) {
             double v = 0;
             for (keel::usize p = 0; p < K; ++p)
-                if (msgRows[w][p]) v += std::ldexp(1.0, static_cast<int>(p));
+                if (msgRows[w][p]) v += std::ldexp(1.0, keel::as<int>(p));
             d[w] = v;
         }
     } else if (typeFlag == 2) {
@@ -801,7 +801,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
     // err output: one count per word (column).
     res.err = Value::matrix(numWords, 1, ValueType::DOUBLE, mr);
     double *ed = res.err.doubleDataMut();
-    for (keel::usize w = 0; w < numWords; ++w) ed[w] = static_cast<double>(errCnt[w]);
+    for (keel::usize w = 0; w < numWords; ++w) ed[w] = keel::as<double>(errCnt[w]);
     return res;
 }
 
@@ -851,7 +851,7 @@ Value syndtable(const Value &H, keel::Allocator *mr)
     const keel::usize nk = plan.nk;
     const keel::usize n  = plan.n;
 
-    const keel::usize M = static_cast<keel::usize>(1) << nk;
+    const keel::usize M = keel::as<keel::usize>(1) << nk;
 
     // Syndrome of a single-bit error at position j = column j of H, packed
     // MSB-first (row 0 of H is the most significant bit, matching

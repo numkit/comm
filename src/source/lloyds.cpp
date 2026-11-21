@@ -69,16 +69,16 @@ void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
 
     if (ini_codebook.numel() == 1) {
         const double Kd = ini_codebook.toScalar();
-        const long K = static_cast<long>(std::floor(Kd));
+        const long K = keel::as<long>(std::floor(Kd));
         if (K < 1)
             throw Error("lloyds: ini_codebook count must be positive",
                         0, 0, "lloyds", "",
                         "numkit:lloyds:NonPositiveINI_CODEBOOK");
-        const double step = (max_train - min_train) / static_cast<double>(K);
+        const double step = (max_train - min_train) / keel::as<double>(K);
         codebook.resize(K);
         for (long i = 0; i < K; ++i) {
-            codebook[static_cast<keel::usize>(i)] =
-                min_train + step * 0.5 + step * static_cast<double>(i);
+            codebook[keel::as<keel::usize>(i)] =
+                min_train + step * 0.5 + step * keel::as<double>(i);
         }
     } else {
         readVector(ini_codebook, codebook);
@@ -135,7 +135,7 @@ lloyds(const Value &training_set, const Value &ini_codebook,
             const double d = training[i] - codebook[bins[i]];
             sse += d * d;
         }
-        return sse / static_cast<double>(training.size());
+        return sse / keel::as<double>(training.size());
     };
 
     keel::Array<double> partition = midpoint();
@@ -160,7 +160,7 @@ lloyds(const Value &training_set, const Value &ini_codebook,
                 if (bins[j] == i) { sum += training[j]; ++cnt; }
             }
             if (cnt > 0) {
-                codebook[i] = sum / static_cast<double>(cnt);
+                codebook[i] = sum / keel::as<double>(cnt);
             } else {
                 // Empty bin: per MATLAB lloyds.m, fall back to a midpoint
                 // between adjacent partition boundaries (or training extrema).

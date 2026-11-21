@@ -39,7 +39,7 @@ void genqammod_argcheck(const Value &x, const Value &constellation)
     const keel::usize N = x.numel();
     for (keel::usize i = 0; i < N; ++i) {
         const double xi = x.elemAsDouble(i);
-        if (xi < 0.0 || xi >= static_cast<double>(M))
+        if (xi < 0.0 || xi >= keel::as<double>(M))
             throw Error("genqammod: index out of range [0, M-1]",
                         0, 0, "genqammod", "",
                         "numkit:genqammod:OutOfRange");
@@ -75,13 +75,13 @@ Value genqammod(const Value &x, const Value &constellation,
     if (out_complex) {
         keel::c64 *o = out.complexDataMut();
         for (keel::usize i = 0; i < N; ++i) {
-            const keel::usize k = static_cast<keel::usize>(x.elemAsDouble(i));
+            const keel::usize k = keel::as<keel::usize>(x.elemAsDouble(i));
             o[i] = constellation.complexData()[k];
         }
     } else {
         double *o = out.doubleDataMut();
         for (keel::usize i = 0; i < N; ++i) {
-            const keel::usize k = static_cast<keel::usize>(x.elemAsDouble(i));
+            const keel::usize k = keel::as<keel::usize>(x.elemAsDouble(i));
             o[i] = constellation.elemAsDouble(k);
         }
     }
@@ -119,7 +119,7 @@ Value genqamdemod(const Value &y, const Value &constellation,
                 best_k  = k;
             }
         }
-        o[i] = static_cast<double>(best_k);
+        o[i] = keel::as<double>(best_k);
     }
     return out;
 }

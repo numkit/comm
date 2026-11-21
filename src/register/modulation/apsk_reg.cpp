@@ -44,7 +44,7 @@ keel::Array<keel::usize> valueToScratchSizes(const Value &v, keel::Allocator *mr
     const keel::usize n = v.numel();
     out.reserve(n);
     for (keel::usize i = 0; i < n; ++i)
-        out.push_back(static_cast<keel::usize>(v.elemAsDouble(i)));
+        out.push_back(keel::as<keel::usize>(v.elemAsDouble(i)));
     return out;
 }
 
@@ -83,7 +83,7 @@ Value buildGrayMapping(keel::ArrayRef<keel::usize> M, keel::Allocator *mr)
         for (keel::usize k = 0; k < p2 && written < Mr; ++k) {
             const keel::usize g = k ^ (k >> 1);
             if (g < Mr) {
-                md[cum + written] = static_cast<double>(ringBase + g);
+                md[cum + written] = keel::as<double>(ringBase + g);
                 ++written;
             }
         }
@@ -129,7 +129,7 @@ Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Alloca
                                 0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
                 val = (val << 1) | (bit != 0.0 ? 1u : 0u);
             }
-            sd[rowVec ? s : (c * nSyms + s)] = static_cast<double>(val);
+            sd[rowVec ? s : (c * nSyms + s)] = keel::as<double>(val);
         }
     }
     return syms;
@@ -147,11 +147,11 @@ Value unpackApskBits(const Value &syms, keel::usize bps, keel::Allocator *mr)
     double *bd = bits.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
-            const keel::usize val = static_cast<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
+            const keel::usize val = keel::as<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
                 const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
-                bd[outIdx] = static_cast<double>(bit);
+                bd[outIdx] = keel::as<double>(bit);
             }
         }
     }

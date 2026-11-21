@@ -138,7 +138,7 @@ void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     auto toLower = [](keel::StringRef sv) {
         keel::String s(sv);
         for (char &c : s)
-            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32);
+            if (c >= 'A' && c <= 'Z') c = keel::as<char>(c + 32);
         return s;
     };
     auto isValidMode = [](keel::StringRef m) {
@@ -180,7 +180,7 @@ void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         const keel::String rawKey = args[i].toString();
         const keel::String key = toLower(rawKey);
         if (key == "bitspersymbol") {
-            k = static_cast<int>(argcheck::expectedPositiveInteger(
+            k = keel::as<int>(argcheck::expectedPositiveInteger(
                 argcheck::expectedReal(args[i + 1], int(i + 2), "BitsPerSymbol", "convertSNR"),
                 int(i + 2), "BitsPerSymbol", "convertSNR"));
         } else if (key == "codingrate" || key == "samplespersymbol" ||

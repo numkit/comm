@@ -62,7 +62,7 @@ Value quantiz_indx(const Value &sig, const Value &partition,
             if (partition.elemAsDouble(k) < xi) ++cnt;
             else break;   // partition is monotonic non-decreasing
         }
-        o[i] = static_cast<double>(cnt);
+        o[i] = keel::as<double>(cnt);
     }
     return indx;
 }
@@ -82,14 +82,14 @@ quantiz(const Value &sig, const Value &partition, const Value &codebook,
     double *q = quantv.doubleDataMut();
     double sse = 0.0;
     for (keel::usize i = 0; i < N; ++i) {
-        const keel::usize k = static_cast<keel::usize>(idx[i]);
+        const keel::usize k = keel::as<keel::usize>(idx[i]);
         const double cv = codebook.elemAsDouble(k);
         q[i] = cv;
         const double d = sig.elemAsDouble(i) - cv;
         sse += d * d;
     }
     return {std::move(indx), std::move(quantv),
-            N > 0 ? sse / static_cast<double>(N) : 0.0};
+            N > 0 ? sse / keel::as<double>(N) : 0.0};
 }
 
 } // namespace numkit::comm

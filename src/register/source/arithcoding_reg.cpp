@@ -30,7 +30,7 @@ void arithdeco_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                    keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "arithdeco");
-    const keel::usize len = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
+    const keel::usize len = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "len", "arithdeco"), 3, "len", "arithdeco"));
     outs[0] = arithdeco(args[0], args[1], len, ctx.engine->allocator());
 }

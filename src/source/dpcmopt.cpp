@@ -45,10 +45,10 @@ void autocorrelation(const double *x, keel::usize N, int ord, double *r)
 {
     for (int k = 0; k <= ord; ++k) {
         double acc = 0.0;
-        const keel::usize last = N - static_cast<keel::usize>(k);  // N-k terms
+        const keel::usize last = N - keel::as<keel::usize>(k);  // N-k terms
         for (keel::usize n = 0; n < last; ++n)
-            acc += x[n] * x[n + static_cast<keel::usize>(k)];
-        r[k] = acc / static_cast<double>(N - 1 - static_cast<keel::usize>(k));
+            acc += x[n] * x[n + keel::as<keel::usize>(k)];
+        r[k] = acc / keel::as<double>(N - 1 - keel::as<keel::usize>(k));
     }
 }
 
@@ -101,7 +101,7 @@ void dpcmopt_argcheck(const Value &training_set, int ord)
     const keel::usize N = training_set.numel();
     // N must be at least ord + 3 so the smallest autocorrelation
     // denominator (N-1-ord) is >= 2.
-    if (N < static_cast<keel::usize>(ord) + 3)
+    if (N < keel::as<keel::usize>(ord) + 3)
         throw numkit::Error("The size of the training set is not large "
                             "enough for the given predictor order.",
                             0, 0, "dpcmopt", "", "numkit:dpcmopt:InvalidInput");
@@ -125,13 +125,13 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
         x[i] = training_set.elemAsDouble(i);
 
     // ── Autocorrelation estimate, lags 0..ord ────────────────────
-    keel::Array<double> r(static_cast<keel::usize>(ord) + 1, arena.allocator());
+    keel::Array<double> r(keel::as<keel::usize>(ord) + 1, arena.allocator());
     autocorrelation(x.data(), N, ord, r.data());
 
     // ── Levinson-Durbin: prediction-error filter A(z) ────────────
     // a = [1, a1, ..., a_ord]
-    keel::Array<double> a(static_cast<keel::usize>(ord) + 1, arena.allocator());
-    keel::Array<double> prev(static_cast<keel::usize>(ord) + 1,
+    keel::Array<double> a(keel::as<keel::usize>(ord) + 1, arena.allocator());
+    keel::Array<double> prev(keel::as<keel::usize>(ord) + 1,
                                     arena.allocator());
     levinson_durbin(r.data(), ord, a.data(), prev.data());
 
@@ -139,7 +139,7 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
     // The leading 0 occupies the "current sample" slot; predictor[k]
     // is the weight on x[n-k].
     DpcmOptResult result;
-    result.predictor = Value::matrix(1, static_cast<keel::usize>(ord) + 1,
+    result.predictor = Value::matrix(1, keel::as<keel::usize>(ord) + 1,
                                      ValueType::DOUBLE, mr);
     {
         double *p = result.predictor.doubleDataMut();
@@ -156,17 +156,17 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
 
     // Prediction residual, length N - ord:
     //   e[i-ord] = x[i] - sum_{k=1}^{ord} predictor[k] * x[i-k]
-    const keel::usize resLen = N - static_cast<keel::usize>(ord);
+    const keel::usize resLen = N - keel::as<keel::usize>(ord);
     const double *p = result.predictor.doubleData();
 
     Value residual = Value::matrix(1, resLen, ValueType::DOUBLE, mr);
     {
         double *e = residual.doubleDataMut();
-        for (keel::usize i = static_cast<keel::usize>(ord); i < N; ++i) {
+        for (keel::usize i = keel::as<keel::usize>(ord); i < N; ++i) {
             double pred = 0.0;
             for (int k = 1; k <= ord; ++k)
-                pred += p[k] * x[i - static_cast<keel::usize>(k)];
-            e[i - static_cast<keel::usize>(ord)] = x[i] - pred;
+                pred += p[k] * x[i - keel::as<keel::usize>(k)];
+            e[i - keel::as<keel::usize>(ord)] = x[i] - pred;
         }
     }
 

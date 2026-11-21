@@ -444,7 +444,7 @@ const keel::c64 *constellationFor(int M, keel::usize &len_out)
 // identifier per function (bugs/opened/lang/reg-domain-logic.md).
 void mil188MSetArgcheck(int M, keel::StringRef fn)
 {
-    argcheck::expectedOneOf(static_cast<double>(M), {16, 32, 64, 256},
+    argcheck::expectedOneOf(keel::as<double>(M), {16, 32, 64, 256},
                             2, "M", fn);
 }
 
@@ -462,11 +462,11 @@ Value mil188qammod(const Value &x, int M, keel::Allocator *mr)
     const keel::usize Nx = x.numel();
     for (keel::usize i = 0; i < Nx; ++i) {
         const double xi = x.elemAsDouble(i);
-        if (xi < 0.0 || xi >= static_cast<double>(N))
+        if (xi < 0.0 || xi >= keel::as<double>(N))
             throw Error("mil188qammod: input out of range [0, M-1]",
                         0, 0, "mil188qammod", "",
                         "numkit:mil188qammod:OutOfRange");
-        o[i] = C[static_cast<keel::usize>(xi)];
+        o[i] = C[keel::as<keel::usize>(xi)];
     }
     return out;
 }
@@ -494,7 +494,7 @@ Value mil188qamdemod(const Value &y, int M, keel::Allocator *mr)
             const double d2 = dr * dr + di * di;
             if (d2 < best_d2) { best_d2 = d2; best_k = k; }
         }
-        o[i] = static_cast<double>(best_k);
+        o[i] = keel::as<double>(best_k);
     }
     return out;
 }

@@ -77,8 +77,8 @@ Value pammod(const Value &x, int M, double ini_phase,
     if (N == 0) return out;
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
-    for (keel::usize i = 0; i < N; ++i) syms[i] = static_cast<keel::i32>(x.elemAsDouble(i));
-    (void)keel::comm::pam_mod(syms, static_cast<keel::i32>(M), ini_phase,
+    for (keel::usize i = 0; i < N; ++i) syms[i] = keel::as<keel::i32>(x.elemAsDouble(i));
+    (void)keel::comm::pam_mod(syms, keel::as<keel::i32>(M), ini_phase,
                               parseOrder(symbol_order), {out.complexDataMut(), N});
     return out;
 }
@@ -93,16 +93,16 @@ Value pamdemod(const Value &y, int M, double ini_phase,
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
     if (y.type() == ValueType::COMPLEX) {
-        (void)keel::comm::pam_demod({y.complexData(), N}, static_cast<keel::i32>(M), ini_phase,
+        (void)keel::comm::pam_demod({y.complexData(), N}, keel::as<keel::i32>(M), ini_phase,
                                     parseOrder(symbol_order), syms);
     } else {
         keel::Array<keel::c64> samples(N, scratch.allocator());
         for (keel::usize i = 0; i < N; ++i) samples[i] = keel::c64(y.elemAsDouble(i), 0.0);
-        (void)keel::comm::pam_demod(samples, static_cast<keel::i32>(M), ini_phase,
+        (void)keel::comm::pam_demod(samples, keel::as<keel::i32>(M), ini_phase,
                                     parseOrder(symbol_order), syms);
     }
     double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = static_cast<double>(syms[i]);
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
     return out;
 }
 
@@ -115,8 +115,8 @@ Value qammod(const Value &x, int M, keel::StringRef symbol_order,
     if (N == 0) return out;
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
-    for (keel::usize i = 0; i < N; ++i) syms[i] = static_cast<keel::i32>(x.elemAsDouble(i));
-    (void)keel::comm::qam_mod(syms, static_cast<keel::i32>(M), parseOrder(symbol_order),
+    for (keel::usize i = 0; i < N; ++i) syms[i] = keel::as<keel::i32>(x.elemAsDouble(i));
+    (void)keel::comm::qam_mod(syms, keel::as<keel::i32>(M), parseOrder(symbol_order),
                               unit_power, {out.complexDataMut(), N});
     return out;
 }
@@ -131,16 +131,16 @@ Value qamdemod(const Value &y, int M, keel::StringRef symbol_order,
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
     if (y.type() == ValueType::COMPLEX) {
-        (void)keel::comm::qam_demod({y.complexData(), N}, static_cast<keel::i32>(M),
+        (void)keel::comm::qam_demod({y.complexData(), N}, keel::as<keel::i32>(M),
                                     parseOrder(symbol_order), unit_power, syms);
     } else {
         keel::Array<keel::c64> samples(N, scratch.allocator());
         for (keel::usize i = 0; i < N; ++i) samples[i] = keel::c64(y.elemAsDouble(i), 0.0);
-        (void)keel::comm::qam_demod(samples, static_cast<keel::i32>(M),
+        (void)keel::comm::qam_demod(samples, keel::as<keel::i32>(M),
                                     parseOrder(symbol_order), unit_power, syms);
     }
     double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = static_cast<double>(syms[i]);
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
     return out;
 }
 

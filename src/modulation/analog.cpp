@@ -99,7 +99,7 @@ void mskdemod_argcheck(const Value &y, int nSamp)
                     0, 0, "mskdemod", "", "numkit:mskdemod:nSamp");
     const auto &d = y.dims();
     const keel::usize H = (d.rows() == 1 && d.cols() >= 1) ? d.cols() : d.rows();
-    if (H == 0 || H % static_cast<keel::usize>(nSamp) != 0)
+    if (H == 0 || H % keel::as<keel::usize>(nSamp) != 0)
         throw Error("mskdemod: signal length must be a positive multiple of nSamp",
                     0, 0, "mskdemod", "", "numkit:mskdemod:length");
 }
@@ -173,7 +173,7 @@ Value pmmod(const Value &x, double fc, double fs, double phasedev,
     // Process column-major: for each column index c, walk rows.
     for (keel::usize c = 0; c < W; ++c) {
         for (keel::usize r = 0; r < H; ++r) {
-            const double t  = static_cast<double>(r) * inv_fs;
+            const double t  = keel::as<double>(r) * inv_fs;
             const double xi = was_row
                                   ? x.elemAsDouble(r)
                                   : x.elemAsDouble(c * H + r);
@@ -221,7 +221,7 @@ Value ammod(const Value &x, double fc, double fs, double ini_phase,
 
     for (keel::usize c = 0; c < W; ++c) {
         for (keel::usize r = 0; r < H; ++r) {
-            const double t  = static_cast<double>(r) * inv_fs;
+            const double t  = keel::as<double>(r) * inv_fs;
             const double xi = was_row
                                   ? x.elemAsDouble(r)
                                   : x.elemAsDouble(c * H + r);
@@ -273,7 +273,7 @@ Value fmmod(const Value &x, double fc, double fs, double freqdev,
                                   ? x.elemAsDouble(r)
                                   : x.elemAsDouble(c * H + r);
             acc += xi * inv_fs;            // running cumsum / Fs
-            const double t = static_cast<double>(r) * inv_fs;
+            const double t = keel::as<double>(r) * inv_fs;
             o[c * H + r] = std::cos(twoPiFc * t
                                   + twoPiFreqDev * acc
                                   + ini_phase);
@@ -318,7 +318,7 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
     if (was_row) std::swap(H, W);
 
     // Build xCum per column.
-    const keel::usize Nout = H * static_cast<keel::usize>(nSamp);
+    const keel::usize Nout = H * keel::as<keel::usize>(nSamp);
     Value out = Value::matrix(Nout, W, ValueType::COMPLEX, mr);
     keel::c64 *o = out.complexDataMut();
 
@@ -337,11 +337,11 @@ Value mskmod(const Value &x, int nSamp, double ini_phase,
             xCum[r + 1] = xCum[r] + (2.0 * xi - 1.0);
         }
 
-        const double inv_nSamp = 1.0 / static_cast<double>(nSamp);
+        const double inv_nSamp = 1.0 / keel::as<double>(nSamp);
         for (keel::usize j = 0; j < Nout; ++j) {
-            const double tFine = static_cast<double>(j) * inv_nSamp;
-            const keel::usize base  = static_cast<keel::usize>(std::floor(tFine));
-            const double frac  = tFine - static_cast<double>(base);
+            const double tFine = keel::as<double>(j) * inv_nSamp;
+            const keel::usize base  = keel::as<keel::usize>(std::floor(tFine));
+            const double frac  = tFine - keel::as<double>(base);
             // Guard tail: at tFine = N - 1/nSamp the base = N-1, so
             // base+1 = N is in range.
             const double interp = xCum[base]
@@ -379,7 +379,7 @@ Value mskdemod(const Value &y, int nSamp, double ini_phase,
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) std::swap(H, W);   // a row is one channel of length H
 
-    const keel::usize N = H / static_cast<keel::usize>(nSamp);   // symbols per channel
+    const keel::usize N = H / keel::as<keel::usize>(nSamp);   // symbols per channel
     const bool cplx = y.isComplex();
 
     Value out = Value::matrix(N, W, ValueType::DOUBLE, mr);
@@ -394,14 +394,14 @@ Value mskdemod(const Value &y, int nSamp, double ini_phase,
     for (keel::usize c = 0; c < W; ++c) {
         long long cumSum = 0;
         for (keel::usize k = 0; k < N; ++k) {
-            const keel::usize start = k * static_cast<keel::usize>(nSamp);
+            const keel::usize start = k * keel::as<keel::usize>(nSamp);
             double acc = 0.0;
-            for (keel::usize n = start + 1; n < start + static_cast<keel::usize>(nSamp); ++n) {
+            for (keel::usize n = start + 1; n < start + keel::as<keel::usize>(nSamp); ++n) {
                 const keel::c64 p = getC(c, n) * keel::conj(getC(c, n - 1));
                 acc += std::atan2(p.imag(), p.real());
             }
             const int bit = (acc > 0.0) ? 1 : 0;
-            o[c * N + k] = static_cast<double>(bit);
+            o[c * N + k] = keel::as<double>(bit);
             cumSum += (2 * bit - 1);
         }
         double ph = std::fmod(ini_phase + (M_PI * 0.5) * (double)cumSum, 2.0 * M_PI);
@@ -463,7 +463,7 @@ Value ssbmod(const Value &x, double fc, double fs, double ini_phase,
         // analytic.complexData()[i].imag() is imag(hilbert(col_in))
         const auto *cdat = analytic.complexData();
         for (keel::usize r = 0; r < H; ++r) {
-            const double t  = static_cast<double>(r) * inv_fs;
+            const double t  = keel::as<double>(r) * inv_fs;
             const double xi = cp[r];
             const double ang = twoPiFc * t + ini_phase;
             o[c * H + r] = xi * std::cos(ang)
@@ -502,7 +502,7 @@ Value pmdemod(const Value &y, double fc, double fs, double phasedev,
         Value analytic = numkit::signal::hilbert(col_in, mr);
         const auto *z = analytic.complexData();
         for (keel::usize r = 0; r < H; ++r) {
-            const double ang = twoPiFc * (static_cast<double>(r) * inv_fs) + ini_phase;
+            const double ang = twoPiFc * (keel::as<double>(r) * inv_fs) + ini_phase;
             const double ca = std::cos(ang), sa = std::sin(ang);
             const double re = z[r].real(), im = z[r].imag();
             // angle(z·exp(-j·ang))
@@ -542,7 +542,7 @@ Value fmdemod(const Value &y, double fc, double fs, double freqdev,
         Value analytic = numkit::signal::hilbert(col_in, mr);
         const auto *z = analytic.complexData();
         for (keel::usize r = 0; r < H; ++r) {
-            const double ang = twoPiFc * (static_cast<double>(r) * inv_fs) + ini_phase;
+            const double ang = twoPiFc * (keel::as<double>(r) * inv_fs) + ini_phase;
             const double ca = std::cos(ang), sa = std::sin(ang);
             const double re = z[r].real(), im = z[r].imag();
             ph[r] = std::atan2(im * ca - re * sa, re * ca + im * sa);
@@ -576,7 +576,7 @@ Value coherentDetect(const Value &y, double fc, double fs, double ini_phase,
     const double twoPiFc = 2.0 * M_PI * fc;
     const double inv_fs = 1.0 / fs;
     for (keel::usize i = 0; i < N; ++i)   // flat sample order: sample i → t = i/fs
-        yo[i] = y.elemAsDouble(i) * std::cos(twoPiFc * (static_cast<double>(i) * inv_fs) + ini_phase);
+        yo[i] = y.elemAsDouble(i) * std::cos(twoPiFc * (keel::as<double>(i) * inv_fs) + ini_phase);
 
     auto [b, a] = numkit::signal::butter(5, fc * 2.0 / fs, "low", mr);
     Value z = numkit::signal::filtfilt(b, a, yc, mr);

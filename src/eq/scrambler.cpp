@@ -23,7 +23,7 @@ keel::Array<keel::u8> readBitVec(const Value &v, keel::Allocator *alloc) {
     const keel::usize N = v.numel();
     keel::Array<keel::u8> out(N, alloc);
     for (keel::usize i = 0; i < N; ++i) {
-        out[i] = (v.elemAsDouble(i) != 0.0) ? static_cast<keel::u8>(1) : static_cast<keel::u8>(0);
+        out[i] = (v.elemAsDouble(i) != 0.0) ? keel::as<keel::u8>(1) : keel::as<keel::u8>(0);
     }
     return out;
 }
@@ -41,7 +41,7 @@ Value packDoubles(keel::Allocator *mr, keel::ArrayRef<keel::u8> bits) {
     Value out = Value::matrix(bits.size(), 1, ValueType::DOUBLE, mr);
     if (!bits.empty()) {
         double *od = out.doubleDataMut();
-        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = static_cast<double>(bits[i]);
+        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = keel::as<double>(bits[i]);
     }
     return out;
 }

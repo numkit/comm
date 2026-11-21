@@ -49,7 +49,7 @@ Value scaleConstellationUnitPower(const Value &c, keel::Allocator *mr) {
             sumP += v * v;
         }
     }
-    const double avgP = sumP / static_cast<double>(M);
+    const double avgP = sumP / keel::as<double>(M);
     if (!(avgP > 0.0)) return c;
     const double scale = 1.0 / std::sqrt(avgP);
     if (c.isComplex()) {
@@ -99,7 +99,7 @@ Value packBitsToSymbols(const Value &x, keel::usize bps, const char *fn, keel::A
                                 0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
                 val = (val << 1) | (bit != 0.0 ? 1u : 0u);
             }
-            sd[rowVec ? s : (c * nSyms + s)] = static_cast<double>(val);
+            sd[rowVec ? s : (c * nSyms + s)] = keel::as<double>(val);
         }
     }
     return syms;
@@ -116,11 +116,11 @@ Value unpackSymbolsToBits(const Value &syms, keel::usize bps, keel::Allocator *m
     double *bd = bits.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
-            const keel::usize val = static_cast<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
+            const keel::usize val = keel::as<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
                 const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
-                bd[outIdx] = static_cast<double>(bit);
+                bd[outIdx] = keel::as<double>(bit);
             }
         }
     }

@@ -129,14 +129,14 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
     double *od = out.doubleDataMut();
 
     // Pre-compute reference tone phasors.
-    const keel::usize ns = static_cast<keel::usize>(nsamp);
-    keel::Array<keel::c64> ref(static_cast<keel::usize>(M) * ns, mr);
+    const keel::usize ns = keel::as<keel::usize>(nsamp);
+    keel::Array<keel::c64> ref(keel::as<keel::usize>(M) * ns, mr);
     for (int k = 0; k < M; ++k) {
         const double f = (double(k) - 0.5 * (M - 1)) * freq_sep;
         const double dphi = 2.0 * M_PI * f / fs;
         for (int n = 0; n < nsamp; ++n) {
             const double th = dphi * double(n);
-            ref[static_cast<keel::usize>(k) * ns + static_cast<keel::usize>(n)] = keel::c64(std::cos(th), std::sin(th));
+            ref[keel::as<keel::usize>(k) * ns + keel::as<keel::usize>(n)] = keel::c64(std::cos(th), std::sin(th));
         }
     }
 
@@ -153,7 +153,7 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
                     yi = y.complexData()[s * nsamp + (keel::usize)n];
                 else
                     yi = keel::c64(y.elemAsDouble(s * nsamp + (keel::usize)n), 0.0);
-                acc += yi * keel::conj(ref[static_cast<keel::usize>(k) * ns + static_cast<keel::usize>(n)]);
+                acc += yi * keel::conj(ref[keel::as<keel::usize>(k) * ns + keel::as<keel::usize>(n)]);
             }
             const double E = keel::norm(acc);
             if (E > bestE) { bestE = E; bestK = k; }

@@ -52,7 +52,7 @@ void parseAlphabet(const Value &a,
         for (keel::usize k = 0; k < K; ++k) {
             al[k] = a_cplx ? a.complexElem(k) : keel::c64(a.elemAsDouble(k), 0.0);
             if (al[k].imag() != 0.0) any_imag = true;
-            pr[k] = static_cast<double>(k + 1) / static_cast<double>(K);
+            pr[k] = keel::as<double>(k + 1) / keel::as<double>(K);
         }
         *alpha_out      = al;
         *prob_out       = pr;
@@ -213,12 +213,12 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
                 throw Error("randerr: error counts must be non-negative integers",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsElements");
-            if (static_cast<keel::usize>(v) > n)
+            if (keel::as<keel::usize>(v) > n)
                 throw Error("randerr: error count exceeds n",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsForm");
-            cs[k] = static_cast<int>(v);
-            pr[k] = static_cast<double>(k + 1) / static_cast<double>(K);
+            cs[k] = keel::as<int>(v);
+            pr[k] = keel::as<double>(k + 1) / keel::as<double>(K);
         }
         *counts_out = cs;
         *prob_out   = pr;
@@ -240,7 +240,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
                 throw Error("randerr: error counts must be non-negative integers",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsElements");
-            if (static_cast<keel::usize>(v) > n)
+            if (keel::as<keel::usize>(v) > n)
                 throw Error("randerr: error count exceeds n",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsForm");
@@ -248,7 +248,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
                 throw Error("randerr: probabilities must be in [0, 1]",
                             0, 0, "randerr", "",
                             "numkit:randerr:Invalid2ndRowErrorsVal");
-            cs[k] = static_cast<int>(v);
+            cs[k] = keel::as<int>(v);
             sum += p;
             pr[k] = sum;
         }
@@ -292,7 +292,7 @@ void fillOneRow(double *o_col_major, keel::usize i, keel::usize m, keel::usize n
 
     // 3) out(i, j) = (p[j] < num)  (0-based, mirroring p<=num 1-based).
     for (keel::usize j = 0; j < n; ++j) {
-        const bool one = (p[j] < static_cast<keel::usize>(num));
+        const bool one = (p[j] < keel::as<keel::usize>(num));
         o_col_major[i + j * m] = one ? 1.0 : 0.0;
     }
 }

@@ -99,7 +99,7 @@ dpcmenco(const Value &sig, const Value &codebook,
         const double e   = sig.elemAsDouble(i) - out;
         const keel::usize bin = partitionBin(partition, e);
         const double q   = codebook.elemAsDouble(bin);
-        o_indx[i] = static_cast<double>(bin);
+        o_indx[i] = keel::as<double>(bin);
         o_qerr[i] = q;
         const double inp = q + out;
         // Shift state: x = [inp; x(1..M-1)]
@@ -131,10 +131,10 @@ dpcmdeco(const Value &indx, const Value &codebook,
     // Lookup quanterr first (matches MATLAB ordering of work).
     for (keel::usize i = 0; i < N; ++i) {
         const double iv = indx.elemAsDouble(i);
-        if (!(iv >= 0.0) || iv >= static_cast<double>(K))
+        if (!(iv >= 0.0) || iv >= keel::as<double>(K))
             throw Error("dpcmdeco: index out of codebook range",
                         0, 0, "dpcmdeco", "", "numkit:dpcmdeco:OutOfRange");
-        o_qerr[i] = codebook.elemAsDouble(static_cast<keel::usize>(iv));
+        o_qerr[i] = codebook.elemAsDouble(keel::as<keel::usize>(iv));
     }
 
     keel::Array<double> x(M, 0.0, mr);

@@ -125,7 +125,7 @@ void vec2mat_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     auto [m, pad] = vec2mat(args[0], n, padval, ctx.engine->allocator());
     outs[0] = m;
     if (nargout >= 2 && outs.size() >= 2)
-        outs[1] = Value::scalar(static_cast<double>(pad), ctx.engine->allocator());
+        outs[1] = Value::scalar(keel::as<double>(pad), ctx.engine->allocator());
 }
 
 } // namespace detail

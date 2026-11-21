@@ -35,7 +35,7 @@ namespace {
 // Read element as integer (truncating).
 inline keel::i64 getI64(const Value &v, keel::usize i)
 {
-    return static_cast<keel::i64>(v.elemAsDouble(i));
+    return keel::as<keel::i64>(v.elemAsDouble(i));
 }
 
 } // namespace
@@ -50,10 +50,10 @@ Value bit2int(const Value &b, int n, bool msbfirst,
         throw Error("bit2int: n must be in 1..64",
                     0, 0, "bit2int", "", "numkit:bit2int:BadN");
     const keel::usize L = b.numel();
-    if (L % static_cast<keel::usize>(n) != 0)
+    if (L % keel::as<keel::usize>(n) != 0)
         throw Error("bit2int: numel(b) must be divisible by n",
                     0, 0, "bit2int", "", "numkit:bit2int:BadLen");
-    const keel::usize M = L / static_cast<keel::usize>(n);
+    const keel::usize M = L / keel::as<keel::usize>(n);
     Value out = Value::matrix(M, 1, ValueType::DOUBLE, mr);
     if (M == 0) return out;
     double *od = out.doubleDataMut();
@@ -63,7 +63,7 @@ Value bit2int(const Value &b, int n, bool msbfirst,
             const keel::usize bitIdx = k * n + (msbfirst ? j : (n - 1 - j));
             v = (v << 1) | (getI64(b, bitIdx) & 1);
         }
-        od[k] = static_cast<double>(v);
+        od[k] = keel::as<double>(v);
     }
     return out;
 }
@@ -78,15 +78,15 @@ Value int2bit(const Value &d, int n, bool msbfirst,
         throw Error("int2bit: n must be in 1..64",
                     0, 0, "int2bit", "", "numkit:int2bit:BadN");
     const keel::usize M = d.numel();
-    Value out = Value::matrix(static_cast<keel::usize>(n), M, ValueType::DOUBLE, mr);
+    Value out = Value::matrix(keel::as<keel::usize>(n), M, ValueType::DOUBLE, mr);
     if (M == 0) return out;
     double *od = out.doubleDataMut();
     for (keel::usize k = 0; k < M; ++k) {
-        const keel::u64 v = static_cast<keel::u64>(getI64(d, k));
+        const keel::u64 v = keel::as<keel::u64>(getI64(d, k));
         for (int j = 0; j < n; ++j) {
             // out(j, k) = j-th MSB-first bit of v (or LSB-first).
             const int bitPos = msbfirst ? (n - 1 - j) : j;
-            od[k * n + j] = static_cast<double>((v >> bitPos) & 1);
+            od[k * n + j] = keel::as<double>((v >> bitPos) & 1);
         }
     }
     return out;
@@ -127,10 +127,10 @@ Value bi2de(const Value &b, int base, bool msbfirst,
         long double pwr = 1.0L;
         for (keel::usize c = 0; c < C; ++c) {
             const keel::usize idx = msbfirst ? (C - 1 - c) : c;
-            v += static_cast<long double>(getI64(b, r + idx * R)) * pwr;
-            pwr *= static_cast<long double>(base);
+            v += keel::as<long double>(getI64(b, r + idx * R)) * pwr;
+            pwr *= keel::as<long double>(base);
         }
-        od[r] = static_cast<double>(v);
+        od[r] = keel::as<double>(v);
     }
     return out;
 }
@@ -151,24 +151,24 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
     if (n <= 0) {
         keel::u64 mx = 0;
         for (keel::usize i = 0; i < R; ++i) {
-            const keel::u64 v = static_cast<keel::u64>(getI64(d, i));
+            const keel::u64 v = keel::as<keel::u64>(getI64(d, i));
             if (v > mx) mx = v;
         }
         n = 0;
         keel::u64 t = mx;
-        while (t > 0) { ++n; t /= static_cast<keel::u64>(base); }
+        while (t > 0) { ++n; t /= keel::as<keel::u64>(base); }
         if (n == 0) n = 1;
     }
-    Value out = Value::matrix(R, static_cast<keel::usize>(n), ValueType::DOUBLE, mr);
+    Value out = Value::matrix(R, keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
     if (R == 0) return out;
     double *od = out.doubleDataMut();
     for (keel::usize r = 0; r < R; ++r) {
-        keel::u64 v = static_cast<keel::u64>(getI64(d, r));
+        keel::u64 v = keel::as<keel::u64>(getI64(d, r));
         for (int j = 0; j < n; ++j) {
             const int col = msbfirst ? (n - 1 - j) : j;
-            od[r + static_cast<keel::usize>(col) * R] =
-                static_cast<double>(v % static_cast<keel::u64>(base));
-            v /= static_cast<keel::u64>(base);
+            od[r + keel::as<keel::usize>(col) * R] =
+                keel::as<double>(v % keel::as<keel::u64>(base));
+            v /= keel::as<keel::u64>(base);
         }
     }
     return out;
@@ -185,7 +185,7 @@ vec2mat(const Value &v, int n, double padval, keel::Allocator *mr)
         throw Error("vec2mat: n must be positive",
                     0, 0, "vec2mat", "", "numkit:vec2mat:BadN");
     const keel::usize L = v.numel();
-    const keel::usize cols = static_cast<keel::usize>(n);
+    const keel::usize cols = keel::as<keel::usize>(n);
     const keel::usize rows = (L + cols - 1) / cols;
     const keel::usize pad  = rows * cols - L;
     Value out = Value::matrix(rows, cols, ValueType::DOUBLE, mr);
@@ -199,7 +199,7 @@ vec2mat(const Value &v, int n, double padval, keel::Allocator *mr)
             od[r + c * rows] = (lin < L) ? v.elemAsDouble(lin) : padval;
         }
     }
-    return {out, static_cast<int>(pad)};
+    return {out, keel::as<int>(pad)};
 }
 
 } // namespace numkit::comm

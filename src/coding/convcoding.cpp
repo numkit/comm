@@ -82,10 +82,10 @@ TrellisView readTrellis(const Value &t, const char *who)
         return *v;
     };
     TrellisView tv;
-    tv.numStates        = static_cast<keel::usize>(field("numStates").toScalar());
-    tv.numOutputSymbols = static_cast<keel::usize>(field("numOutputSymbols").toScalar());
-    tv.n = static_cast<int>(std::lround(std::log2(
-        static_cast<double>(tv.numOutputSymbols))));
+    tv.numStates        = keel::as<keel::usize>(field("numStates").toScalar());
+    tv.numOutputSymbols = keel::as<keel::usize>(field("numOutputSymbols").toScalar());
+    tv.n = keel::as<int>(std::lround(std::log2(
+        keel::as<double>(tv.numOutputSymbols))));
     tv.nextStates = field("nextStates").doubleData();
     tv.outputs    = field("outputs").doubleData();
     return tv;
@@ -100,7 +100,7 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
         throw Error("poly2trellis: only a scalar ConstraintLength (rate 1/n) "
                     "is supported in this revision (rate k/n deferred)",
                     0, 0, "poly2trellis", "", "numkit:poly2trellis:rate");
-    const long long K = static_cast<long long>(constraintLength.toScalar());
+    const long long K = keel::as<long long>(constraintLength.toScalar());
     if (K < 1)
         throw Error("poly2trellis: ConstraintLength must be >= 1",
                     0, 0, "poly2trellis", "", "numkit:poly2trellis:K");
@@ -114,12 +114,12 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
     keel::Array<keel::u64> g(n, mr);
     for (keel::usize i = 0; i < n; ++i)
         g[i] = octalToDecimal(
-            static_cast<keel::u64>(codeGenerator.elemAsDouble(i)),
+            keel::as<keel::u64>(codeGenerator.elemAsDouble(i)),
             "poly2trellis");
 
-    const keel::usize numStates = static_cast<keel::usize>(1) << (K - 1);
+    const keel::usize numStates = keel::as<keel::usize>(1) << (K - 1);
     const keel::usize numInput  = 2;                                   // k = 1
-    const keel::usize numOutput = static_cast<keel::usize>(1) << n;
+    const keel::usize numOutput = keel::as<keel::usize>(1) << n;
 
     Value ns = Value::matrix(numStates, numInput, ValueType::DOUBLE, mr);
     Value ou = Value::matrix(numStates, numInput, ValueType::DOUBLE, mr);
@@ -132,22 +132,22 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
             // K-bit register: newest input at the MSB, then the (K-1) state
             // bits below it.
             const keel::u64 reg =
-                (static_cast<keel::u64>(u) << (K - 1)) | s;
+                (keel::as<keel::u64>(u) << (K - 1)) | s;
             const keel::u64 nextState = (reg >> 1) & stateMask;
             keel::u64 out = 0;
             for (keel::usize i = 0; i < n; ++i)            // g1 = MSB
-                out = (out << 1) | static_cast<keel::u64>(bitParity(reg & g[i]));
+                out = (out << 1) | keel::as<keel::u64>(bitParity(reg & g[i]));
             // Column-major (numStates × 2): element (s, u) at u*numStates + s.
-            nsd[u * numStates + s] = static_cast<double>(nextState);
-            oud[u * numStates + s] = static_cast<double>(out);
+            nsd[u * numStates + s] = keel::as<double>(nextState);
+            oud[u * numStates + s] = keel::as<double>(out);
         }
     }
 
     Value t = Value::structArray(1, 1, mr);
     auto &el = t.structArrayElem(0);
-    el.put(keel::String::from("numInputSymbols"),  Value::scalar(static_cast<double>(numInput),  mr));
-    el.put(keel::String::from("numOutputSymbols"), Value::scalar(static_cast<double>(numOutput), mr));
-    el.put(keel::String::from("numStates"),        Value::scalar(static_cast<double>(numStates), mr));
+    el.put(keel::String::from("numInputSymbols"),  Value::scalar(keel::as<double>(numInput),  mr));
+    el.put(keel::String::from("numOutputSymbols"), Value::scalar(keel::as<double>(numOutput), mr));
+    el.put(keel::String::from("numStates"),        Value::scalar(keel::as<double>(numStates), mr));
     el.put(keel::String::from("nextStates"), std::move(ns));
     el.put(keel::String::from("outputs"),    std::move(ou));
     return t;
@@ -159,7 +159,7 @@ Value convenc(const Value &msg, const Value &trellis,
     const TrellisView tv = readTrellis(trellis, "convenc");
     const keel::usize L = msg.numel();
     const int n = tv.n;
-    const keel::usize outLen = L * static_cast<keel::usize>(n);
+    const keel::usize outLen = L * keel::as<keel::usize>(n);
     // Output takes msg's orientation (column input -> column output).
     const bool col = (msg.dims().cols() == 1 && msg.dims().rows() > 1);
     Value out = col ? Value::matrix(outLen, 1, ValueType::DOUBLE, mr)
@@ -171,11 +171,11 @@ Value convenc(const Value &msg, const Value &trellis,
     for (keel::usize i = 0; i < L; ++i) {
         const int bit = (msg.elemAsDouble(i) != 0.0) ? 1 : 0;
         // Column-major (numStates × 2): element (state, bit).
-        const keel::usize idx = static_cast<keel::usize>(bit) * tv.numStates + state;
-        const keel::u64 outWord = static_cast<keel::u64>(tv.outputs[idx]);
+        const keel::usize idx = keel::as<keel::usize>(bit) * tv.numStates + state;
+        const keel::u64 outWord = keel::as<keel::u64>(tv.outputs[idx]);
         for (int j = n - 1; j >= 0; --j)                 // MSB (g1) first
-            od[oi++] = static_cast<double>((outWord >> j) & 1u);
-        state = static_cast<keel::usize>(tv.nextStates[idx]);
+            od[oi++] = keel::as<double>((outWord >> j) & 1u);
+        state = keel::as<keel::usize>(tv.nextStates[idx]);
     }
     return out;
 }
@@ -216,11 +216,11 @@ VitdecPlan vitdec_argcheck(const Value &code, const Value &trellis,
     const TrellisView tv = readTrellis(trellis, "vitdec");
     const int n = tv.n;
     const keel::usize total = code.numel();
-    if (n <= 0 || (total % static_cast<keel::usize>(n)) != 0)
+    if (n <= 0 || (total % keel::as<keel::usize>(n)) != 0)
         throw Error("vitdec: code length must be a multiple of "
                     "log2(numOutputSymbols)",
                     0, 0, "vitdec", "", "numkit:vitdec:len");
-    return {tv, n, total / static_cast<keel::usize>(n), tv.numStates, keel::move(mode)};
+    return {tv, n, total / keel::as<keel::usize>(n), tv.numStates, keel::move(mode)};
 }
 
 } // namespace
@@ -272,13 +272,13 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
             if (metric[s] == INF) continue;
             for (keel::usize u = 0; u < 2; ++u) {
                 const keel::usize idx = u * S + s;               // (state s, input u)
-                const keel::usize ns  = static_cast<keel::usize>(tv.nextStates[idx]);
-                const keel::u64 ow = static_cast<keel::u64>(tv.outputs[idx]);
+                const keel::usize ns  = keel::as<keel::usize>(tv.nextStates[idx]);
+                const keel::u64 ow = keel::as<keel::u64>(tv.outputs[idx]);
                 const double cand = metric[s] + hamming(rsym[t], ow);
                 if (cand < newMetric[ns]) {
                     newMetric[ns] = cand;
-                    prevState[t * S + ns] = static_cast<int>(s);
-                    decBit[t * S + ns]    = static_cast<keel::u8>(u);
+                    prevState[t * S + ns] = keel::as<int>(s);
+                    decBit[t * S + ns]    = keel::as<keel::u8>(u);
                 }
             }
         }
@@ -297,9 +297,9 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
     double *od = out.doubleDataMut();
     keel::usize st = endState;
     for (keel::usize ti = L; ti-- > 0;) {
-        od[ti] = static_cast<double>(decBit[ti * S + st]);
+        od[ti] = keel::as<double>(decBit[ti * S + st]);
         const int p = prevState[ti * S + st];
-        st = (p >= 0) ? static_cast<keel::usize>(p) : 0;
+        st = (p >= 0) ? keel::as<keel::usize>(p) : 0;
     }
     return out;
 }
@@ -309,7 +309,7 @@ Value istrellis(const Value &S, keel::Allocator *mr)
     auto no = [&]() { return Value::logicalScalar(false, mr); };
     auto isPow2 = [](double v) {
         if (v < 1.0 || v != std::floor(v)) return false;
-        const keel::u64 u = static_cast<keel::u64>(v);
+        const keel::u64 u = keel::as<keel::u64>(v);
         return (u & (u - 1)) == 0;
     };
     if (!S.isStruct() || S.numel() != 1) return no();
@@ -331,8 +331,8 @@ Value istrellis(const Value &S, keel::Allocator *mr)
     if (!isPow2(nI) || !isPow2(nO) || !isPow2(nS)) return no();
 
     if (ns.isStruct() || ns.isCell() || ou.isStruct() || ou.isCell()) return no();
-    const keel::usize Sn = static_cast<keel::usize>(nS);
-    const keel::usize In = static_cast<keel::usize>(nI);
+    const keel::usize Sn = keel::as<keel::usize>(nS);
+    const keel::usize In = keel::as<keel::usize>(nI);
     if (ns.dims().rows() != Sn || ns.dims().cols() != In ||
         ou.dims().rows() != Sn || ou.dims().cols() != In)
         return no();

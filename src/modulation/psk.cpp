@@ -71,8 +71,8 @@ Value pskmod(const Value &x, int M, double ini_phase,
     if (N == 0) return out;
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
-    for (keel::usize i = 0; i < N; ++i) syms[i] = static_cast<keel::i32>(x.elemAsDouble(i));
-    (void)keel::comm::psk_mod(syms, static_cast<keel::i32>(M), ini_phase,
+    for (keel::usize i = 0; i < N; ++i) syms[i] = keel::as<keel::i32>(x.elemAsDouble(i));
+    (void)keel::comm::psk_mod(syms, keel::as<keel::i32>(M), ini_phase,
                               parseOrder(symbol_order), {out.complexDataMut(), N});
     return out;
 }
@@ -87,16 +87,16 @@ Value pskdemod(const Value &y, int M, double ini_phase,
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
     if (y.type() == ValueType::COMPLEX) {
-        (void)keel::comm::psk_demod({y.complexData(), N}, static_cast<keel::i32>(M), ini_phase,
+        (void)keel::comm::psk_demod({y.complexData(), N}, keel::as<keel::i32>(M), ini_phase,
                                     parseOrder(symbol_order), syms);
     } else {
         keel::Array<keel::c64> samples(N, scratch.allocator());
         for (keel::usize i = 0; i < N; ++i) samples[i] = keel::c64(y.elemAsDouble(i), 0.0);
-        (void)keel::comm::psk_demod(samples, static_cast<keel::i32>(M), ini_phase,
+        (void)keel::comm::psk_demod(samples, keel::as<keel::i32>(M), ini_phase,
                                     parseOrder(symbol_order), syms);
     }
     double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = static_cast<double>(syms[i]);
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
     return out;
 }
 
@@ -109,8 +109,8 @@ Value dpskmod(const Value &x, int M, double phase_rot,
     if (N == 0) return out;
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
-    for (keel::usize i = 0; i < N; ++i) syms[i] = static_cast<keel::i32>(x.elemAsDouble(i));
-    (void)keel::comm::dpsk_mod(syms, static_cast<keel::i32>(M), phase_rot,
+    for (keel::usize i = 0; i < N; ++i) syms[i] = keel::as<keel::i32>(x.elemAsDouble(i));
+    (void)keel::comm::dpsk_mod(syms, keel::as<keel::i32>(M), phase_rot,
                                parseOrder(symbol_order), {out.complexDataMut(), N});
     return out;
 }
@@ -125,16 +125,16 @@ Value dpskdemod(const Value &y, int M, double phase_rot,
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::i32> syms(N, scratch.allocator());
     if (y.type() == ValueType::COMPLEX) {
-        (void)keel::comm::dpsk_demod({y.complexData(), N}, static_cast<keel::i32>(M), phase_rot,
+        (void)keel::comm::dpsk_demod({y.complexData(), N}, keel::as<keel::i32>(M), phase_rot,
                                      parseOrder(symbol_order), syms);
     } else {
         keel::Array<keel::c64> samples(N, scratch.allocator());
         for (keel::usize i = 0; i < N; ++i) samples[i] = keel::c64(y.elemAsDouble(i), 0.0);
-        (void)keel::comm::dpsk_demod(samples, static_cast<keel::i32>(M), phase_rot,
+        (void)keel::comm::dpsk_demod(samples, keel::as<keel::i32>(M), phase_rot,
                                      parseOrder(symbol_order), syms);
     }
     double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = static_cast<double>(syms[i]);
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
     return out;
 }
 
