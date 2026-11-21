@@ -10,6 +10,7 @@
 // Output normalised to unit energy, matching MATLAB R2025b.
 
 #include <keel/array.h>
+#include <keel/comm.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/math.h>
@@ -30,12 +31,6 @@
 namespace numkit::comm {
 
 namespace {
-
-double sinc_pi(double x) {
-    if (keel::abs(x) < 1e-12) return 1.0;
-    const double a = M_PI * x;
-    return std::sin(a) / a;
-}
 
 void rcosdesign_argcheck(double beta, int span, int sps, keel::StringRef shape)
 {
@@ -105,101 +100,24 @@ Value rcosdesign(double beta, int span, int sps,
 {
     rcosdesign_argcheck(beta, span, sps, shape);
     const bool rrc = (shape == "sqrt" || shape == "Sqrt" || shape == "SQRT");
-
-    // Filter length.
-    const int N = span * sps + 1;
-    keel::Array<double> h(N, 0.0, mr);
-
-    // Symbol period T set so that t / T is dimensionless and t runs
-    // from -span/2 to +span/2 in steps of 1/sps. (T = 1 here.)
-    const double T = 1.0;
-    const double dt = 1.0 / static_cast<double>(sps);
-
-    for (int n = 0; n < N; ++n) {
-        const double t = (n - (N - 1) / 2.0) * dt;
-        double v;
-
-        if (!rrc) {
-            // Raised cosine.
-            const double tT = t / T;
-            const double denom = 1.0 - std::pow(2.0 * beta * tT, 2);
-            if (keel::abs(denom) < 1e-12) {
-                // l'Hôpital limit at t = ±T/(2β).
-                v = (M_PI / 4.0) * sinc_pi(1.0 / (2.0 * beta));
-            } else {
-                v = sinc_pi(tT) * std::cos(M_PI * beta * tT) / denom;
-            }
-        } else {
-            // Root raised cosine.
-            const double tT = t / T;
-            if (keel::abs(t) < 1e-12) {
-                // h(0) = (1 + β · (4/π − 1)) / √T
-                v = (1.0 + beta * (4.0 / M_PI - 1.0)) / std::sqrt(T);
-            } else if (beta > 0.0 &&
-                       keel::abs(keel::abs(t) - T / (4.0 * beta)) < 1e-12) {
-                // h(±T/(4β)) limit
-                const double a = (beta / std::sqrt(2.0 * T));
-                const double s = std::sin(M_PI / (4.0 * beta));
-                const double c = std::cos(M_PI / (4.0 * beta));
-                v = a * ((1.0 + 2.0 / M_PI) * s + (1.0 - 2.0 / M_PI) * c);
-            } else {
-                const double num = std::cos((1.0 + beta) * M_PI * tT) +
-                                    std::sin((1.0 - beta) * M_PI * tT) /
-                                        (4.0 * beta * tT);
-                const double den = 1.0 - std::pow(4.0 * beta * tT, 2);
-                v = (4.0 * beta / (M_PI * std::sqrt(T))) * num / den;
-            }
-        }
-        h[static_cast<keel::usize>(n)] = v;
-    }
-
-    // Unit-energy normalisation (matches MATLAB).
-    double e = 0.0;
-    for (double v : h) e += v * v;
-    if (e > 0.0) {
-        const double s = 1.0 / std::sqrt(e);
-        for (auto &v : h) v *= s;
-    }
-
-    Value r = Value::matrix(1, static_cast<keel::usize>(N), ValueType::DOUBLE, mr);
-    if (N > 0) std::copy(h.begin(), h.end(), r.doubleDataMut());
+    const keel::usize N = static_cast<keel::usize>(span) * static_cast<keel::usize>(sps) + 1;
+    Value r = Value::matrix(1, N, ValueType::DOUBLE, mr);
+    (void)keel::comm::rcos_design(beta, static_cast<keel::usize>(span),
+                                  static_cast<keel::usize>(sps),
+                                  rrc ? keel::comm::RcosShape::kSqrt : keel::comm::RcosShape::kNormal,
+                                  {r.doubleDataMut(), N});
     return r;
 }
 
-// ── gaussdesign ─────────────────────────────────────────────────────
-// Gaussian pulse-shaping filter (standard GMSK pulse; e.g. Proakis,
-// "Digital Communications"). Coefficients:
-//   filtLen = span*sps + 1
-//   t       = ((1:filtLen) - mean(1:filtLen)) / sps
-//   alpha   = sqrt(log(2)/2) / BT
-//   h       = (sqrt(pi)/alpha) * exp(-(pi*t/alpha).^2)
-//   h       = h / sum(h)                                (unit-area)
 Value gaussdesign(double BT, int span, int sps,
                   keel::Allocator *mr)
 {
     gaussdesign_argcheck(BT, span, sps);
-
-    const int N = span * sps + 1;
-    const double centre = 0.5 * (1 + N);  // mean(1:N)
-    const double alpha = std::sqrt(std::log(2.0) / 2.0) / BT;
-    const double pre = std::sqrt(M_PI) / alpha;
-
-    keel::Array<double> h(N, mr);
-    double s = 0.0;
-    for (int k = 1; k <= N; ++k) {
-        const double t = (static_cast<double>(k) - centre) / sps;
-        const double arg = M_PI * t / alpha;
-        const double v = pre * std::exp(-(arg * arg));
-        h[static_cast<keel::usize>(k - 1)] = v;
-        s += v;
-    }
-    if (s > 0.0) {
-        const double inv = 1.0 / s;
-        for (auto &v : h) v *= inv;
-    }
-
-    Value r = Value::matrix(1, static_cast<keel::usize>(N), ValueType::DOUBLE, mr);
-    if (N > 0) std::copy(h.begin(), h.end(), r.doubleDataMut());
+    const keel::usize N = static_cast<keel::usize>(span) * static_cast<keel::usize>(sps) + 1;
+    Value r = Value::matrix(1, N, ValueType::DOUBLE, mr);
+    (void)keel::comm::gauss_design(BT, static_cast<keel::usize>(span),
+                                   static_cast<keel::usize>(sps),
+                                   {r.doubleDataMut(), N});
     return r;
 }
 

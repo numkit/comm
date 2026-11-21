@@ -1,34 +1,18 @@
 // toolboxes/comm/src/eq/compand.cpp
 //
-// MATLAB compand: μ-law and A-law compressor / expander.
-//
-// Signature: y = compand(x, param, V, method)
-//   x       — input signal (any shape, double)
-//   param   — μ for μ-law, A for A-law
-//   V       — peak magnitude (input clipped to [-V, V] in spirit)
-//   method  — 'mu/compressor' | 'mu/expander' |
-//             'A/compressor'  | 'A/expander'
-//
-// μ-law compress:  y = sign(x) · V · log(1 + μ|x|/V) / log(1 + μ)
-// μ-law expand:    x = sign(y) · (V/μ) · (exp(|y|/V · log(1+μ)) − 1)
-//
-// A-law compress, |x|/V ≤ 1/A: y = sign(x) · A|x| / (1 + log A)
-//                       else : y = sign(x) · V · (1 + log(A|x|/V)) / (1 + log A)
-//
-// A-law expand,  |y|/V ≤ 1/(1 + log A): x = sign(y) · |y|·(1+log A)/A
-//                              else : x = sign(y) · V · exp((1+log A)·|y|/V − 1)/A
+// μ-law and A-law companding, delegated to keel::comm.
 
+#include <keel/arena.h>
+#include <keel/array.h>
+#include <keel/comm.h>
 #include <keel/core.h>
 #include <keel/memory.h>
-#include <keel/math.h>
 #include <keel/ref.h>
 #include <numkit/comm/eq/compand.hpp>
 
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cmath>
 
 namespace numkit::comm {
 
@@ -54,16 +38,14 @@ void compand_argcheck(double param, double V, keel::StringRef method)
     const bool isCompress = method.contains("compressor");
     const bool isExpand = method.contains("expander");
     if (!isCompress && !isExpand)
-        throw Error("compand: method must end with '/compressor' or "
-                    "'/expander'",
+        throw Error("compand: method must end with '/compressor' or '/expander'",
                     0, 0, "compand", "", "numkit:compand:method");
 }
 
 } // namespace
 
 Value compand(const Value &x, double param, double V,
-              keel::StringRef method,
-              keel::Allocator *mr)
+              keel::StringRef method, keel::Allocator *mr)
 {
     compand_argcheck(param, V, method);
 
@@ -72,62 +54,22 @@ Value compand(const Value &x, double param, double V,
                        && (method[1] == 'u' || method[1] == 'U'));
     const bool isCompress = method.contains("compressor");
 
-    Value out = Value::matrix(x.dims().rows(), x.dims().cols(),
-                              ValueType::DOUBLE, mr);
-    double *o = out.doubleDataMut();
-    const keel::usize N = x.numel();
+    const auto mode = isMu
+        ? (isCompress ? keel::comm::CompandMode::kMuCompress : keel::comm::CompandMode::kMuExpand)
+        : (isCompress ? keel::comm::CompandMode::kACompress  : keel::comm::CompandMode::kAExpand);
 
-    if (isMu) {
-        const double logMu = std::log(1.0 + param);
-        if (isCompress) {
-            for (keel::usize i = 0; i < N; ++i) {
-                const double xi   = x.elemAsDouble(i);
-                const double absx = keel::abs(xi);
-                const double mag  = V * std::log(1.0 + param * absx / V)
-                                      / logMu;
-                o[i] = (xi >= 0.0) ? mag : -mag;
-            }
-        } else {  // expander
-            for (keel::usize i = 0; i < N; ++i) {
-                const double yi   = x.elemAsDouble(i);
-                const double absy = keel::abs(yi);
-                const double mag  = (V / param)
-                                  * (std::exp(absy / V * logMu) - 1.0);
-                o[i] = (yi >= 0.0) ? mag : -mag;
-            }
-        }
-    } else {  // A-law
-        const double logA = std::log(param);
-        const double oneLogA = 1.0 + logA;
-        if (isCompress) {
-            const double thr = 1.0 / param;  // |x|/V threshold
-            for (keel::usize i = 0; i < N; ++i) {
-                const double xi   = x.elemAsDouble(i);
-                const double absx = keel::abs(xi);
-                const double ratio = absx / V;
-                double mag;
-                if (ratio <= thr) {
-                    mag = (param * absx) / oneLogA;
-                } else {
-                    mag = V * (1.0 + std::log(param * ratio)) / oneLogA;
-                }
-                o[i] = (xi >= 0.0) ? mag : -mag;
-            }
-        } else {  // expander
-            const double thr = 1.0 / oneLogA;  // |y|/V threshold
-            for (keel::usize i = 0; i < N; ++i) {
-                const double yi   = x.elemAsDouble(i);
-                const double absy = keel::abs(yi);
-                const double ratio = absy / V;
-                double mag;
-                if (ratio <= thr) {
-                    mag = absy * oneLogA / param;
-                } else {
-                    mag = V * std::exp(oneLogA * ratio - 1.0) / param;
-                }
-                o[i] = (yi >= 0.0) ? mag : -mag;
-            }
-        }
+    Value out = Value::matrix(x.dims().rows(), x.dims().cols(), ValueType::DOUBLE, mr);
+    const keel::usize N = x.numel();
+    if (N == 0) return out;
+
+    keel::MutArrayRef<double> outRef(out.doubleDataMut(), N);
+    if (x.type() == ValueType::DOUBLE) {
+        (void)keel::comm::compand({x.doubleData(), N}, param, V, mode, outRef);
+    } else {
+        keel::ArenaTemp scratch = keel::get_scratch(mr);
+        keel::Array<double> in(N, scratch.allocator());
+        for (keel::usize i = 0; i < N; ++i) in[i] = x.elemAsDouble(i);
+        (void)keel::comm::compand(in, param, V, mode, outRef);
     }
     return out;
 }

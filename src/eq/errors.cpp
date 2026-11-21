@@ -1,8 +1,10 @@
 // toolboxes/comm/src/eq/errors.cpp
 //
-// biterr / symerr -- bit and symbol error counts/rates between two
-// arrays. MATLAB Communications Toolbox metrics.
+// biterr / symerr — bit and symbol error counts/rates, delegated to keel::comm.
 
+#include <keel/arena.h>
+#include <keel/array.h>
+#include <keel/comm.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -14,24 +16,11 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
 #include <utility>
 
 namespace numkit::comm {
 
 namespace {
-
-// Count bit differences between two non-negative integers (Hamming
-// distance over their binary representations). Treats both as uint64.
-inline keel::u64 hammingBits(keel::u64 a, keel::u64 b)
-{
-    keel::u64 x = a ^ b;
-    keel::u64 count = 0;
-    while (x) { count += (x & 1); x >>= 1; }
-    return count;
-}
 
 void biterr_argcheck(const Value &x, const Value &y, int k)
 {
@@ -75,8 +64,6 @@ keel::String symerr_argcheck(const Value &x, const Value &y, keel::StringRef flg
 
 } // anonymous namespace
 
-// ── Public C++ API (see eq/errors.hpp) ────────────────────────────────
-
 std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
                                keel::Allocator *mr)
 {
@@ -85,54 +72,28 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
     const double *xd = x.doubleData();
     const double *yd = y.doubleData();
 
-    // Determine k: explicit (>= 1), else smallest covering bit width.
-    int k_bits = k;
-    if (k_bits < 1) {
-        keel::u64 mx = 0;
-        for (keel::usize i = 0; i < n; ++i) {
-            const keel::u64 xi = static_cast<keel::u64>(xd[i]);
-            const keel::u64 yi = static_cast<keel::u64>(yd[i]);
-            mx = std::max(mx, std::max(xi, yi));
-        }
-        k_bits = 1;
-        while ((static_cast<keel::u64>(1) << k_bits) <= mx) ++k_bits;
-    }
-
-    keel::u64 total = 0;
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    keel::Array<keel::u64> a(n, scratch.allocator());
+    keel::Array<keel::u64> b(n, scratch.allocator());
     for (keel::usize i = 0; i < n; ++i) {
-        const keel::u64 xi = static_cast<keel::u64>(xd[i]);
-        const keel::u64 yi = static_cast<keel::u64>(yd[i]);
-        total += hammingBits(xi, yi);
+        a[i] = static_cast<keel::u64>(xd[i]);
+        b[i] = static_cast<keel::u64>(yd[i]);
     }
-    const double total_bits =
-        static_cast<double>(n) * static_cast<double>(k_bits);
-    const double ratio = (total_bits > 0.0)
-        ? static_cast<double>(total) / total_bits
-        : 0.0;
-    return {Value::scalar(static_cast<double>(total), mr),
-            Value::scalar(ratio, mr)};
+    const auto stats = keel::comm::bit_error_rate(a, b, static_cast<keel::i32>(k));
+    return {Value::scalar(static_cast<double>(stats.count), mr),
+            Value::scalar(stats.ratio, mr)};
 }
 
 std::pair<Value, Value> symerr(const Value &x, const Value &y,
-                               keel::StringRef flg,
-                               keel::Allocator *mr)
+                               keel::StringRef flg, keel::Allocator *mr)
 {
     const keel::String mode = symerr_argcheck(x, y, flg);
 
     if (mode == "overall") {
         const keel::usize n = x.numel();
-
-        const double *xd = x.doubleData();
-        const double *yd = y.doubleData();
-        keel::u64 count = 0;
-        for (keel::usize i = 0; i < n; ++i)
-            if (xd[i] != yd[i]) ++count;
-
-        const double ratio = (n > 0)
-            ? static_cast<double>(count) / static_cast<double>(n)
-            : 0.0;
-        return {Value::scalar(static_cast<double>(count), mr),
-                Value::scalar(ratio, mr)};
+        const auto stats = keel::comm::sym_error_rate({x.doubleData(), n}, {y.doubleData(), n});
+        return {Value::scalar(static_cast<double>(stats.count), mr),
+                Value::scalar(stats.ratio, mr)};
     }
 
     if (mode == "column-wise") {
@@ -145,12 +106,9 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
         double *cd = counts.doubleDataMut();
         double *rd = ratios.doubleDataMut();
         for (keel::usize j = 0; j < c; ++j) {
-            keel::u64 cnt = 0;
-            for (keel::usize i = 0; i < r; ++i) {
-                if (xd[j * r + i] != yd[j * r + i]) ++cnt;
-            }
-            cd[j] = static_cast<double>(cnt);
-            rd[j] = (r > 0) ? static_cast<double>(cnt) / static_cast<double>(r) : 0.0;
+            const auto stats = keel::comm::sym_error_rate({xd + j * r, r}, {yd + j * r, r});
+            cd[j] = static_cast<double>(stats.count);
+            rd[j] = stats.ratio;
         }
         return {std::move(counts), std::move(ratios)};
     }
@@ -174,8 +132,7 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
     return {std::move(counts), std::move(ratios)};
 }
 
-std::pair<Value, Value> symerr(const Value &x, const Value &y,
-                               keel::Allocator *mr)
+std::pair<Value, Value> symerr(const Value &x, const Value &y, keel::Allocator *mr)
 {
     return symerr(x, y, "overall", mr);
 }

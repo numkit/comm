@@ -1,24 +1,10 @@
 // toolboxes/comm/src/eq/scrambler.cpp
 //
-// Multiplicative scrambler / descrambler. Both share the same
-// polynomial and initial state; the descrambler is the algebraic
-// inverse of the scrambler.
-//
-// Multiplicative scrambler (per-bit):
-//   fb = XOR over i=1..n where g_i = 1 of state[i-1]
-//   y[k] = x[k] XOR fb
-//   shift state right by 1, store y[k] at state[0]
-//
-// Multiplicative descrambler:
-//   fb = XOR over i=1..n where g_i = 1 of state[i-1]
-//   x[k] = y[k] XOR fb
-//   shift state right by 1, store y[k] at state[0]   (NOT x[k])
-//
-// Note both sides clock in the *channel* bit y[k]: this is what makes
-// the descrambler self-synchronizing — losing or flipping a few
-// channel bits eventually clears out of the register.
+// Multiplicative scrambler / descrambler, delegated to keel::comm.
 
+#include <keel/arena.h>
 #include <keel/array.h>
+#include <keel/comm.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -29,24 +15,20 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
-
 namespace numkit::comm {
 
 namespace {
 
-keel::Array<int> readBitVec(const Value &v, const char * /*name*/, keel::Allocator *mr) {
+keel::Array<keel::u8> readBitVec(const Value &v, keel::Allocator *alloc) {
     const keel::usize N = v.numel();
-    keel::Array<int> out(N, mr);
+    keel::Array<keel::u8> out(N, alloc);
     for (keel::usize i = 0; i < N; ++i) {
-        const double x = v.elemAsDouble(i);
-        const int b = (x != 0.0) ? 1 : 0;
-        out[i] = b;
+        out[i] = (v.elemAsDouble(i) != 0.0) ? static_cast<keel::u8>(1) : static_cast<keel::u8>(0);
     }
     return out;
 }
 
-void validatePoly(keel::ArrayRef<int> poly, const char *name) {
+void validatePoly(keel::ArrayRef<keel::u8> poly, const char *name) {
     if (poly.size() < 2)
         throw Error(keel::format("{}: polynomial must have at least 2 coefficients (degree ≥ 1)", name),
                     0, 0, name, "", "numkit:scrambler:poly");
@@ -55,19 +37,17 @@ void validatePoly(keel::ArrayRef<int> poly, const char *name) {
                     0, 0, name, "", "numkit:scrambler:poly");
 }
 
-Value packDoubles(keel::Allocator *mr,
-                  keel::ArrayRef<int> bits)
-{
+Value packDoubles(keel::Allocator *mr, keel::ArrayRef<keel::u8> bits) {
     Value out = Value::matrix(bits.size(), 1, ValueType::DOUBLE, mr);
     if (!bits.empty()) {
         double *od = out.doubleDataMut();
-        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = double(bits[i]);
+        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = static_cast<double>(bits[i]);
     }
     return out;
 }
 
-void scrambler_argcheck(keel::ArrayRef<int> polyVec,
-                        keel::ArrayRef<int> state,
+void scrambler_argcheck(keel::ArrayRef<keel::u8> polyVec,
+                        keel::ArrayRef<keel::u8> state,
                         const char *name,
                         const char *stateErrId)
 {
@@ -81,48 +61,30 @@ void scrambler_argcheck(keel::ArrayRef<int> polyVec,
 } // anonymous
 
 Value scrambler(const Value &x, const Value &poly,
-                const Value &initState,
-                keel::Allocator *mr)
+                const Value &initState, keel::Allocator *mr)
 {
-    auto xBits   = readBitVec(x, "scrambler", mr);
-    auto polyVec = readBitVec(poly, "scrambler", mr);
-    auto state   = readBitVec(initState, "scrambler", mr);
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    auto xBits   = readBitVec(x, scratch.allocator());
+    auto polyVec = readBitVec(poly, scratch.allocator());
+    auto state   = readBitVec(initState, scratch.allocator());
     scrambler_argcheck(polyVec, state, "scrambler", "numkit:scrambler:state");
-    const keel::usize n = polyVec.size() - 1;
 
-    keel::Array<int> y(xBits.size(), 0, mr);
-    for (keel::usize k = 0; k < xBits.size(); ++k) {
-        int fb = 0;
-        for (keel::usize i = 1; i <= n; ++i)
-            if (polyVec[i]) fb ^= state[i - 1];
-        y[k] = xBits[k] ^ fb;
-        // Shift register right by one position; new MSB = y[k].
-        for (keel::usize i = n; i-- > 1;) state[i] = state[i - 1];
-        state[0] = y[k];
-    }
+    keel::Array<keel::u8> y(xBits.size(), 0, scratch.allocator());
+    (void)keel::comm::scramble(xBits, polyVec, state, y);
     return packDoubles(mr, y);
 }
 
 Value descrambler(const Value &y, const Value &poly,
-                  const Value &initState,
-                  keel::Allocator *mr)
+                  const Value &initState, keel::Allocator *mr)
 {
-    auto yBits   = readBitVec(y, "descrambler", mr);
-    auto polyVec = readBitVec(poly, "descrambler", mr);
-    auto state   = readBitVec(initState, "descrambler", mr);
+    keel::ArenaTemp scratch = keel::get_scratch(mr);
+    auto yBits   = readBitVec(y, scratch.allocator());
+    auto polyVec = readBitVec(poly, scratch.allocator());
+    auto state   = readBitVec(initState, scratch.allocator());
     scrambler_argcheck(polyVec, state, "descrambler", "numkit:descrambler:state");
-    const keel::usize n = polyVec.size() - 1;
 
-    keel::Array<int> x(yBits.size(), 0, mr);
-    for (keel::usize k = 0; k < yBits.size(); ++k) {
-        int fb = 0;
-        for (keel::usize i = 1; i <= n; ++i)
-            if (polyVec[i]) fb ^= state[i - 1];
-        x[k] = yBits[k] ^ fb;
-        // Shift register; clock in the CHANNEL bit y[k] (not x[k]).
-        for (keel::usize i = n; i-- > 1;) state[i] = state[i - 1];
-        state[0] = yBits[k];
-    }
+    keel::Array<keel::u8> x(yBits.size(), 0, scratch.allocator());
+    (void)keel::comm::descramble(yBits, polyVec, state, x);
     return packDoubles(mr, x);
 }
 

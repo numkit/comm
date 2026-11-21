@@ -137,6 +137,26 @@ if(NOT TARGET numkit_signal_core)
     endif()
 endif()
 
+# Dependency: keel::comm (zero-STL digital communications kernels)
+if(NOT TARGET keel::comm)
+    find_package(keel_comm QUIET CONFIG)
+    if(TARGET keel::keel_comm AND NOT TARGET keel::comm)
+        add_library(keel::comm ALIAS keel::keel_comm)
+    endif()
+endif()
+if(NOT TARGET keel::comm)
+    set(KEEL_COMM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../keelcpp/comm/CMakeLists.txt" AND NOT DEFINED FETCHCONTENT_SOURCE_DIR_KEEL_COMM)
+        set(FETCHCONTENT_SOURCE_DIR_KEEL_COMM "${CMAKE_CURRENT_SOURCE_DIR}/../../../keelcpp/comm" CACHE PATH "Local keel_comm checkout")
+    endif()
+    FetchContent_Declare(
+        keel_comm
+        GIT_REPOSITORY https://github.com/keelcpp/comm.git
+        GIT_TAG        9aba6672f055d9d8e60c101902250693116a5df4
+    )
+    FetchContent_MakeAvailable(keel_comm)
+endif()
+
 file(GLOB_RECURSE COMM_COMPUTE_SOURCES
     "src/channel/*.cpp"
     "src/coding/*.cpp"
@@ -169,7 +189,10 @@ target_include_directories(numkit_comm_core
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(numkit_comm_core PUBLIC numkit_value numkit_sys numkit_ops numkit_signal_core)
+target_link_libraries(numkit_comm_core
+    PUBLIC numkit_value numkit_sys numkit_ops numkit_signal_core
+    PRIVATE keel::comm
+)
 
 if(NUMKIT_WITH_SIMD)
     target_compile_definitions(numkit_comm_core PUBLIC NUMKIT_WITH_SIMD=1)
