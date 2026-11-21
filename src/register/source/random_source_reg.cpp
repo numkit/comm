@@ -36,7 +36,7 @@ void randsrc_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         alphabet = &args[2];
     } else {
         default_alphabet = Value::matrix(1, 2, ValueType::DOUBLE, mr);
-        double *d = default_alphabet.doubleDataMut();
+        keel::f64 *d = default_alphabet.doubleDataMut();
         d[0] = -1.0;
         d[1] =  1.0;
         alphabet = &default_alphabet;
@@ -46,7 +46,7 @@ void randsrc_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     keel::u32 state = 0;
     if (args.size() >= 4 && !args[3].isEmpty()) {
         have_state = true;
-        const double s = args[3].toScalar();
+        const keel::f64 s = args[3].toScalar();
         if (s < 0.0)
             throw Error("randsrc: state must be a non-negative integer",
                         0, 0, "randsrc", "", "numkit:randsrc:InvalidState");
@@ -79,7 +79,7 @@ void randerr_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     keel::u32 state = 0;
     if (args.size() >= 4 && !args[3].isEmpty()) {
         have_state = true;
-        const double s = args[3].toScalar();
+        const keel::f64 s = args[3].toScalar();
         if (s < 0.0)
             throw Error("randerr: state must be a non-negative integer",
                         0, 0, "randerr", "", "numkit:randerr:InvalidState");

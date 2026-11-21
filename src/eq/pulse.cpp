@@ -32,7 +32,7 @@ namespace numkit::comm {
 
 namespace {
 
-void rcosdesign_argcheck(double beta, int span, int sps, keel::StringRef shape)
+void rcosdesign_argcheck(keel::f64 beta, int span, int sps, keel::StringRef shape)
 {
     if (!(beta >= 0.0 && beta <= 1.0))
         throw Error("rcosdesign: beta must be in [0, 1]",
@@ -51,7 +51,7 @@ void rcosdesign_argcheck(double beta, int span, int sps, keel::StringRef shape)
                     0, 0, "rcosdesign", "", "numkit:rcosdesign:shape");
 }
 
-void gaussdesign_argcheck(double BT, int span, int sps)
+void gaussdesign_argcheck(keel::f64 BT, int span, int sps)
 {
     if (!(BT > 0.0))
         throw Error("gaussdesign: BT must be positive",
@@ -94,7 +94,7 @@ void intdump_argcheck(const Value &x, int n)
 
 } // anonymous
 
-Value rcosdesign(double beta, int span, int sps,
+Value rcosdesign(keel::f64 beta, int span, int sps,
                  keel::StringRef shape,
                  keel::Allocator *mr)
 {
@@ -109,7 +109,7 @@ Value rcosdesign(double beta, int span, int sps,
     return r;
 }
 
-Value gaussdesign(double BT, int span, int sps,
+Value gaussdesign(keel::f64 BT, int span, int sps,
                   keel::Allocator *mr)
 {
     gaussdesign_argcheck(BT, span, sps);
@@ -138,27 +138,27 @@ Value rectpulse(const Value &x, int n, keel::Allocator *mr)
     Value out;
     if (is_row) {
         out = Value::matrix(1, W * keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize c = 0; c < W; ++c) {
-            const double v = x.elemAsDouble(c);
+            const keel::f64 v = x.elemAsDouble(c);
             for (int k = 0; k < n; ++k)
                 od[c * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
         }
     } else if (is_col) {
         out = Value::matrix(H * keel::as<keel::usize>(n), 1, ValueType::DOUBLE, mr);
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize r = 0; r < H; ++r) {
-            const double v = x.elemAsDouble(r);
+            const keel::f64 v = x.elemAsDouble(r);
             for (int k = 0; k < n; ++k)
                 od[r * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
         }
     } else {
         const keel::usize Nh = H * keel::as<keel::usize>(n);
         out = Value::matrix(Nh, W, ValueType::DOUBLE, mr);
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize c = 0; c < W; ++c) {
             for (keel::usize r = 0; r < H; ++r) {
-                const double v = x.elemAsDouble(c * H + r);
+                const keel::f64 v = x.elemAsDouble(c * H + r);
                 for (int k = 0; k < n; ++k)
                     od[c * Nh + r * keel::as<keel::usize>(n) + keel::as<keel::usize>(k)] = v;
             }
@@ -189,12 +189,12 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
                         0, 0, "intdump", "", "numkit:intdump:size");
         const keel::usize Wo = W / un;
         out = Value::matrix(1, Wo, ValueType::DOUBLE, mr);
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize c = 0; c < Wo; ++c) {
-            double s = 0.0;
+            keel::f64 s = 0.0;
             for (keel::usize k = 0; k < un; ++k)
                 s += x.elemAsDouble(c * un + k);
-            od[c] = s / keel::as<double>(un);
+            od[c] = s / keel::as<keel::f64>(un);
         }
     } else if (is_col) {
         if (H % un != 0)
@@ -202,12 +202,12 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
                         0, 0, "intdump", "", "numkit:intdump:size");
         const keel::usize Ho = H / un;
         out = Value::matrix(Ho, 1, ValueType::DOUBLE, mr);
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize r = 0; r < Ho; ++r) {
-            double s = 0.0;
+            keel::f64 s = 0.0;
             for (keel::usize k = 0; k < un; ++k)
                 s += x.elemAsDouble(r * un + k);
-            od[r] = s / keel::as<double>(un);
+            od[r] = s / keel::as<keel::f64>(un);
         }
     } else {
         // Matrix: average n consecutive rows per column.
@@ -216,13 +216,13 @@ Value intdump(const Value &x, int n, keel::Allocator *mr)
                         0, 0, "intdump", "", "numkit:intdump:size");
         const keel::usize Ho = H / un;
         out = Value::matrix(Ho, W, ValueType::DOUBLE, mr);
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize c = 0; c < W; ++c) {
             for (keel::usize r = 0; r < Ho; ++r) {
-                double s = 0.0;
+                keel::f64 s = 0.0;
                 for (keel::usize k = 0; k < un; ++k)
                     s += x.elemAsDouble(c * H + r * un + k);
-                od[c * Ho + r] = s / keel::as<double>(un);
+                od[c * Ho + r] = s / keel::as<keel::f64>(un);
             }
         }
     }

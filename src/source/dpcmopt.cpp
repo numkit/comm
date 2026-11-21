@@ -41,14 +41,14 @@ namespace {
 // The lag-k sum has N-k terms; the denominator is N-1-k (one less than
 // the term count). The caller guarantees N >= ord + 3 so every
 // denominator (N-1-k for k <= ord) is strictly positive.
-void autocorrelation(const double *x, keel::usize N, int ord, double *r)
+void autocorrelation(const keel::f64 *x, keel::usize N, int ord, keel::f64 *r)
 {
     for (int k = 0; k <= ord; ++k) {
-        double acc = 0.0;
+        keel::f64 acc = 0.0;
         const keel::usize last = N - keel::as<keel::usize>(k);  // N-k terms
         for (keel::usize n = 0; n < last; ++n)
             acc += x[n] * x[n + keel::as<keel::usize>(k)];
-        r[k] = acc / keel::as<double>(N - 1 - keel::as<keel::usize>(k));
+        r[k] = acc / keel::as<keel::f64>(N - 1 - keel::as<keel::usize>(k));
     }
 }
 
@@ -63,23 +63,23 @@ void autocorrelation(const double *x, keel::usize N, int ord, double *r)
 // Scratch `prev` (length ord+1) holds a snapshot of `a` before the
 // in-place update so the reversed term is read from the pre-update
 // coefficients.
-void levinson_durbin(const double *r, int ord, double *a, double *prev)
+void levinson_durbin(const keel::f64 *r, int ord, keel::f64 *a, keel::f64 *prev)
 {
     for (int i = 0; i <= ord; ++i)
         a[i] = 0.0;
     a[0] = 1.0;
 
-    double D = r[0];
+    keel::f64 D = r[0];
 
     for (int m = 0; m < ord; ++m) {
-        double beta = 0.0;
+        keel::f64 beta = 0.0;
         for (int j = 0; j <= m; ++j)
             beta += a[j] * r[m + 1 - j];
 
         // D == 0 only for a degenerate (all-zero / constant) signal;
         // guard against a division by zero — K = 0 leaves `a` and D
         // unchanged, yielding a zero predictor tail.
-        const double K = (D != 0.0) ? (-beta / D) : 0.0;
+        const keel::f64 K = (D != 0.0) ? (-beta / D) : 0.0;
 
         for (int i = 0; i <= m; ++i)
             prev[i] = a[i];
@@ -120,18 +120,18 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
 
     // ── Read the training signal into contiguous scratch ─────────
     // elemAsDouble accepts a row or column vector.
-    keel::Array<double> x(N, arena.allocator());
+    keel::Array<keel::f64> x(N, arena.allocator());
     for (keel::usize i = 0; i < N; ++i)
         x[i] = training_set.elemAsDouble(i);
 
     // ── Autocorrelation estimate, lags 0..ord ────────────────────
-    keel::Array<double> r(keel::as<keel::usize>(ord) + 1, arena.allocator());
+    keel::Array<keel::f64> r(keel::as<keel::usize>(ord) + 1, arena.allocator());
     autocorrelation(x.data(), N, ord, r.data());
 
     // ── Levinson-Durbin: prediction-error filter A(z) ────────────
     // a = [1, a1, ..., a_ord]
-    keel::Array<double> a(keel::as<keel::usize>(ord) + 1, arena.allocator());
-    keel::Array<double> prev(keel::as<keel::usize>(ord) + 1,
+    keel::Array<keel::f64> a(keel::as<keel::usize>(ord) + 1, arena.allocator());
+    keel::Array<keel::f64> prev(keel::as<keel::usize>(ord) + 1,
                                     arena.allocator());
     levinson_durbin(r.data(), ord, a.data(), prev.data());
 
@@ -142,7 +142,7 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
     result.predictor = Value::matrix(1, keel::as<keel::usize>(ord) + 1,
                                      ValueType::DOUBLE, mr);
     {
-        double *p = result.predictor.doubleDataMut();
+        keel::f64 *p = result.predictor.doubleDataMut();
         p[0] = 0.0;
         for (int k = 1; k <= ord; ++k)
             p[k] = -a[k];
@@ -157,13 +157,13 @@ DpcmOptResult dpcmopt(const Value &training_set, int ord,
     // Prediction residual, length N - ord:
     //   e[i-ord] = x[i] - sum_{k=1}^{ord} predictor[k] * x[i-k]
     const keel::usize resLen = N - keel::as<keel::usize>(ord);
-    const double *p = result.predictor.doubleData();
+    const keel::f64 *p = result.predictor.doubleData();
 
     Value residual = Value::matrix(1, resLen, ValueType::DOUBLE, mr);
     {
-        double *e = residual.doubleDataMut();
+        keel::f64 *e = residual.doubleDataMut();
         for (keel::usize i = keel::as<keel::usize>(ord); i < N; ++i) {
-            double pred = 0.0;
+            keel::f64 pred = 0.0;
             for (int k = 1; k <= ord; ++k)
                 pred += p[k] * x[i - keel::as<keel::usize>(k)];
             e[i - keel::as<keel::usize>(ord)] = x[i] - pred;

@@ -27,7 +27,7 @@ void lloyds_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 {
     argcheck::checkNargin(args.size(), 2, 4, "lloyds");
     auto *mr = ctx.engine->allocator();
-    double tol = 1e-7;
+    keel::f64 tol = 1e-7;
     if (args.size() >= 3 && !args[2].isEmpty())
         tol = args[2].toScalar();
     auto [partition, codebook, distor, rel] =

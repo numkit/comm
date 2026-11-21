@@ -41,8 +41,8 @@ namespace {
 // Build the natural-order constellation: for each ring r, its M[r]
 // points at radii[r] * exp(i * (phaseoffset[r] + 2π·k/M[r])).
 keel::Array<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
-                                   keel::ArrayRef<double> radii,
-                                   keel::ArrayRef<double> phaseoffset,
+                                   keel::ArrayRef<keel::f64> radii,
+                                   keel::ArrayRef<keel::f64> phaseoffset,
                                    keel::Allocator *mr)
 {
     const keel::usize R = M.size();
@@ -52,10 +52,10 @@ keel::Array<keel::c64> buildConstellation(keel::ArrayRef<keel::usize> M,
     C.reserve(N);
     for (keel::usize r = 0; r < R; ++r) {
         const keel::usize Mr = M[r];
-        const double radr = radii[r];
-        const double pho  = phaseoffset[r];
+        const keel::f64 radr = radii[r];
+        const keel::f64 pho  = phaseoffset[r];
         for (keel::usize k = 0; k < Mr; ++k) {
-            const double theta = pho + 2.0 * M_PI * keel::as<double>(k) / keel::as<double>(Mr);
+            const keel::f64 theta = pho + 2.0 * M_PI * keel::as<keel::f64>(k) / keel::as<keel::f64>(Mr);
             C.emplace_back(radr * std::cos(theta), radr * std::sin(theta));
         }
     }
@@ -70,7 +70,7 @@ void readVecInt(const Value &v, keel::Array<int> &out)
         out[i] = keel::as<int>(v.elemAsDouble(i));
 }
 
-void readVec(const Value &v, keel::Array<double> &out)
+void readVec(const Value &v, keel::Array<keel::f64> &out)
 {
     const keel::usize n = v.numel();
     out.resize(n);
@@ -94,7 +94,7 @@ keel::Array<int> invertMapping(keel::ArrayRef<int> mapping, keel::Allocator *mr)
     return inv;
 }
 
-void apsk_argcheck(keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
+void apsk_argcheck(keel::ArrayRef<keel::usize> M, keel::ArrayRef<keel::f64> radii,
                    const Value &phaseoffset_v, const Value &mapping_v,
                    const char *fn)
 {
@@ -115,17 +115,17 @@ void apsk_argcheck(keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
 
 } // namespace
 
-Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
+Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<keel::f64> radii,
               const Value &phaseoffset_v, const Value &mapping_v,
               keel::Allocator *mr)
 {
     apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskmod");
-    keel::Array<double> phaseoffset(M.size(), mr);
+    keel::Array<keel::f64> phaseoffset(M.size(), mr);
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
         if (phaseoffset.size() == 1) {
             // Scalar broadcast.
-            const double v = phaseoffset[0];
+            const keel::f64 v = phaseoffset[0];
             phaseoffset.assign(M.size(), v);
         } else if (phaseoffset.size() != M.size()) {
             throw Error("apskmod: phaseoffset length must match M",
@@ -133,7 +133,7 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
         }
     } else {
         for (keel::usize r = 0; r < M.size(); ++r)
-            phaseoffset[r] = M_PI / keel::as<double>(M[r]);
+            phaseoffset[r] = M_PI / keel::as<keel::f64>(M[r]);
     }
 
     keel::usize Ntot = 0;
@@ -169,16 +169,16 @@ Value apskmod(const Value &x, keel::ArrayRef<keel::usize> M, keel::ArrayRef<doub
     return out;
 }
 
-Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<double> radii,
+Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<keel::f64> radii,
                 const Value &phaseoffset_v, const Value &mapping_v,
                 keel::Allocator *mr)
 {
     apsk_argcheck(M, radii, phaseoffset_v, mapping_v, "apskdemod");
-    keel::Array<double> phaseoffset(M.size(), mr);
+    keel::Array<keel::f64> phaseoffset(M.size(), mr);
     if (!phaseoffset_v.isEmpty()) {
         readVec(phaseoffset_v, phaseoffset);
         if (phaseoffset.size() == 1) {
-            const double v = phaseoffset[0];
+            const keel::f64 v = phaseoffset[0];
             phaseoffset.assign(M.size(), v);
         } else if (phaseoffset.size() != M.size()) {
             throw Error("apskdemod: phaseoffset length must match M",
@@ -186,7 +186,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
         }
     } else {
         for (keel::usize r = 0; r < M.size(); ++r)
-            phaseoffset[r] = M_PI / keel::as<double>(M[r]);
+            phaseoffset[r] = M_PI / keel::as<keel::f64>(M[r]);
     }
 
     keel::usize Ntot = 0;
@@ -206,7 +206,7 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
 
     Value out = Value::matrix(y.dims().rows(), y.dims().cols(),
                               ValueType::DOUBLE, mr);
-    double *o = out.doubleDataMut();
+    keel::f64 *o = out.doubleDataMut();
     const keel::usize Ny = y.numel();
     const bool y_complex = y.isComplex();
     for (keel::usize i = 0; i < Ny; ++i) {
@@ -215,15 +215,15 @@ Value apskdemod(const Value &y, keel::ArrayRef<keel::usize> M, keel::ArrayRef<do
                           : keel::c64(y.elemAsDouble(i), 0.0);
         // Find nearest constellation point (by squared distance).
         keel::usize best_k = 0;
-        double best_d2 = std::numeric_limits<double>::infinity();
+        keel::f64 best_d2 = std::numeric_limits<keel::f64>::infinity();
         for (keel::usize k = 0; k < C.size(); ++k) {
-            const double dr = yi.real() - C[k].real();
-            const double di = yi.imag() - C[k].imag();
-            const double d2 = dr * dr + di * di;
+            const keel::f64 dr = yi.real() - C[k].real();
+            const keel::f64 di = yi.imag() - C[k].imag();
+            const keel::f64 d2 = dr * dr + di * di;
             if (d2 < best_d2) { best_d2 = d2; best_k = k; }
         }
         // Map constellation index back through user mapping.
-        o[i] = keel::as<double>(mapping[best_k]);
+        o[i] = keel::as<keel::f64>(mapping[best_k]);
     }
     return out;
 }

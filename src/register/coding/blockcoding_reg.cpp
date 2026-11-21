@@ -47,9 +47,9 @@ void hammgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     HammgenResult res = hammgen(m, prim, ctx.engine->allocator());
     outs[0] = std::move(res.h);
     if (nargout >= 2) outs[1] = std::move(res.g);
-    if (nargout >= 3) outs[2] = Value::scalar(keel::as<double>(res.n),
+    if (nargout >= 3) outs[2] = Value::scalar(keel::as<keel::f64>(res.n),
                                               ctx.engine->allocator());
-    if (nargout >= 4) outs[3] = Value::scalar(keel::as<double>(res.k),
+    if (nargout >= 4) outs[3] = Value::scalar(keel::as<keel::f64>(res.k),
                                               ctx.engine->allocator());
 }
 
@@ -76,7 +76,7 @@ void cyclgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     CyclgenResult res = cyclgen(n, args[1], opt, ctx.engine->allocator());
     outs[0] = std::move(res.h);
     if (nargout >= 2) outs[1] = std::move(res.g);
-    if (nargout >= 3) outs[2] = Value::scalar(keel::as<double>(res.k),
+    if (nargout >= 3) outs[2] = Value::scalar(keel::as<keel::f64>(res.k),
                                               ctx.engine->allocator());
 }
 
@@ -92,7 +92,7 @@ void encode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     EncodeResult res = encode(args[0], n, k, method, opt, ctx.engine->allocator());
     outs[0] = std::move(res.code);
-    if (nargout >= 2) outs[1] = Value::scalar(keel::as<double>(res.added),
+    if (nargout >= 2) outs[1] = Value::scalar(keel::as<keel::f64>(res.added),
                                               ctx.engine->allocator());
 }
 

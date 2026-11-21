@@ -31,8 +31,8 @@ void compand_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "compand", "", "numkit:compand:method");
         method = args[3].toString();
     }
-    const double param = args[1].toScalar();
-    const double V     = args[2].toScalar();
+    const keel::f64 param = args[1].toScalar();
+    const keel::f64 V     = args[2].toScalar();
     outs[0] = compand(args[0], param, V, method, ctx.engine->allocator());
 }
 

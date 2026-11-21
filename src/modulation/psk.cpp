@@ -62,7 +62,7 @@ void dpskdemod_argcheck(int M) {
 
 } // anonymous
 
-Value pskmod(const Value &x, int M, double ini_phase,
+Value pskmod(const Value &x, int M, keel::f64 ini_phase,
              keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pskmod_argcheck(M);
@@ -77,7 +77,7 @@ Value pskmod(const Value &x, int M, double ini_phase,
     return out;
 }
 
-Value pskdemod(const Value &y, int M, double ini_phase,
+Value pskdemod(const Value &y, int M, keel::f64 ini_phase,
                keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pskdemod_argcheck(M);
@@ -95,12 +95,12 @@ Value pskdemod(const Value &y, int M, double ini_phase,
         (void)keel::comm::psk_demod(samples, keel::as<keel::i32>(M), ini_phase,
                                     parseOrder(symbol_order), syms);
     }
-    double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
+    keel::f64 *od = out.doubleDataMut();
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<keel::f64>(syms[i]);
     return out;
 }
 
-Value dpskmod(const Value &x, int M, double phase_rot,
+Value dpskmod(const Value &x, int M, keel::f64 phase_rot,
               keel::StringRef symbol_order, keel::Allocator *mr)
 {
     dpskmod_argcheck(M);
@@ -115,7 +115,7 @@ Value dpskmod(const Value &x, int M, double phase_rot,
     return out;
 }
 
-Value dpskdemod(const Value &y, int M, double phase_rot,
+Value dpskdemod(const Value &y, int M, keel::f64 phase_rot,
                 keel::StringRef symbol_order, keel::Allocator *mr)
 {
     dpskdemod_argcheck(M);
@@ -133,8 +133,8 @@ Value dpskdemod(const Value &y, int M, double phase_rot,
         (void)keel::comm::dpsk_demod(samples, keel::as<keel::i32>(M), phase_rot,
                                      parseOrder(symbol_order), syms);
     }
-    double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
+    keel::f64 *od = out.doubleDataMut();
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<keel::f64>(syms[i]);
     return out;
 }
 

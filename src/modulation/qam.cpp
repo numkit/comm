@@ -60,7 +60,7 @@ void qamdemod_argcheck(int M) {
         throw Error("qamdemod: M must be ≥ 4", 0, 0, "qamdemod", "", "numkit:qamdemod:badM");
 }
 
-void modnorm_argcheck(const Value &ref, keel::StringRef type, double target) {
+void modnorm_argcheck(const Value &ref, keel::StringRef type, keel::f64 target) {
     (void)ref;
     (void)type;
     (void)target;
@@ -68,7 +68,7 @@ void modnorm_argcheck(const Value &ref, keel::StringRef type, double target) {
 
 } // anonymous
 
-Value pammod(const Value &x, int M, double ini_phase,
+Value pammod(const Value &x, int M, keel::f64 ini_phase,
              keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pammod_argcheck(M);
@@ -83,7 +83,7 @@ Value pammod(const Value &x, int M, double ini_phase,
     return out;
 }
 
-Value pamdemod(const Value &y, int M, double ini_phase,
+Value pamdemod(const Value &y, int M, keel::f64 ini_phase,
                keel::StringRef symbol_order, keel::Allocator *mr)
 {
     pamdemod_argcheck(M);
@@ -101,8 +101,8 @@ Value pamdemod(const Value &y, int M, double ini_phase,
         (void)keel::comm::pam_demod(samples, keel::as<keel::i32>(M), ini_phase,
                                     parseOrder(symbol_order), syms);
     }
-    double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
+    keel::f64 *od = out.doubleDataMut();
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<keel::f64>(syms[i]);
     return out;
 }
 
@@ -139,12 +139,12 @@ Value qamdemod(const Value &y, int M, keel::StringRef symbol_order,
         (void)keel::comm::qam_demod(samples, keel::as<keel::i32>(M),
                                     parseOrder(symbol_order), unit_power, syms);
     }
-    double *od = out.doubleDataMut();
-    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<double>(syms[i]);
+    keel::f64 *od = out.doubleDataMut();
+    for (keel::usize i = 0; i < N; ++i) od[i] = keel::as<keel::f64>(syms[i]);
     return out;
 }
 
-Value modnorm(const Value &ref, keel::StringRef type, double target, keel::Allocator *mr)
+Value modnorm(const Value &ref, keel::StringRef type, keel::f64 target, keel::Allocator *mr)
 {
     modnorm_argcheck(ref, type, target);
     const keel::usize N = ref.numel();

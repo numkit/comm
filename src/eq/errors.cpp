@@ -31,8 +31,8 @@ void biterr_argcheck(const Value &x, const Value &y, int k)
     if (k < 0)
         throw Error("biterr: k must be a positive integer",
                     0, 0, "biterr", "", "numkit:biterr:k");
-    const double *xd = x.doubleData();
-    const double *yd = y.doubleData();
+    const keel::f64 *xd = x.doubleData();
+    const keel::f64 *yd = y.doubleData();
     for (keel::usize i = 0; i < n; ++i) {
         if (xd[i] < 0.0 || yd[i] < 0.0)
             throw Error("biterr: inputs must be non-negative integers",
@@ -69,8 +69,8 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
 {
     biterr_argcheck(x, y, k);
     const keel::usize n = x.numel();
-    const double *xd = x.doubleData();
-    const double *yd = y.doubleData();
+    const keel::f64 *xd = x.doubleData();
+    const keel::f64 *yd = y.doubleData();
 
     keel::ArenaTemp scratch = keel::get_scratch(mr);
     keel::Array<keel::u64> a(n, scratch.allocator());
@@ -80,7 +80,7 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, int k,
         b[i] = keel::as<keel::u64>(yd[i]);
     }
     const auto stats = keel::comm::bit_error_rate(a, b, keel::as<keel::i32>(k));
-    return {Value::scalar(keel::as<double>(stats.count), mr),
+    return {Value::scalar(keel::as<keel::f64>(stats.count), mr),
             Value::scalar(stats.ratio, mr)};
 }
 
@@ -92,22 +92,22 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
     if (mode == "overall") {
         const keel::usize n = x.numel();
         const auto stats = keel::comm::sym_error_rate({x.doubleData(), n}, {y.doubleData(), n});
-        return {Value::scalar(keel::as<double>(stats.count), mr),
+        return {Value::scalar(keel::as<keel::f64>(stats.count), mr),
                 Value::scalar(stats.ratio, mr)};
     }
 
     if (mode == "column-wise") {
         const keel::usize r = x.dims().rows();
         const keel::usize c = x.dims().cols();
-        const double *xd = x.doubleData();
-        const double *yd = y.doubleData();
+        const keel::f64 *xd = x.doubleData();
+        const keel::f64 *yd = y.doubleData();
         Value counts = Value::matrix(1, c, ValueType::DOUBLE, mr);
         Value ratios = Value::matrix(1, c, ValueType::DOUBLE, mr);
-        double *cd = counts.doubleDataMut();
-        double *rd = ratios.doubleDataMut();
+        keel::f64 *cd = counts.doubleDataMut();
+        keel::f64 *rd = ratios.doubleDataMut();
         for (keel::usize j = 0; j < c; ++j) {
             const auto stats = keel::comm::sym_error_rate({xd + j * r, r}, {yd + j * r, r});
-            cd[j] = keel::as<double>(stats.count);
+            cd[j] = keel::as<keel::f64>(stats.count);
             rd[j] = stats.ratio;
         }
         return {std::move(counts), std::move(ratios)};
@@ -115,19 +115,19 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
 
     const keel::usize r = x.dims().rows();
     const keel::usize c = x.dims().cols();
-    const double *xd = x.doubleData();
-    const double *yd = y.doubleData();
+    const keel::f64 *xd = x.doubleData();
+    const keel::f64 *yd = y.doubleData();
     Value counts = Value::matrix(r, 1, ValueType::DOUBLE, mr);
     Value ratios = Value::matrix(r, 1, ValueType::DOUBLE, mr);
-    double *cd = counts.doubleDataMut();
-    double *rd = ratios.doubleDataMut();
+    keel::f64 *cd = counts.doubleDataMut();
+    keel::f64 *rd = ratios.doubleDataMut();
     for (keel::usize i = 0; i < r; ++i) {
         keel::u64 cnt = 0;
         for (keel::usize j = 0; j < c; ++j) {
             if (xd[j * r + i] != yd[j * r + i]) ++cnt;
         }
-        cd[i] = keel::as<double>(cnt);
-        rd[i] = (c > 0) ? keel::as<double>(cnt) / keel::as<double>(c) : 0.0;
+        cd[i] = keel::as<keel::f64>(cnt);
+        rd[i] = (c > 0) ? keel::as<keel::f64>(cnt) / keel::as<keel::f64>(c) : 0.0;
     }
     return {std::move(counts), std::move(ratios)};
 }

@@ -38,20 +38,20 @@ keel::String toLowerAscii(keel::StringRef sv) {
 Value scaleConstellationUnitPower(const Value &c, keel::Allocator *mr) {
     const keel::usize M = c.numel();
     if (M == 0) return c;
-    double sumP = 0.0;
+    keel::f64 sumP = 0.0;
     if (c.isComplex()) {
         const auto *cd = c.complexData();
         for (keel::usize k = 0; k < M; ++k)
             sumP += cd[k].real() * cd[k].real() + cd[k].imag() * cd[k].imag();
     } else {
         for (keel::usize k = 0; k < M; ++k) {
-            const double v = c.elemAsDouble(k);
+            const keel::f64 v = c.elemAsDouble(k);
             sumP += v * v;
         }
     }
-    const double avgP = sumP / keel::as<double>(M);
+    const keel::f64 avgP = sumP / keel::as<keel::f64>(M);
     if (!(avgP > 0.0)) return c;
-    const double scale = 1.0 / std::sqrt(avgP);
+    const keel::f64 scale = 1.0 / std::sqrt(avgP);
     if (c.isComplex()) {
         Value out = Value::matrix(c.dims().rows(), c.dims().cols(), ValueType::COMPLEX, mr);
         const auto *src = c.complexData();
@@ -87,19 +87,19 @@ Value packBitsToSymbols(const Value &x, keel::usize bps, const char *fn, keel::A
     const keel::usize nCols = rowVec ? 1 : W;
     Value syms = rowVec ? Value::matrix(1, nSyms, ValueType::DOUBLE, mr)
                         : Value::matrix(nSyms, nCols, ValueType::DOUBLE, mr);
-    double *sd = syms.doubleDataMut();
+    keel::f64 *sd = syms.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
             keel::usize val = 0;
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize idx = rowVec ? (s * bps + b) : (c * H + s * bps + b);
-                const double bit = x.elemAsDouble(idx);
+                const keel::f64 bit = x.elemAsDouble(idx);
                 if (bit != 0.0 && bit != 1.0)
                     throw Error(keel::format("{}: bit input must contain only 0 and 1", fn),
                                 0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
                 val = (val << 1) | (bit != 0.0 ? 1u : 0u);
             }
-            sd[rowVec ? s : (c * nSyms + s)] = keel::as<double>(val);
+            sd[rowVec ? s : (c * nSyms + s)] = keel::as<keel::f64>(val);
         }
     }
     return syms;
@@ -113,14 +113,14 @@ Value unpackSymbolsToBits(const Value &syms, keel::usize bps, keel::Allocator *m
     const keel::usize nCols = rowVec ? 1 : W;
     Value bits = rowVec ? Value::matrix(1, nSyms * bps, ValueType::DOUBLE, mr)
                         : Value::matrix(nSyms * bps, nCols, ValueType::DOUBLE, mr);
-    double *bd = bits.doubleDataMut();
+    keel::f64 *bd = bits.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
             const keel::usize val = keel::as<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
                 const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
-                bd[outIdx] = keel::as<double>(bit);
+                bd[outIdx] = keel::as<keel::f64>(bit);
             }
         }
     }

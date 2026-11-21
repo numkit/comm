@@ -120,12 +120,12 @@ void vec2mat_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 2, 3, "vec2mat");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "n", "vec2mat"), 2, "n", "vec2mat");
-    double padval = 0.0;
+    keel::f64 padval = 0.0;
     if (args.size() >= 3) padval = args[2].toScalar();
     auto [m, pad] = vec2mat(args[0], n, padval, ctx.engine->allocator());
     outs[0] = m;
     if (nargout >= 2 && outs.size() >= 2)
-        outs[1] = Value::scalar(keel::as<double>(pad), ctx.engine->allocator());
+        outs[1] = Value::scalar(keel::as<keel::f64>(pad), ctx.engine->allocator());
 }
 
 } // namespace detail

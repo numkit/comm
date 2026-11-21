@@ -48,7 +48,7 @@ void pammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 2, 4, "pammod");
     const int M = (int)args[1].toScalar();
-    const double ini = (args.size() >= 3 && !args[2].isEmpty()
+    const keel::f64 ini = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
     auto order = parse_order(args, 2, "bin");
@@ -60,7 +60,7 @@ void pamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 2, 4, "pamdemod");
     const int M = (int)args[1].toScalar();
-    const double ini = (args.size() >= 3 && !args[2].isEmpty()
+    const keel::f64 ini = (args.size() >= 3 && !args[2].isEmpty()
                         && !(args[2].isChar() || args[2].isString()))
                         ? args[2].toScalar() : 0.0;
     auto order = parse_order(args, 2, "bin");
@@ -93,7 +93,7 @@ void modnorm_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 3, 3, "modnorm");
     keel::String type("avpow");
     if (args[1].isChar() || args[1].isString()) type = args[1].toString();
-    const double target = args[2].toScalar();
+    const keel::f64 target = args[2].toScalar();
     outs[0] = modnorm(args[0], type, target, ctx.engine->allocator());
 }
 

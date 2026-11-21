@@ -24,7 +24,7 @@ void rcosdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "rcosdesign");
-    const double beta = args[0].toScalar();
+    const keel::f64 beta = args[0].toScalar();
     const int span    = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "span", "rcosdesign"), 2, "span", "rcosdesign");
     const int sps     = argcheck::expectedPositiveInteger(
@@ -44,7 +44,7 @@ void gaussdesign_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     // R2025b defaults: span 3, sps 2 — both optional.
     argcheck::checkNargin(args.size(), 1, 3, "gaussdesign");
-    const double BT = args[0].toScalar();
+    const keel::f64 BT = args[0].toScalar();
     const int span = (args.size() >= 2 && !args[1].isEmpty())
         ? argcheck::expectedPositiveInteger(
               argcheck::expectedReal(args[1], 2, "span", "gaussdesign"),

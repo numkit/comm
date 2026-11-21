@@ -56,14 +56,14 @@ Value bit2int(const Value &b, int n, bool msbfirst,
     const keel::usize M = L / keel::as<keel::usize>(n);
     Value out = Value::matrix(M, 1, ValueType::DOUBLE, mr);
     if (M == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize k = 0; k < M; ++k) {
         keel::u64 v = 0;
         for (int j = 0; j < n; ++j) {
             const keel::usize bitIdx = k * n + (msbfirst ? j : (n - 1 - j));
             v = (v << 1) | (getI64(b, bitIdx) & 1);
         }
-        od[k] = keel::as<double>(v);
+        od[k] = keel::as<keel::f64>(v);
     }
     return out;
 }
@@ -80,13 +80,13 @@ Value int2bit(const Value &d, int n, bool msbfirst,
     const keel::usize M = d.numel();
     Value out = Value::matrix(keel::as<keel::usize>(n), M, ValueType::DOUBLE, mr);
     if (M == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize k = 0; k < M; ++k) {
         const keel::u64 v = keel::as<keel::u64>(getI64(d, k));
         for (int j = 0; j < n; ++j) {
             // out(j, k) = j-th MSB-first bit of v (or LSB-first).
             const int bitPos = msbfirst ? (n - 1 - j) : j;
-            od[k * n + j] = keel::as<double>((v >> bitPos) & 1);
+            od[k * n + j] = keel::as<keel::f64>((v >> bitPos) & 1);
         }
     }
     return out;
@@ -120,7 +120,7 @@ Value bi2de(const Value &b, int base, bool msbfirst,
     const keel::usize C = b.dims().cols();
     Value out = Value::matrix(R, 1, ValueType::DOUBLE, mr);
     if (R == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize r = 0; r < R; ++r) {
         // b is column-major; element (r, c) at idx r + c*R.
         long double v = 0.0L;
@@ -130,7 +130,7 @@ Value bi2de(const Value &b, int base, bool msbfirst,
             v += keel::as<long double>(getI64(b, r + idx * R)) * pwr;
             pwr *= keel::as<long double>(base);
         }
-        od[r] = keel::as<double>(v);
+        od[r] = keel::as<keel::f64>(v);
     }
     return out;
 }
@@ -161,13 +161,13 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
     }
     Value out = Value::matrix(R, keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
     if (R == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize r = 0; r < R; ++r) {
         keel::u64 v = keel::as<keel::u64>(getI64(d, r));
         for (int j = 0; j < n; ++j) {
             const int col = msbfirst ? (n - 1 - j) : j;
             od[r + keel::as<keel::usize>(col) * R] =
-                keel::as<double>(v % keel::as<keel::u64>(base));
+                keel::as<keel::f64>(v % keel::as<keel::u64>(base));
             v /= keel::as<keel::u64>(base);
         }
     }
@@ -179,7 +179,7 @@ Value de2bi(const Value &d, int n_user, int base, bool msbfirst,
 // last row to width N with `padval` (default 0). Returns the matrix and
 // the count of pad entries added.
 std::pair<Value, int>
-vec2mat(const Value &v, int n, double padval, keel::Allocator *mr)
+vec2mat(const Value &v, int n, keel::f64 padval, keel::Allocator *mr)
 {
     if (n <= 0)
         throw Error("vec2mat: n must be positive",
@@ -190,7 +190,7 @@ vec2mat(const Value &v, int n, double padval, keel::Allocator *mr)
     const keel::usize pad  = rows * cols - L;
     Value out = Value::matrix(rows, cols, ValueType::DOUBLE, mr);
     if (rows == 0) return {out, 0};
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     // Row-major fill: out(r, c) = v(r * cols + c) when in-range, padval otherwise.
     // out is column-major, so write to (r + c*rows).
     for (keel::usize r = 0; r < rows; ++r) {

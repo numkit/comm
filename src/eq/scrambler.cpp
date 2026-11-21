@@ -40,8 +40,8 @@ void validatePoly(keel::ArrayRef<keel::u8> poly, const char *name) {
 Value packDoubles(keel::Allocator *mr, keel::ArrayRef<keel::u8> bits) {
     Value out = Value::matrix(bits.size(), 1, ValueType::DOUBLE, mr);
     if (!bits.empty()) {
-        double *od = out.doubleDataMut();
-        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = keel::as<double>(bits[i]);
+        keel::f64 *od = out.doubleDataMut();
+        for (keel::usize i = 0; i < bits.size(); ++i) od[i] = keel::as<keel::f64>(bits[i]);
     }
     return out;
 }

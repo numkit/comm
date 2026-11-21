@@ -48,9 +48,9 @@ keel::Array<keel::usize> valueToScratchSizes(const Value &v, keel::Allocator *mr
     return out;
 }
 
-keel::Array<double> valueToScratchDoubles(const Value &v, keel::Allocator *mr)
+keel::Array<keel::f64> valueToScratchDoubles(const Value &v, keel::Allocator *mr)
 {
-    keel::Array<double> out(mr);
+    keel::Array<keel::f64> out(mr);
     const keel::usize n = v.numel();
     out.reserve(n);
     for (keel::usize i = 0; i < n; ++i)
@@ -68,7 +68,7 @@ Value buildGrayMapping(keel::ArrayRef<keel::usize> M, keel::Allocator *mr)
         if (m != M[0]) sameRingSize = false;
     }
     Value mp = Value::matrix(1, Ntot, ValueType::DOUBLE, mr);
-    double *md = mp.doubleDataMut();
+    keel::f64 *md = mp.doubleDataMut();
     keel::usize cum = 0;
     const keel::usize R = M.size();
     const bool pow2Rings = (R >= 2) && ((R & (R - 1)) == 0) && sameRingSize && ((M[0] & (M[0] - 1)) == 0);
@@ -83,7 +83,7 @@ Value buildGrayMapping(keel::ArrayRef<keel::usize> M, keel::Allocator *mr)
         for (keel::usize k = 0; k < p2 && written < Mr; ++k) {
             const keel::usize g = k ^ (k >> 1);
             if (g < Mr) {
-                md[cum + written] = keel::as<double>(ringBase + g);
+                md[cum + written] = keel::as<keel::f64>(ringBase + g);
                 ++written;
             }
         }
@@ -117,19 +117,19 @@ Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Alloca
     const keel::usize nCols = rowVec ? 1 : W;
     Value syms = rowVec ? Value::matrix(1, nSyms, ValueType::DOUBLE, mr)
                         : Value::matrix(nSyms, nCols, ValueType::DOUBLE, mr);
-    double *sd = syms.doubleDataMut();
+    keel::f64 *sd = syms.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
             keel::usize val = 0;
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize idx = rowVec ? (s * bps + b) : (c * H + s * bps + b);
-                const double bit = x.elemAsDouble(idx);
+                const keel::f64 bit = x.elemAsDouble(idx);
                 if (bit != 0.0 && bit != 1.0)
                     throw Error(keel::format("{}: bit input must contain only 0 and 1", fn),
                                 0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
                 val = (val << 1) | (bit != 0.0 ? 1u : 0u);
             }
-            sd[rowVec ? s : (c * nSyms + s)] = keel::as<double>(val);
+            sd[rowVec ? s : (c * nSyms + s)] = keel::as<keel::f64>(val);
         }
     }
     return syms;
@@ -144,14 +144,14 @@ Value unpackApskBits(const Value &syms, keel::usize bps, keel::Allocator *mr)
     const keel::usize nCols = rowVec ? 1 : W;
     Value bits = rowVec ? Value::matrix(1, nSyms * bps, ValueType::DOUBLE, mr)
                         : Value::matrix(nSyms * bps, nCols, ValueType::DOUBLE, mr);
-    double *bd = bits.doubleDataMut();
+    keel::f64 *bd = bits.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
             const keel::usize val = keel::as<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
                 const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
-                bd[outIdx] = keel::as<double>(bit);
+                bd[outIdx] = keel::as<keel::f64>(bit);
             }
         }
     }
@@ -240,7 +240,7 @@ void apskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         const keel::usize bps = apskBitsPerSymbol(Mspan, "apskmod");
         x = packApskBits(x, bps, "apskmod", mr);
     }
-    outs[0] = apskmod(x, Mspan, keel::ArrayRef<double>(Rv.data(), Rv.size()), po, mp, mr);
+    outs[0] = apskmod(x, Mspan, keel::ArrayRef<keel::f64>(Rv.data(), Rv.size()), po, mp, mr);
 }
 
 void apskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
@@ -255,7 +255,7 @@ void apskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     Value po, mp;
     bool bitMode = false;
     parseApskTail(args, Mspan, "apskdemod", false, po, mp, bitMode, mr);
-    Value syms = apskdemod(args[0], Mspan, keel::ArrayRef<double>(Rv.data(), Rv.size()), po, mp, mr);
+    Value syms = apskdemod(args[0], Mspan, keel::ArrayRef<keel::f64>(Rv.data(), Rv.size()), po, mp, mr);
     if (bitMode) {
         const keel::usize bps = apskBitsPerSymbol(Mspan, "apskdemod");
         syms = unpackApskBits(syms, bps, mr);

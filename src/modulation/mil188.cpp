@@ -444,7 +444,7 @@ const keel::c64 *constellationFor(int M, keel::usize &len_out)
 // identifier per function (bugs/opened/lang/reg-domain-logic.md).
 void mil188MSetArgcheck(int M, keel::StringRef fn)
 {
-    argcheck::expectedOneOf(keel::as<double>(M), {16, 32, 64, 256},
+    argcheck::expectedOneOf(keel::as<keel::f64>(M), {16, 32, 64, 256},
                             2, "M", fn);
 }
 
@@ -461,8 +461,8 @@ Value mil188qammod(const Value &x, int M, keel::Allocator *mr)
     keel::c64 *o = out.complexDataMut();
     const keel::usize Nx = x.numel();
     for (keel::usize i = 0; i < Nx; ++i) {
-        const double xi = x.elemAsDouble(i);
-        if (xi < 0.0 || xi >= keel::as<double>(N))
+        const keel::f64 xi = x.elemAsDouble(i);
+        if (xi < 0.0 || xi >= keel::as<keel::f64>(N))
             throw Error("mil188qammod: input out of range [0, M-1]",
                         0, 0, "mil188qammod", "",
                         "numkit:mil188qammod:OutOfRange");
@@ -479,7 +479,7 @@ Value mil188qamdemod(const Value &y, int M, keel::Allocator *mr)
 
     Value out = Value::matrix(y.dims().rows(), y.dims().cols(),
                               ValueType::DOUBLE, mr);
-    double *o = out.doubleDataMut();
+    keel::f64 *o = out.doubleDataMut();
     const keel::usize Ny = y.numel();
     const bool y_complex = y.isComplex();
     for (keel::usize i = 0; i < Ny; ++i) {
@@ -487,14 +487,14 @@ Value mil188qamdemod(const Value &y, int M, keel::Allocator *mr)
                           ? y.complexData()[i]
                           : keel::c64(y.elemAsDouble(i), 0.0);
         keel::usize best_k = 0;
-        double best_d2 = std::numeric_limits<double>::infinity();
+        keel::f64 best_d2 = std::numeric_limits<keel::f64>::infinity();
         for (keel::usize k = 0; k < N; ++k) {
-            const double dr = yi.real() - C[k].real();
-            const double di = yi.imag() - C[k].imag();
-            const double d2 = dr * dr + di * di;
+            const keel::f64 dr = yi.real() - C[k].real();
+            const keel::f64 di = yi.imag() - C[k].imag();
+            const keel::f64 d2 = dr * dr + di * di;
             if (d2 < best_d2) { best_d2 = d2; best_k = k; }
         }
-        o[i] = keel::as<double>(best_k);
+        o[i] = keel::as<keel::f64>(best_k);
     }
     return out;
 }

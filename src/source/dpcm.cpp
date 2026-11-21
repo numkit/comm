@@ -31,7 +31,7 @@ namespace {
 
 // Find quantization bin index: smallest i such that e < partition[i],
 // or K-1 if e >= partition[K-2] (K-1 thresholds for K bins).
-keel::usize partitionBin(const Value &partition, double e)
+keel::usize partitionBin(const Value &partition, keel::f64 e)
 {
     const keel::usize M = partition.numel();
     keel::usize i = 0;
@@ -39,7 +39,7 @@ keel::usize partitionBin(const Value &partition, double e)
     return i;
 }
 
-void readPredictor(const Value &predictor, keel::Array<double> &p)
+void readPredictor(const Value &predictor, keel::Array<keel::f64> &p)
 {
     const keel::usize L = predictor.numel();
     if (L < 2)
@@ -57,7 +57,7 @@ bool isRow(const Value &v)
 }
 
 void dpcmenco_argcheck(const Value &codebook, const Value &partition,
-                       const Value &predictor, keel::Array<double> &pred)
+                       const Value &predictor, keel::Array<keel::f64> &pred)
 {
     if (codebook.numel() != partition.numel() + 1)
         throw Error("dpcmenco: length(codebook) must equal "
@@ -67,7 +67,7 @@ void dpcmenco_argcheck(const Value &codebook, const Value &partition,
     readPredictor(predictor, pred);
 }
 
-void dpcmdeco_argcheck(const Value &predictor, keel::Array<double> &pred)
+void dpcmdeco_argcheck(const Value &predictor, keel::Array<keel::f64> &pred)
 {
     readPredictor(predictor, pred);
 }
@@ -79,7 +79,7 @@ dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
          keel::Allocator *mr)
 {
-    keel::Array<double> pred(mr);
+    keel::Array<keel::f64> pred(mr);
     dpcmenco_argcheck(codebook, partition, predictor, pred);
     const keel::usize M = pred.size();
 
@@ -89,19 +89,19 @@ dpcmenco(const Value &sig, const Value &codebook,
                                      ValueType::DOUBLE, mr);
     Value quanterr_v = Value::matrix(row ? 1 : N, row ? N : 1,
                                      ValueType::DOUBLE, mr);
-    double *o_indx = indx_v.doubleDataMut();
-    double *o_qerr = quanterr_v.doubleDataMut();
+    keel::f64 *o_indx = indx_v.doubleDataMut();
+    keel::f64 *o_qerr = quanterr_v.doubleDataMut();
 
-    keel::Array<double> x(M, 0.0, mr);  // predictor state (newest first)
+    keel::Array<keel::f64> x(M, 0.0, mr);  // predictor state (newest first)
     for (keel::usize i = 0; i < N; ++i) {
-        double out = 0.0;
+        keel::f64 out = 0.0;
         for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
-        const double e   = sig.elemAsDouble(i) - out;
+        const keel::f64 e   = sig.elemAsDouble(i) - out;
         const keel::usize bin = partitionBin(partition, e);
-        const double q   = codebook.elemAsDouble(bin);
-        o_indx[i] = keel::as<double>(bin);
+        const keel::f64 q   = codebook.elemAsDouble(bin);
+        o_indx[i] = keel::as<keel::f64>(bin);
         o_qerr[i] = q;
-        const double inp = q + out;
+        const keel::f64 inp = q + out;
         // Shift state: x = [inp; x(1..M-1)]
         for (keel::usize k = M; k-- > 1;) x[k] = x[k - 1];
         if (M > 0) x[0] = inp;
@@ -114,7 +114,7 @@ dpcmdeco(const Value &indx, const Value &codebook,
          const Value &predictor,
          keel::Allocator *mr)
 {
-    keel::Array<double> pred(mr);
+    keel::Array<keel::f64> pred(mr);
     dpcmdeco_argcheck(predictor, pred);
     const keel::usize M = pred.size();
 
@@ -125,21 +125,21 @@ dpcmdeco(const Value &indx, const Value &codebook,
                                      ValueType::DOUBLE, mr);
     Value quanterr_v = Value::matrix(row ? 1 : N, row ? N : 1,
                                      ValueType::DOUBLE, mr);
-    double *o_sig  = sig_v.doubleDataMut();
-    double *o_qerr = quanterr_v.doubleDataMut();
+    keel::f64 *o_sig  = sig_v.doubleDataMut();
+    keel::f64 *o_qerr = quanterr_v.doubleDataMut();
 
     // Lookup quanterr first (matches MATLAB ordering of work).
     for (keel::usize i = 0; i < N; ++i) {
-        const double iv = indx.elemAsDouble(i);
-        if (!(iv >= 0.0) || iv >= keel::as<double>(K))
+        const keel::f64 iv = indx.elemAsDouble(i);
+        if (!(iv >= 0.0) || iv >= keel::as<keel::f64>(K))
             throw Error("dpcmdeco: index out of codebook range",
                         0, 0, "dpcmdeco", "", "numkit:dpcmdeco:OutOfRange");
         o_qerr[i] = codebook.elemAsDouble(keel::as<keel::usize>(iv));
     }
 
-    keel::Array<double> x(M, 0.0, mr);
+    keel::Array<keel::f64> x(M, 0.0, mr);
     for (keel::usize i = 0; i < N; ++i) {
-        double out = 0.0;
+        keel::f64 out = 0.0;
         for (keel::usize k = 0; k < M; ++k) out += pred[k] * x[k];
         o_sig[i] = o_qerr[i] + out;
         for (keel::usize k = M; k-- > 1;) x[k] = x[k - 1];

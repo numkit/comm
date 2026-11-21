@@ -40,7 +40,7 @@ void readVecU(const Value &v, keel::Array<keel::u64> &out)
     const keel::usize n = v.numel();
     out.resize(n);
     for (keel::usize i = 0; i < n; ++i) {
-        const double d = v.elemAsDouble(i);
+        const keel::f64 d = v.elemAsDouble(i);
         if (!(d > 0.0) || std::floor(d) != d)
             throw Error("arithenco: counts must be positive integers",
                         0, 0, "arithenco", "", "numkit:arithenco:Counts");
@@ -87,7 +87,7 @@ Value arithenco(const Value &seq, const Value &counts,
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
-    const int N = keel::as<int>(std::ceil(std::log2(keel::as<double>(total)))) + 2;
+    const int N = keel::as<int>(std::ceil(std::log2(keel::as<keel::f64>(total)))) + 2;
     const keel::u64 topMask = 1ULL << (N - 1);
 
     keel::u64 dec_low = 0;
@@ -99,7 +99,7 @@ Value arithenco(const Value &seq, const Value &counts,
 
     const keel::usize Nseq = seq.numel();
     for (keel::usize k = 0; k < Nseq; ++k) {
-        const double sd = seq.elemAsDouble(k);
+        const keel::f64 sd = seq.elemAsDouble(k);
         if (!(sd > 0.0) || std::floor(sd) != sd
             || keel::as<keel::usize>(sd) > K)
             throw Error("arithenco: symbol out of range [1, length(counts)]",
@@ -161,8 +161,8 @@ Value arithenco(const Value &seq, const Value &counts,
     const keel::usize L = bits.size();
     Value out = Value::matrix(row ? 1 : L, row ? L : 1,
                               ValueType::DOUBLE, mr);
-    double *o = out.doubleDataMut();
-    for (keel::usize i = 0; i < L; ++i) o[i] = keel::as<double>(bits[i]);
+    keel::f64 *o = out.doubleDataMut();
+    for (keel::usize i = 0; i < L; ++i) o[i] = keel::as<keel::f64>(bits[i]);
     return out;
 }
 
@@ -176,13 +176,13 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
     for (keel::usize i = 0; i < K; ++i) cum[i + 1] = cum[i] + cnt[i];
     const keel::u64 total = cum[K];
 
-    const int N = keel::as<int>(std::ceil(std::log2(keel::as<double>(total)))) + 2;
+    const int N = keel::as<int>(std::ceil(std::log2(keel::as<keel::f64>(total)))) + 2;
     const keel::u64 topMask = 1ULL << (N - 1);
 
     // Read code bits.
     const keel::usize Lcode = code.numel();
     auto readBit = [&](keel::usize i) -> keel::u64 {
-        const double d = code.elemAsDouble(i);
+        const keel::f64 d = code.elemAsDouble(i);
         if (d != 0.0 && d != 1.0)
             throw Error("arithdeco: code bits must be 0 or 1",
                         0, 0, "arithdeco", "", "numkit:arithdeco:Bit");
@@ -208,13 +208,13 @@ Value arithdeco(const Value &code, const Value &counts, keel::usize len,
         return 1;
     };
 
-    keel::Array<double> dseq(len, mr);
+    keel::Array<keel::f64> dseq(len, mr);
     keel::usize k = keel::as<keel::usize>(N);   // next code-bit index (0-based)
     for (keel::usize i = 0; i < len; ++i) {
         const keel::u64 span = dec_up - dec_low + 1;
         const keel::u64 dec_tag_new = ((dec_tag - dec_low + 1) * total - 1) / span;
         const keel::usize ptr = pick(dec_tag_new);
-        dseq[i] = keel::as<double>(ptr);
+        dseq[i] = keel::as<keel::f64>(ptr);
 
         const keel::u64 low_new = dec_low + (span * cum[ptr - 1]) / total;
         dec_up  = dec_low + (span * cum[ptr]) / total - 1;

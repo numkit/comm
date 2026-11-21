@@ -130,7 +130,7 @@ inline keel::String toLower(keel::StringRef sv)
 Value polyToRow(keel::ArrayRef<int> t, keel::Allocator *mr)
 {
     Value v = Value::matrix(1, t.size(), ValueType::DOUBLE, mr);
-    double *d = v.doubleDataMut();
+    keel::f64 *d = v.doubleDataMut();
     for (keel::usize j = 0; j < t.size(); ++j) d[j] = t[j];
     return v;
 }
@@ -143,7 +143,7 @@ Value shiftMatrix(keel::ArrayRef<int> rowIn, long long rows, long long n,
     keel::Array<int> row(rowIn);
     Value out = Value::matrix(keel::as<keel::usize>(rows),
                               keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
-    double *d = out.doubleDataMut();
+    keel::f64 *d = out.doubleDataMut();
     for (long long r = 0; r < rows; ++r) {
         for (long long c = 0; c < n; ++c) d[c * rows + r] = row[c];
         const int last = row[n - 1];
@@ -180,7 +180,7 @@ Value gen2parImpl(const Value &mat, const char *who,
             if (matBit(mat, i, t) != (i == t ? 1 : 0)) { firstIsI = false; break; }
 
     Value out = Value::matrix(pcols, c, ValueType::DOUBLE, mr);
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     auto put = [&](keel::usize i, keel::usize j, int b) { od[j * pcols + i] = b; };
 
     if (lastIsI) {
@@ -244,7 +244,7 @@ HammgenResult hammgen(long long m, const Value &primPoly,
     // H(j,i) = bit j of (x^i mod p), i = 0..n-1, j = 0..m-1.
     Value h = Value::matrix(keel::as<keel::usize>(m),
                             keel::as<keel::usize>(n), ValueType::DOUBLE, mr);
-    double *hd = h.doubleDataMut();
+    keel::f64 *hd = h.doubleDataMut();
     const keel::u64 topBit = 1ULL << m;
     keel::u64 r = 1;  // x^0
     for (long long i = 0; i < n; ++i) {
@@ -331,7 +331,7 @@ Value cyclpoly(long long n, long long k, keel::StringRef opt,
         if (rows.empty()) return Value::matrix(0, 0, ValueType::DOUBLE, mr);
         Value out = Value::matrix(rows.size(), keel::as<keel::usize>(m) + 1,
                                   ValueType::DOUBLE, mr);
-        double *d = out.doubleDataMut();
+        keel::f64 *d = out.doubleDataMut();
         const keel::usize R = rows.size();
         for (keel::usize r = 0; r < R; ++r)
             for (keel::usize c = 0; c < rows[r].size(); ++c)
@@ -391,13 +391,13 @@ CyclgenResult cyclgen(long long n, const Value &genpoly,
         const keel::usize K = keel::as<keel::usize>(k);
         const keel::usize N = keel::as<keel::usize>(n);
         res.h = Value::matrix(M, N, ValueType::DOUBLE, mr);
-        double *hd = res.h.doubleDataMut();
+        keel::f64 *hd = res.h.doubleDataMut();
         for (keel::usize r = 0; r < M; ++r) {
             for (keel::usize c = 0; c < M; ++c) hd[c * M + r] = (r == c) ? 1 : 0;
             for (keel::usize t = 0; t < K; ++t) hd[(M + t) * M + r] = b[t][r];
         }
         res.g = Value::matrix(K, N, ValueType::DOUBLE, mr);
-        double *gd = res.g.doubleDataMut();
+        keel::f64 *gd = res.g.doubleDataMut();
         for (keel::usize r = 0; r < K; ++r) {
             for (keel::usize c = 0; c < M; ++c) gd[c * K + r] = b[r][c];
             for (keel::usize t = 0; t < K; ++t) gd[(M + t) * K + r] = (r == t) ? 1 : 0;
@@ -568,9 +568,9 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         if (!isVector)
             throw Error("encode: message must be a vector for the decimal format",
                         0, 0, "encode", "", "numkit:encode:msgvec");
-        const double maxv = std::ldexp(1.0, keel::as<int>(k)) - 1.0;
+        const keel::f64 maxv = std::ldexp(1.0, keel::as<int>(k)) - 1.0;
         for (keel::usize w = 0; w < nel; ++w) {
-            const double x = msg.elemAsDouble(w);
+            const keel::f64 x = msg.elemAsDouble(w);
             if (x < 0 || x > maxv || std::floor(x) != x)
                 throw Error("encode: decimal message entries must be integers "
                             "in [0, 2^K-1]",
@@ -583,7 +583,7 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         }
     } else {
         for (keel::usize i = 0; i < nel; ++i) {
-            const double x = msg.elemAsDouble(i);
+            const keel::f64 x = msg.elemAsDouble(i);
             if (x != 0.0 && x != 1.0)
                 throw Error("encode: binary message must contain only 0s and 1s",
                             0, 0, "encode", "", "numkit:encode:bin");
@@ -640,9 +640,9 @@ EncodeResult encode(const Value &msg, long long n, long long k,
     if (typeFlag == 1) {
         res.code = isRowVector ? Value::matrix(1, numWords, ValueType::DOUBLE, mr)
                                : Value::matrix(numWords, 1, ValueType::DOUBLE, mr);
-        double *d = res.code.doubleDataMut();
+        keel::f64 *d = res.code.doubleDataMut();
         for (keel::usize w = 0; w < numWords; ++w) {
-            double v = 0;
+            keel::f64 v = 0;
             for (long long p = 0; p < n; ++p)
                 if (code[w][keel::as<keel::usize>(p)]) v += std::ldexp(1.0, keel::as<int>(p));
             d[w] = v;
@@ -651,12 +651,12 @@ EncodeResult encode(const Value &msg, long long n, long long k,
         const keel::usize L = numWords * N;
         res.code = isRowVector ? Value::matrix(1, L, ValueType::DOUBLE, mr)
                                : Value::matrix(L, 1, ValueType::DOUBLE, mr);
-        double *d = res.code.doubleDataMut();
+        keel::f64 *d = res.code.doubleDataMut();
         for (keel::usize w = 0; w < numWords; ++w)
             for (keel::usize p = 0; p < N; ++p) d[w * N + p] = code[w][p];
     } else {
         res.code = Value::matrix(numWords, N, ValueType::DOUBLE, mr);
-        double *d = res.code.doubleDataMut();
+        keel::f64 *d = res.code.doubleDataMut();
         for (keel::usize w = 0; w < numWords; ++w)
             for (keel::usize c = 0; c < N; ++c) d[c * numWords + w] = code[w][c];
     }
@@ -693,9 +693,9 @@ DecodeResult decode(const Value &code, long long n, long long k,
         if (!isVector)
             throw Error("decode: code must be a vector for the decimal format",
                         0, 0, "decode", "", "numkit:decode:codevec");
-        const double maxv = std::ldexp(1.0, keel::as<int>(n)) - 1.0;
+        const keel::f64 maxv = std::ldexp(1.0, keel::as<int>(n)) - 1.0;
         for (keel::usize w = 0; w < nel; ++w) {
-            const double x = code.elemAsDouble(w);
+            const keel::f64 x = code.elemAsDouble(w);
             if (x < 0 || x > maxv || std::floor(x) != x)
                 throw Error("decode: decimal code entries must be integers in "
                             "[0, 2^N-1]",
@@ -707,7 +707,7 @@ DecodeResult decode(const Value &code, long long n, long long k,
         }
     } else {
         for (keel::usize i = 0; i < nel; ++i) {
-            const double x = code.elemAsDouble(i);
+            const keel::f64 x = code.elemAsDouble(i);
             if (x != 0.0 && x != 1.0)
                 throw Error("decode: binary code must contain only 0s and 1s",
                             0, 0, "decode", "", "numkit:decode:bin");
@@ -778,9 +778,9 @@ DecodeResult decode(const Value &code, long long n, long long k,
     if (typeFlag == 1) {
         res.msg = isRowVector ? Value::matrix(1, numWords, ValueType::DOUBLE, mr)
                               : Value::matrix(numWords, 1, ValueType::DOUBLE, mr);
-        double *d = res.msg.doubleDataMut();
+        keel::f64 *d = res.msg.doubleDataMut();
         for (keel::usize w = 0; w < numWords; ++w) {
-            double v = 0;
+            keel::f64 v = 0;
             for (keel::usize p = 0; p < K; ++p)
                 if (msgRows[w][p]) v += std::ldexp(1.0, keel::as<int>(p));
             d[w] = v;
@@ -789,19 +789,19 @@ DecodeResult decode(const Value &code, long long n, long long k,
         const keel::usize L = numWords * K;
         res.msg = isRowVector ? Value::matrix(1, L, ValueType::DOUBLE, mr)
                               : Value::matrix(L, 1, ValueType::DOUBLE, mr);
-        double *d = res.msg.doubleDataMut();
+        keel::f64 *d = res.msg.doubleDataMut();
         for (keel::usize w = 0; w < numWords; ++w)
             for (keel::usize p = 0; p < K; ++p) d[w * K + p] = msgRows[w][p];
     } else {
         res.msg = Value::matrix(numWords, K, ValueType::DOUBLE, mr);
-        double *d = res.msg.doubleDataMut();
+        keel::f64 *d = res.msg.doubleDataMut();
         for (keel::usize w = 0; w < numWords; ++w)
             for (keel::usize c = 0; c < K; ++c) d[c * numWords + w] = msgRows[w][c];
     }
     // err output: one count per word (column).
     res.err = Value::matrix(numWords, 1, ValueType::DOUBLE, mr);
-    double *ed = res.err.doubleDataMut();
-    for (keel::usize w = 0; w < numWords; ++w) ed[w] = keel::as<double>(errCnt[w]);
+    keel::f64 *ed = res.err.doubleDataMut();
+    for (keel::usize w = 0; w < numWords; ++w) ed[w] = keel::as<keel::f64>(errCnt[w]);
     return res;
 }
 
@@ -866,7 +866,7 @@ Value syndtable(const Value &H, keel::Allocator *mr)
     }
 
     Value out = Value::matrix(M, n, ValueType::DOUBLE, mr);
-    double *d = out.doubleDataMut();              // column-major: (row, col) at col*M + row
+    keel::f64 *d = out.doubleDataMut();              // column-major: (row, col) at col*M + row
     std::fill(d, d + M * n, 0.0);
 
     keel::Array<keel::u8> filled(M, 0, mr);

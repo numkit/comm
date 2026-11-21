@@ -18,7 +18,7 @@ namespace numkit::comm {
 
 namespace {
 
-void compand_argcheck(double param, double V, keel::StringRef method)
+void compand_argcheck(keel::f64 param, keel::f64 V, keel::StringRef method)
 {
     if (param <= 0.0)
         throw Error("compand: param (μ or A) must be positive",
@@ -44,7 +44,7 @@ void compand_argcheck(double param, double V, keel::StringRef method)
 
 } // namespace
 
-Value compand(const Value &x, double param, double V,
+Value compand(const Value &x, keel::f64 param, keel::f64 V,
               keel::StringRef method, keel::Allocator *mr)
 {
     compand_argcheck(param, V, method);
@@ -62,12 +62,12 @@ Value compand(const Value &x, double param, double V,
     const keel::usize N = x.numel();
     if (N == 0) return out;
 
-    keel::MutArrayRef<double> outRef(out.doubleDataMut(), N);
+    keel::MutArrayRef<keel::f64> outRef(out.doubleDataMut(), N);
     if (x.type() == ValueType::DOUBLE) {
         (void)keel::comm::compand({x.doubleData(), N}, param, V, mode, outRef);
     } else {
         keel::ArenaTemp scratch = keel::get_scratch(mr);
-        keel::Array<double> in(N, scratch.allocator());
+        keel::Array<keel::f64> in(N, scratch.allocator());
         for (keel::usize i = 0; i < N; ++i) in[i] = x.elemAsDouble(i);
         (void)keel::comm::compand(in, param, V, mode, outRef);
     }

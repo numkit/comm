@@ -54,15 +54,15 @@ Value quantiz_indx(const Value &sig, const Value &partition,
     const bool row = isRow(sig);
     Value indx = Value::matrix(row ? 1 : N, row ? N : 1,
                                ValueType::DOUBLE, mr);
-    double *o = indx.doubleDataMut();
+    keel::f64 *o = indx.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) {
-        const double xi = sig.elemAsDouble(i);
+        const keel::f64 xi = sig.elemAsDouble(i);
         keel::usize cnt = 0;
         for (keel::usize k = 0; k < M; ++k) {
             if (partition.elemAsDouble(k) < xi) ++cnt;
             else break;   // partition is monotonic non-decreasing
         }
-        o[i] = keel::as<double>(cnt);
+        o[i] = keel::as<keel::f64>(cnt);
     }
     return indx;
 }
@@ -75,21 +75,21 @@ quantiz(const Value &sig, const Value &partition, const Value &codebook,
     const keel::usize N = sig.numel();
 
     Value indx = quantiz_indx(sig, partition, mr);
-    const double *idx = indx.doubleData();
+    const keel::f64 *idx = indx.doubleData();
 
     Value quantv = Value::matrix(indx.dims().rows(), indx.dims().cols(),
                                  ValueType::DOUBLE, mr);
-    double *q = quantv.doubleDataMut();
-    double sse = 0.0;
+    keel::f64 *q = quantv.doubleDataMut();
+    keel::f64 sse = 0.0;
     for (keel::usize i = 0; i < N; ++i) {
         const keel::usize k = keel::as<keel::usize>(idx[i]);
-        const double cv = codebook.elemAsDouble(k);
+        const keel::f64 cv = codebook.elemAsDouble(k);
         q[i] = cv;
-        const double d = sig.elemAsDouble(i) - cv;
+        const keel::f64 d = sig.elemAsDouble(i) - cv;
         sse += d * d;
     }
     return {std::move(indx), std::move(quantv),
-            N > 0 ? sse / keel::as<double>(N) : 0.0};
+            N > 0 ? sse / keel::as<keel::f64>(N) : 0.0};
 }
 
 } // namespace numkit::comm

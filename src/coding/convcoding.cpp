@@ -64,8 +64,8 @@ struct TrellisView {
     keel::usize numStates        = 0;
     keel::usize numOutputSymbols = 0;
     int         n                = 0;   // output bits per step
-    const double *nextStates     = nullptr;  // numStates × 2, column-major
-    const double *outputs        = nullptr;
+    const keel::f64 *nextStates     = nullptr;  // numStates × 2, column-major
+    const keel::f64 *outputs        = nullptr;
 };
 
 TrellisView readTrellis(const Value &t, const char *who)
@@ -85,7 +85,7 @@ TrellisView readTrellis(const Value &t, const char *who)
     tv.numStates        = keel::as<keel::usize>(field("numStates").toScalar());
     tv.numOutputSymbols = keel::as<keel::usize>(field("numOutputSymbols").toScalar());
     tv.n = keel::as<int>(std::lround(std::log2(
-        keel::as<double>(tv.numOutputSymbols))));
+        keel::as<keel::f64>(tv.numOutputSymbols))));
     tv.nextStates = field("nextStates").doubleData();
     tv.outputs    = field("outputs").doubleData();
     return tv;
@@ -123,8 +123,8 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
 
     Value ns = Value::matrix(numStates, numInput, ValueType::DOUBLE, mr);
     Value ou = Value::matrix(numStates, numInput, ValueType::DOUBLE, mr);
-    double *nsd = ns.doubleDataMut();
-    double *oud = ou.doubleDataMut();
+    keel::f64 *nsd = ns.doubleDataMut();
+    keel::f64 *oud = ou.doubleDataMut();
 
     const keel::u64 stateMask = numStates - 1;  // 0 when numStates==1
     for (keel::usize s = 0; s < numStates; ++s) {
@@ -138,16 +138,16 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator,
             for (keel::usize i = 0; i < n; ++i)            // g1 = MSB
                 out = (out << 1) | keel::as<keel::u64>(bitParity(reg & g[i]));
             // Column-major (numStates × 2): element (s, u) at u*numStates + s.
-            nsd[u * numStates + s] = keel::as<double>(nextState);
-            oud[u * numStates + s] = keel::as<double>(out);
+            nsd[u * numStates + s] = keel::as<keel::f64>(nextState);
+            oud[u * numStates + s] = keel::as<keel::f64>(out);
         }
     }
 
     Value t = Value::structArray(1, 1, mr);
     auto &el = t.structArrayElem(0);
-    el.put(keel::String::from("numInputSymbols"),  Value::scalar(keel::as<double>(numInput),  mr));
-    el.put(keel::String::from("numOutputSymbols"), Value::scalar(keel::as<double>(numOutput), mr));
-    el.put(keel::String::from("numStates"),        Value::scalar(keel::as<double>(numStates), mr));
+    el.put(keel::String::from("numInputSymbols"),  Value::scalar(keel::as<keel::f64>(numInput),  mr));
+    el.put(keel::String::from("numOutputSymbols"), Value::scalar(keel::as<keel::f64>(numOutput), mr));
+    el.put(keel::String::from("numStates"),        Value::scalar(keel::as<keel::f64>(numStates), mr));
     el.put(keel::String::from("nextStates"), std::move(ns));
     el.put(keel::String::from("outputs"),    std::move(ou));
     return t;
@@ -166,7 +166,7 @@ Value convenc(const Value &msg, const Value &trellis,
                     : Value::matrix(1, outLen, ValueType::DOUBLE, mr);
     if (outLen == 0) return out;
 
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     keel::usize state = 0, oi = 0;
     for (keel::usize i = 0; i < L; ++i) {
         const int bit = (msg.elemAsDouble(i) != 0.0) ? 1 : 0;
@@ -174,7 +174,7 @@ Value convenc(const Value &msg, const Value &trellis,
         const keel::usize idx = keel::as<keel::usize>(bit) * tv.numStates + state;
         const keel::u64 outWord = keel::as<keel::u64>(tv.outputs[idx]);
         for (int j = n - 1; j >= 0; --j)                 // MSB (g1) first
-            od[oi++] = keel::as<double>((outWord >> j) & 1u);
+            od[oi++] = keel::as<keel::f64>((outWord >> j) & 1u);
         state = keel::as<keel::usize>(tv.nextStates[idx]);
     }
     return out;
@@ -250,9 +250,9 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
         rsym[t] = w;
     }
 
-    const double INF = std::numeric_limits<double>::infinity();
-    keel::Array<double> metric(S, scratch.allocator());
-    keel::Array<double> newMetric(S, scratch.allocator());
+    const keel::f64 INF = std::numeric_limits<keel::f64>::infinity();
+    keel::Array<keel::f64> metric(S, scratch.allocator());
+    keel::Array<keel::f64> newMetric(S, scratch.allocator());
     for (keel::usize s = 0; s < S; ++s) metric[s] = INF;
     metric[0] = 0.0;
     keel::Array<int>          prevState(L * S, scratch.allocator());
@@ -274,7 +274,7 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
                 const keel::usize idx = u * S + s;               // (state s, input u)
                 const keel::usize ns  = keel::as<keel::usize>(tv.nextStates[idx]);
                 const keel::u64 ow = keel::as<keel::u64>(tv.outputs[idx]);
-                const double cand = metric[s] + hamming(rsym[t], ow);
+                const keel::f64 cand = metric[s] + hamming(rsym[t], ow);
                 if (cand < newMetric[ns]) {
                     newMetric[ns] = cand;
                     prevState[t * S + ns] = keel::as<int>(s);
@@ -288,16 +288,16 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
     // Pick the traceback start state: state 0 for 'term', else min metric.
     keel::usize endState = 0;
     if (mode != "term") {
-        double best = metric[0];
+        keel::f64 best = metric[0];
         for (keel::usize s = 1; s < S; ++s)
             if (metric[s] < best) { best = metric[s]; endState = s; }
     }
 
     // Traceback (full).
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     keel::usize st = endState;
     for (keel::usize ti = L; ti-- > 0;) {
-        od[ti] = keel::as<double>(decBit[ti * S + st]);
+        od[ti] = keel::as<keel::f64>(decBit[ti * S + st]);
         const int p = prevState[ti * S + st];
         st = (p >= 0) ? keel::as<keel::usize>(p) : 0;
     }
@@ -307,7 +307,7 @@ Value vitdec(const Value &code, const Value &trellis, long long /*tblen*/,
 Value istrellis(const Value &S, keel::Allocator *mr)
 {
     auto no = [&]() { return Value::logicalScalar(false, mr); };
-    auto isPow2 = [](double v) {
+    auto isPow2 = [](keel::f64 v) {
         if (v < 1.0 || v != std::floor(v)) return false;
         const keel::u64 u = keel::as<keel::u64>(v);
         return (u & (u - 1)) == 0;
@@ -327,7 +327,7 @@ Value istrellis(const Value &S, keel::Allocator *mr)
     const Value &ns  = *nsPtr;
     const Value &ou  = *ouPtr;
     if (!nIv.isScalar() || !nOv.isScalar() || !nSv.isScalar()) return no();
-    const double nI = nIv.toScalar(), nO = nOv.toScalar(), nS = nSv.toScalar();
+    const keel::f64 nI = nIv.toScalar(), nO = nOv.toScalar(), nS = nSv.toScalar();
     if (!isPow2(nI) || !isPow2(nO) || !isPow2(nS)) return no();
 
     if (ns.isStruct() || ns.isCell() || ou.isStruct() || ou.isCell()) return no();
@@ -339,9 +339,9 @@ Value istrellis(const Value &S, keel::Allocator *mr)
 
     const keel::usize N = Sn * In;
     for (keel::usize i = 0; i < N; ++i) {
-        const double v = ns.elemAsDouble(i);
+        const keel::f64 v = ns.elemAsDouble(i);
         if (v < 0.0 || v >= nS || v != std::floor(v)) return no();
-        const double w = ou.elemAsDouble(i);
+        const keel::f64 w = ou.elemAsDouble(i);
         if (w < 0.0 || w >= nO || w != std::floor(w)) return no();
     }
     return Value::logicalScalar(true, mr);

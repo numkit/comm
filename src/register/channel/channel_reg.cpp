@@ -30,8 +30,8 @@ void awgn_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 2, 5, "awgn");
     // Marshal-only: voiced extraction; the 'measured' sentinel semantics
     // and the compute-side behaviour live in channel.cpp's awgn.
-    const double snr = argcheck::expectedReal(args[1], 2, "snr", "awgn");
-    double sp = 0.0;  // default 0 dBW (1 W linear); "measured" uses -1e10 sentinel
+    const keel::f64 snr = argcheck::expectedReal(args[1], 2, "snr", "awgn");
+    keel::f64 sp = 0.0;  // default 0 dBW (1 W linear); "measured" uses -1e10 sentinel
     if (args.size() >= 3 && !args[2].isEmpty()) {
         if (args[2].isChar() || args[2].isString()) sp = -1e10;
     }
@@ -56,7 +56,7 @@ void wgn_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 3, 7, "wgn");
     const int m = (int)args[0].toScalar();
     const int n = (int)args[1].toScalar();
-    const double p = args[2].toScalar();
+    const keel::f64 p = args[2].toScalar();
     keel::String type("dBW");
     bool complex_out = false;
     for (keel::usize i = 3; i < args.size(); ++i) {
@@ -114,7 +114,7 @@ void noisebw_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 {
     argcheck::checkNargin(args.size(), 4, 4, "noisebw");
     const int    n  = (int)args[2].toScalar();
-    const double fs = args[3].toScalar();
+    const keel::f64 fs = args[3].toScalar();
     outs[0] = noisebw(args[0], args[1], n, fs, ctx.engine->allocator());
 }
 
@@ -122,9 +122,9 @@ void berconfint_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                     keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "berconfint");
-    const double k     = args[0].toScalar();
-    const double n     = args[1].toScalar();
-    const double level = (args.size() >= 3 && !args[2].isEmpty())
+    const keel::f64 k     = args[0].toScalar();
+    const keel::f64 n     = args[1].toScalar();
+    const keel::f64 level = (args.size() >= 3 && !args[2].isEmpty())
                          ? args[2].toScalar() : 0.95;
     auto [ber, ci] = berconfint(k, n, level, ctx.engine->allocator());
     outs[0] = std::move(ber);

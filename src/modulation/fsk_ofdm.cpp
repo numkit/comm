@@ -38,7 +38,7 @@ inline int freq_idx_to_symbol(int k, int /*M*/, keel::StringRef order) {
     return (order == "bin") ? k : from_gray(k);
 }
 
-void fskmod_argcheck(int M, double freq_sep, int nsamp, double fs)
+void fskmod_argcheck(int M, keel::f64 freq_sep, int nsamp, keel::f64 fs)
 {
     if (M < 2)
         throw Error("fskmod: M must be ≥ 2", 0, 0, "fskmod", "",
@@ -48,7 +48,7 @@ void fskmod_argcheck(int M, double freq_sep, int nsamp, double fs)
                     0, 0, "fskmod", "", "numkit:fskmod:badparam");
 }
 
-void fskdemod_argcheck(int M, double freq_sep, int nsamp, double fs)
+void fskdemod_argcheck(int M, keel::f64 freq_sep, int nsamp, keel::f64 fs)
 {
     if (M < 2)
         throw Error("fskdemod: M must be ≥ 2", 0, 0, "fskdemod", "",
@@ -81,8 +81,8 @@ void ofdmdemod_argcheck(const Value &in, int nfft, int cplen)
 
 } // anonymous
 
-Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
-             double fs, keel::StringRef phase_continuity,
+Value fskmod(const Value &x, int M, keel::f64 freq_sep, int nsamp,
+             keel::f64 fs, keel::StringRef phase_continuity,
              keel::StringRef symbol_order,
              keel::Allocator *mr)
 {
@@ -96,19 +96,19 @@ Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
 
     const bool cont = (phase_continuity == "cont");
 
-    double phase = 0.0;
+    keel::f64 phase = 0.0;
     for (keel::usize s = 0; s < Nsym; ++s) {
         const int sym = (int)x.elemAsDouble(s);
         const int k = symbol_to_freq_idx(sym, M, symbol_order);
         // Tone frequency, centered around 0 (symmetric tones).
-        const double f = (double(k) - 0.5 * (M - 1)) * freq_sep;
-        const double dphi = 2.0 * M_PI * f / fs;
+        const keel::f64 f = (keel::f64(k) - 0.5 * (M - 1)) * freq_sep;
+        const keel::f64 dphi = 2.0 * M_PI * f / fs;
         for (int n = 0; n < nsamp; ++n) {
             if (cont) {
                 od[s * nsamp + (keel::usize)n] = keel::c64(std::cos(phase), std::sin(phase));
                 phase += dphi;
             } else {
-                const double th = 2.0 * M_PI * f * double(n) / fs;
+                const keel::f64 th = 2.0 * M_PI * f * keel::f64(n) / fs;
                 od[s * nsamp + (keel::usize)n] = keel::c64(std::cos(th), std::sin(th));
             }
         }
@@ -116,8 +116,8 @@ Value fskmod(const Value &x, int M, double freq_sep, int nsamp,
     return out;
 }
 
-Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
-               double fs, keel::StringRef symbol_order,
+Value fskdemod(const Value &y, int M, keel::f64 freq_sep, int nsamp,
+               keel::f64 fs, keel::StringRef symbol_order,
                keel::Allocator *mr)
 {
     fskdemod_argcheck(M, freq_sep, nsamp, fs);
@@ -126,16 +126,16 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
     const keel::usize Nsym = Nsamps / (keel::usize)nsamp;
     Value out = Value::matrix(Nsym, 1, ValueType::DOUBLE, mr);
     if (Nsym == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
 
     // Pre-compute reference tone phasors.
     const keel::usize ns = keel::as<keel::usize>(nsamp);
     keel::Array<keel::c64> ref(keel::as<keel::usize>(M) * ns, mr);
     for (int k = 0; k < M; ++k) {
-        const double f = (double(k) - 0.5 * (M - 1)) * freq_sep;
-        const double dphi = 2.0 * M_PI * f / fs;
+        const keel::f64 f = (keel::f64(k) - 0.5 * (M - 1)) * freq_sep;
+        const keel::f64 dphi = 2.0 * M_PI * f / fs;
         for (int n = 0; n < nsamp; ++n) {
-            const double th = dphi * double(n);
+            const keel::f64 th = dphi * keel::f64(n);
             ref[keel::as<keel::usize>(k) * ns + keel::as<keel::usize>(n)] = keel::c64(std::cos(th), std::sin(th));
         }
     }
@@ -144,7 +144,7 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
         // Correlate the segment against each candidate tone (conjugate
         // multiply + sum, take magnitude).
         int bestK = 0;
-        double bestE = -1.0;
+        keel::f64 bestE = -1.0;
         for (int k = 0; k < M; ++k) {
             keel::c64 acc(0.0, 0.0);
             for (int n = 0; n < nsamp; ++n) {
@@ -155,10 +155,10 @@ Value fskdemod(const Value &y, int M, double freq_sep, int nsamp,
                     yi = keel::c64(y.elemAsDouble(s * nsamp + (keel::usize)n), 0.0);
                 acc += yi * keel::conj(ref[keel::as<keel::usize>(k) * ns + keel::as<keel::usize>(n)]);
             }
-            const double E = keel::norm(acc);
+            const keel::f64 E = keel::norm(acc);
             if (E > bestE) { bestE = E; bestK = k; }
         }
-        od[s] = double(freq_idx_to_symbol(bestK, M, symbol_order));
+        od[s] = keel::f64(freq_idx_to_symbol(bestK, M, symbol_order));
     }
     return out;
 }

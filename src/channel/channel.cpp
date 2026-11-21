@@ -32,20 +32,20 @@ namespace numkit::comm {
 namespace {
 
 // Compute average power of a complex / real array.
-double avg_power(const Value &x) {
+keel::f64 avg_power(const Value &x) {
     const keel::usize N = x.numel();
     if (N == 0) return 0.0;
-    double s = 0.0;
+    keel::f64 s = 0.0;
     if (x.type() == ValueType::COMPLEX) {
         const keel::c64 *cd = x.complexData();
         for (keel::usize i = 0; i < N; ++i) s += keel::norm(cd[i]);
     } else {
         for (keel::usize i = 0; i < N; ++i) {
-            const double v = x.elemAsDouble(i);
+            const keel::f64 v = x.elemAsDouble(i);
             s += v * v;
         }
     }
-    return s / double(N);
+    return s / keel::f64(N);
 }
 
 template <typename Op>
@@ -57,19 +57,19 @@ Value elementwise(keel::Allocator *mr, const Value &x, Op op) {
     if (d.is3D()) out = Value::matrix3d(d.rows(), d.cols(), d.pages(), ValueType::DOUBLE, mr);
     else          out = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
     if (N == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) od[i] = op(x.elemAsDouble(i));
     return out;
 }
 
-void awgn_argcheck(const Value &x, double snr_db, double sigpower_db)
+void awgn_argcheck(const Value &x, keel::f64 snr_db, keel::f64 sigpower_db)
 {
     (void)x;
     (void)snr_db;
     (void)sigpower_db;
 }
 
-void wgn_argcheck(int m, int n, double p, keel::StringRef type)
+void wgn_argcheck(int m, int n, keel::f64 p, keel::StringRef type)
 {
     (void)m;
     (void)n;
@@ -77,7 +77,7 @@ void wgn_argcheck(int m, int n, double p, keel::StringRef type)
     (void)type;
 }
 
-void bsc_argcheck(const Value &x, double p)
+void bsc_argcheck(const Value &x, keel::f64 p)
 {
     (void)x;
     if (p < 0.0 || p > 1.0)
@@ -109,7 +109,7 @@ void berawgn_argcheck(const Value &EbNo_dB, keel::StringRef mod, int M)
     (void)M;
 }
 
-void noisebw_argcheck(const Value &num, const Value &den, int Nsamp, double fs)
+void noisebw_argcheck(const Value &num, const Value &den, int Nsamp, keel::f64 fs)
 {
     (void)num;
     (void)den;
@@ -117,7 +117,7 @@ void noisebw_argcheck(const Value &num, const Value &den, int Nsamp, double fs)
     (void)fs;
 }
 
-void berconfint_argcheck(double numErrs, double numBits, double level)
+void berconfint_argcheck(keel::f64 numErrs, keel::f64 numBits, keel::f64 level)
 {
     if (!(numBits > 0.0))
         throw Error("berconfint: numBits must be positive",
@@ -141,18 +141,18 @@ void convertSNR_argcheck(const Value &snr_in, keel::StringRef in_type,
 
 } // anonymous
 
-Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double sigpower_db,
+Value awgn(::numkit::ops::RngContext &rng, const Value &x, keel::f64 snr_db, keel::f64 sigpower_db,
            keel::Allocator *mr)
 {
     awgn_argcheck(x, snr_db, sigpower_db);
     const bool is_complex = (x.type() == ValueType::COMPLEX);
-    double sig_pow = (sigpower_db < -1e9)  // -inf sentinel = "measured"
+    keel::f64 sig_pow = (sigpower_db < -1e9)  // -inf sentinel = "measured"
                      ? avg_power(x)
                      : std::pow(10.0, sigpower_db / 10.0);
     if (sig_pow <= 0.0) sig_pow = 1.0;
-    const double snr_lin = std::pow(10.0, snr_db / 10.0);
-    const double noise_pow = sig_pow / snr_lin;
-    const double sigma = std::sqrt(is_complex ? noise_pow / 2.0 : noise_pow);
+    const keel::f64 snr_lin = std::pow(10.0, snr_db / 10.0);
+    const keel::f64 noise_pow = sig_pow / snr_lin;
+    const keel::f64 sigma = std::sqrt(is_complex ? noise_pow / 2.0 : noise_pow);
 
     const keel::usize N = x.numel();
     Value out;
@@ -166,48 +166,48 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, double snr_db, double
         keel::c64 *od = out.complexDataMut();
         const keel::c64 *xd = x.complexData();
         for (keel::usize i = 0; i < N; ++i) {
-            double re = sigma * rng.nextNormal();
-            double im = sigma * rng.nextNormal();
+            keel::f64 re = sigma * rng.nextNormal();
+            keel::f64 im = sigma * rng.nextNormal();
             od[i] = xd[i] + keel::c64(re, im);
         }
     } else {
-        double *od = out.doubleDataMut();
+        keel::f64 *od = out.doubleDataMut();
         for (keel::usize i = 0; i < N; ++i)
             od[i] = x.elemAsDouble(i) + sigma * rng.nextNormal();
     }
     return out;
 }
 
-Value wgn(::numkit::ops::RngContext &rng, int m, int n, double p, keel::StringRef type,
+Value wgn(::numkit::ops::RngContext &rng, int m, int n, keel::f64 p, keel::StringRef type,
           bool complex_out, keel::Allocator *mr)
 {
     wgn_argcheck(m, n, p, type);
-    double power_lin = 0.0;
+    keel::f64 power_lin = 0.0;
     if (type == "linear") power_lin = p;
     else if (type == "dBm") power_lin = std::pow(10.0, (p - 30.0) / 10.0);
     else /* dBW */         power_lin = std::pow(10.0, p / 10.0);
     if (power_lin < 0.0) power_lin = 0.0;
-    const double sigma = std::sqrt(complex_out ? power_lin / 2.0 : power_lin);
+    const keel::f64 sigma = std::sqrt(complex_out ? power_lin / 2.0 : power_lin);
 
     if (complex_out) {
         Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
         keel::c64 *od = out.complexDataMut();
         const keel::usize N = (keel::usize)m * (keel::usize)n;
         for (keel::usize i = 0; i < N; ++i) {
-            double re = sigma * rng.nextNormal();
-            double im = sigma * rng.nextNormal();
+            keel::f64 re = sigma * rng.nextNormal();
+            keel::f64 im = sigma * rng.nextNormal();
             od[i] = keel::c64(re, im);
         }
         return out;
     }
     Value out = Value::matrix(m, n, ValueType::DOUBLE, mr);
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     const keel::usize N = (keel::usize)m * (keel::usize)n;
     for (keel::usize i = 0; i < N; ++i) od[i] = sigma * rng.nextNormal();
     return out;
 }
 
-Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, keel::Allocator *mr) {
+Value bsc(::numkit::ops::RngContext &rng, const Value &x, keel::f64 p, keel::Allocator *mr) {
     bsc_argcheck(x, p);
 
     const keel::usize N = x.numel();
@@ -216,40 +216,40 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, double p, keel::Alloca
     if (x.isScalar()) out = Value::matrix(1, 1, ValueType::DOUBLE, mr);
     else if (d.is3D())out = Value::matrix3d(d.rows(), d.cols(), d.pages(), ValueType::DOUBLE, mr);
     else              out = Value::matrix(d.rows(), d.cols(), ValueType::DOUBLE, mr);
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) {
         const int b = (int)x.elemAsDouble(i) & 1;
-        od[i] = double(rng.nextUniform() < p ? (b ^ 1) : b);
+        od[i] = keel::f64(rng.nextUniform() < p ? (b ^ 1) : b);
     }
     return out;
 }
 
 Value qfunc(const Value &x, keel::Allocator *mr) {
     qfunc_argcheck(x);
-    return elementwise(mr, x, [](double v) {
+    return elementwise(mr, x, [](keel::f64 v) {
         return 0.5 * std::erfc(v / std::sqrt(2.0));
     });
 }
 
 namespace {
 // Inverse complementary error function via Newton refinement on Acklam approx.
-double erfcinv_approx(double x) {
+keel::f64 erfcinv_approx(keel::f64 x) {
     // erfcinv(x) = -erfinv(x - 1). Use Acklam-style series for the inv normal CDF
     // and convert: norminv(p) = √2·erfinv(2p-1), so erfinv(y) = norminv((y+1)/2)/√2.
-    const double p = 1.0 - 0.5 * x;  // erfcinv(x) where x = 2(1-p)
-    static const double a[] = { -3.969683028665376e+01,  2.209460984245205e+02,
+    const keel::f64 p = 1.0 - 0.5 * x;  // erfcinv(x) where x = 2(1-p)
+    static const keel::f64 a[] = { -3.969683028665376e+01,  2.209460984245205e+02,
                                  -2.759285104469687e+02,  1.383577518672690e+02,
                                  -3.066479806614716e+01,  2.506628277459239e+00 };
-    static const double b[] = { -5.447609879822406e+01,  1.615858368580409e+02,
+    static const keel::f64 b[] = { -5.447609879822406e+01,  1.615858368580409e+02,
                                  -1.556989798598866e+02,  6.680131188771972e+01,
                                  -1.328068155288572e+01 };
-    static const double c[] = { -7.784894002430293e-03, -3.223964580411365e-01,
+    static const keel::f64 c[] = { -7.784894002430293e-03, -3.223964580411365e-01,
                                  -2.400758277161838e+00, -2.549732539343734e+00,
                                   4.374664141464968e+00,  2.938163982698783e+00 };
-    static const double d[] = {  7.784695709041462e-03,  3.224671290700398e-01,
+    static const keel::f64 d[] = {  7.784695709041462e-03,  3.224671290700398e-01,
                                   2.445134137142996e+00,  3.754408661907416e+00 };
-    const double pl = 0.02425, ph = 1.0 - pl;
-    double q, r, z;
+    const keel::f64 pl = 0.02425, ph = 1.0 - pl;
+    keel::f64 q, r, z;
     if (p < pl) {
         q = std::sqrt(-2.0 * std::log(p));
         z = (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
@@ -269,8 +269,8 @@ double erfcinv_approx(double x) {
 
 Value qfuncinv(const Value &p, keel::Allocator *mr) {
     qfuncinv_argcheck(p);
-    return elementwise(mr, p, [](double v) {
-        if (!(v > 0.0 && v < 1.0)) return std::numeric_limits<double>::quiet_NaN();
+    return elementwise(mr, p, [](keel::f64 v) {
+        if (!(v > 0.0 && v < 1.0)) return std::numeric_limits<keel::f64>::quiet_NaN();
         // Q(x) = 0.5·erfc(x/√2). Inverse: x = √2·erfcinv(2v).
         return std::sqrt(2.0) * erfcinv_approx(2.0 * v);
     });
@@ -290,22 +290,22 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
     const keel::usize N = std::max(Na, Nb);
     Value out = Value::matrix((Na > Nb) ? Na : Nb, 1, ValueType::DOUBLE, mr);
     if (N == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) {
-        const double a = a_v.elemAsDouble(Na > 1 ? i : 0);
-        const double b = b_v.elemAsDouble(Nb > 1 ? i : 0);
+        const keel::f64 a = a_v.elemAsDouble(Na > 1 ? i : 0);
+        const keel::f64 b = b_v.elemAsDouble(Nb > 1 ? i : 0);
         if (b <= 0.0)         { od[i] = 1.0; continue; }
         if (a == 0.0) {
             // Q_m(0, b) = exp(-b²/2) · Σ_{k=0..m-1} b^(2k)/(2^k · k!)
             // = chi-squared 2m-DOF tail at b².
-            const double y = 0.5 * b * b;
+            const keel::f64 y = 0.5 * b * b;
             // Integrate gamma(m, b²/2) upper incomplete / Γ(m).
             // For small m we can sum directly: Q_m(0, b) = Σ_{k=0..m-1} y^k e^{-y} / k!
-            double acc = 0.0;
-            double term = std::exp(-y);
+            keel::f64 acc = 0.0;
+            keel::f64 term = std::exp(-y);
             for (int k = 0; k < m; ++k) {
                 acc += term;
-                term *= y / double(k + 1);
+                term *= y / keel::f64(k + 1);
             }
             od[i] = acc;
             continue;
@@ -313,39 +313,39 @@ Value marcumq(const Value &a_v, const Value &b_v, int m,
         // Numerical integration of the integral definition:
         //   Q_m(a, b) = ∫_b^∞ x · (x/a)^(m-1) · exp(-(x²+a²)/2) · I_{m-1}(a·x) dx
         // Adaptive trapezoidal up to a sensible upper limit.
-        const double upper = std::max(b + 20.0, a + 20.0);
+        const keel::f64 upper = std::max(b + 20.0, a + 20.0);
         const int N_int = 4096;
-        const double dx = (upper - b) / double(N_int);
+        const keel::f64 dx = (upper - b) / keel::f64(N_int);
         // Modified Bessel I_{m-1}(z) via series: I_n(z) = Σ_{k=0..} (z/2)^(2k+n)/(k!(k+n)!).
-        auto besselI = [&](int n, double z) {
+        auto besselI = [&](int n, keel::f64 z) {
             if (z == 0.0) return n == 0 ? 1.0 : 0.0;
-            const double half = z / 2.0;
-            double term = 1.0;
-            for (int k = 1; k <= n; ++k) term *= half / double(k);
+            const keel::f64 half = z / 2.0;
+            keel::f64 term = 1.0;
+            for (int k = 1; k <= n; ++k) term *= half / keel::f64(k);
             term *= std::pow(half, n) / std::pow(half, n);
             // Correction: term should be (z/2)^n / n!. The above sequence gives
             // exactly that, but to be safe rebuild explicitly:
             term = 1.0;
-            for (int k = 1; k <= n; ++k) term *= half / double(k);
+            for (int k = 1; k <= n; ++k) term *= half / keel::f64(k);
             term *= std::pow(half, n);
             // Hmm — replace with simpler explicit form:
             term = std::pow(half, n);
-            double fact = 1.0;
-            for (int k = 1; k <= n; ++k) fact *= double(k);
+            keel::f64 fact = 1.0;
+            for (int k = 1; k <= n; ++k) fact *= keel::f64(k);
             term /= fact;
-            double acc = term;
+            keel::f64 acc = term;
             for (int k = 1; k < 100; ++k) {
-                term *= half * half / (double(k) * double(k + n));
+                term *= half * half / (keel::f64(k) * keel::f64(k + n));
                 acc += term;
                 if (std::fabs(term) < 1e-18 * std::fabs(acc)) break;
             }
             return acc;
         };
-        double sum = 0.0;
+        keel::f64 sum = 0.0;
         for (int k = 0; k <= N_int; ++k) {
-            const double xv = b + double(k) * dx;
-            const double w = (k == 0 || k == N_int) ? 0.5 : 1.0;
-            const double f = xv * std::pow(xv / a, m - 1)
+            const keel::f64 xv = b + keel::f64(k) * dx;
+            const keel::f64 w = (k == 0 || k == N_int) ? 0.5 : 1.0;
+            const keel::f64 f = xv * std::pow(xv / a, m - 1)
                            * std::exp(-0.5 * (xv * xv + a * a))
                            * besselI(m - 1, a * xv);
             sum += w * f;
@@ -359,26 +359,26 @@ Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
               keel::Allocator *mr)
 {
     berawgn_argcheck(EbNo_dB, mod, M);
-    return elementwise(mr, EbNo_dB, [&](double dB) {
-        const double EbNo = std::pow(10.0, dB / 10.0);
+    return elementwise(mr, EbNo_dB, [&](keel::f64 dB) {
+        const keel::f64 EbNo = std::pow(10.0, dB / 10.0);
         if (mod == "psk") {
             if (M == 2) return 0.5 * std::erfc(std::sqrt(EbNo));
             if (M == 4) return 0.5 * std::erfc(std::sqrt(EbNo));
             // BER approx for M-PSK (high SNR): (2/k) · Q(√(2k·EbNo) sin(π/M))
-            const double k = std::log2(double(M));
-            const double arg = std::sqrt(2.0 * k * EbNo) * std::sin(M_PI / double(M));
+            const keel::f64 k = std::log2(keel::f64(M));
+            const keel::f64 arg = std::sqrt(2.0 * k * EbNo) * std::sin(M_PI / keel::f64(M));
             return (2.0 / k) * 0.5 * std::erfc(arg / std::sqrt(2.0));
         }
         if (mod == "qam") {
-            const double k = std::log2(double(M));
-            const double K = std::sqrt(double(M));
-            const double base = std::erfc(std::sqrt(3.0 * k * EbNo / (2.0 * (M - 1))));
-            const double sym_err = (1.0 - 1.0 / K) * base;
+            const keel::f64 k = std::log2(keel::f64(M));
+            const keel::f64 K = std::sqrt(keel::f64(M));
+            const keel::f64 base = std::erfc(std::sqrt(3.0 * k * EbNo / (2.0 * (M - 1))));
+            const keel::f64 sym_err = (1.0 - 1.0 / K) * base;
             return sym_err / k;  // approximate Gray-coded BER
         }
         if (mod == "pam") {
-            const double k = std::log2(double(M));
-            const double base = std::erfc(std::sqrt(3.0 * k * EbNo / (M * M - 1)));
+            const keel::f64 k = std::log2(keel::f64(M));
+            const keel::f64 base = std::erfc(std::sqrt(3.0 * k * EbNo / (M * M - 1)));
             return (M - 1) / (M * k) * base;
         }
         if (mod == "fsk") {
@@ -389,12 +389,12 @@ Value berawgn(const Value &EbNo_dB, keel::StringRef mod, int M,
             // BER for DPSK (M=2): 0.5·exp(-EbNo).
             return 0.5 * std::exp(-EbNo);
         }
-        return std::numeric_limits<double>::quiet_NaN();
+        return std::numeric_limits<keel::f64>::quiet_NaN();
     });
 }
 
 Value noisebw(const Value &num, const Value &den, int Nsamp,
-              double fs, keel::Allocator *mr)
+              keel::f64 fs, keel::Allocator *mr)
 {
     noisebw_argcheck(num, den, Nsamp, fs);
     // MATLAB convention (noisebw):
@@ -404,36 +404,36 @@ Value noisebw(const Value &num, const Value &den, int Nsamp,
     if (Nsamp <= 0) Nsamp = 1024;
     const keel::usize Mn = num.numel();
     const keel::usize Md = den.numel();
-    keel::Array<double> bn(Mn, mr), an(Md, mr);
+    keel::Array<keel::f64> bn(Mn, mr), an(Md, mr);
     for (keel::usize i = 0; i < Mn; ++i) bn[i] = num.elemAsDouble(i);
     for (keel::usize i = 0; i < Md; ++i) an[i] = den.elemAsDouble(i);
 
-    double Hmax2 = 0.0;
-    double sum_H2 = 0.0;
+    keel::f64 Hmax2 = 0.0;
+    keel::f64 sum_H2 = 0.0;
     for (int k = 0; k < Nsamp; ++k) {
-        const double w = M_PI * double(k) / double(Nsamp);
+        const keel::f64 w = M_PI * keel::f64(k) / keel::f64(Nsamp);
         const keel::c64 z = keel::polar(1.0, -w);
         keel::c64 np(0.0, 0.0), dp(0.0, 0.0);
         keel::c64 zk(1.0, 0.0);
         for (keel::usize i = 0; i < Mn; ++i) { np += bn[i] * zk; zk *= z; }
         zk = keel::c64(1.0, 0.0);
         for (keel::usize i = 0; i < Md; ++i) { dp += an[i] * zk; zk *= z; }
-        const double H2 = (keel::abs(dp) > 0.0) ? keel::norm(np / dp) : 0.0;
+        const keel::f64 H2 = (keel::abs(dp) > 0.0) ? keel::norm(np / dp) : 0.0;
         if (H2 > Hmax2) Hmax2 = H2;
         sum_H2 += H2;
     }
-    const double bw = (Hmax2 > 0.0)
-        ? fs * sum_H2 / Hmax2 / double(Nsamp)
+    const keel::f64 bw = (Hmax2 > 0.0)
+        ? fs * sum_H2 / Hmax2 / keel::f64(Nsamp)
         : 0.0;
     return Value::scalar(bw, mr);
 }
 
 // Inverse regularized incomplete beta scalar wrapper (uses builtin Newton-iter
 // implementation that operates on Value).
-static double betaincinv_scalar(keel::Allocator *mr,
-                                double p, double a, double b)
+static keel::f64 betaincinv_scalar(keel::Allocator *mr,
+                                keel::f64 p, keel::f64 a, keel::f64 b)
 {
-    if (a <= 0.0 || b <= 0.0) return std::numeric_limits<double>::quiet_NaN();
+    if (a <= 0.0 || b <= 0.0) return std::numeric_limits<keel::f64>::quiet_NaN();
     if (p <= 0.0) return 0.0;
     if (p >= 1.0) return 1.0;
     Value pV = Value::scalar(p, mr);
@@ -443,25 +443,25 @@ static double betaincinv_scalar(keel::Allocator *mr,
 }
 
 std::tuple<Value, Value>
-berconfint(double numErrs, double numBits, double level,
+berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
            keel::Allocator *mr)
 {
     berconfint_argcheck(numErrs, numBits, level);
 
-    const double k = numErrs;
-    const double n = numBits;
-    const double ber = k / n;
-    const double alpha = 1.0 - level;
+    const keel::f64 k = numErrs;
+    const keel::f64 n = numBits;
+    const keel::f64 ber = k / n;
+    const keel::f64 alpha = 1.0 - level;
 
     // Clopper-Pearson exact binomial CI.
-    double lo = (k == 0.0) ? 0.0
+    keel::f64 lo = (k == 0.0) ? 0.0
                            : betaincinv_scalar(mr, alpha / 2.0, k, n - k + 1.0);
-    double hi = (k == n)   ? 1.0
+    keel::f64 hi = (k == n)   ? 1.0
                            : betaincinv_scalar(mr, 1.0 - alpha / 2.0, k + 1.0, n - k);
 
     Value berV = Value::scalar(ber, mr);
     Value ciV  = Value::matrix(1, 2, ValueType::DOUBLE, mr);
-    double *cd = ciV.doubleDataMut();
+    keel::f64 *cd = ciV.doubleDataMut();
     cd[0] = lo;
     cd[1] = hi;
     return {std::move(berV), std::move(ciV)};
@@ -475,13 +475,13 @@ Value convertSNR(const Value &snr_in,
 {
     convertSNR_argcheck(snr_in, in_type, out_type, bits_per_symbol);
     if (in_type == out_type) return snr_in;
-    return elementwise(mr, snr_in, [&](double dB) {
+    return elementwise(mr, snr_in, [&](keel::f64 dB) {
         // Convert via Es/No as the pivot.
-        double EsNo;
-        if      (in_type == "ebno") EsNo = dB + 10.0 * std::log10(double(bits_per_symbol));
+        keel::f64 EsNo;
+        if      (in_type == "ebno") EsNo = dB + 10.0 * std::log10(keel::f64(bits_per_symbol));
         else if (in_type == "esno") EsNo = dB;
         else /*snr*/                 EsNo = dB;  // assume Es/No = SNR (1 sample/symbol)
-        if      (out_type == "ebno") return EsNo - 10.0 * std::log10(double(bits_per_symbol));
+        if      (out_type == "ebno") return EsNo - 10.0 * std::log10(keel::f64(bits_per_symbol));
         else if (out_type == "esno") return EsNo;
         else                          return EsNo;
     });

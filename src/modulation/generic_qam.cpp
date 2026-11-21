@@ -38,8 +38,8 @@ void genqammod_argcheck(const Value &x, const Value &constellation)
                     0, 0, "genqammod", "", "numkit:genqammod:EmptyConst");
     const keel::usize N = x.numel();
     for (keel::usize i = 0; i < N; ++i) {
-        const double xi = x.elemAsDouble(i);
-        if (xi < 0.0 || xi >= keel::as<double>(M))
+        const keel::f64 xi = x.elemAsDouble(i);
+        if (xi < 0.0 || xi >= keel::as<keel::f64>(M))
             throw Error("genqammod: index out of range [0, M-1]",
                         0, 0, "genqammod", "",
                         "numkit:genqammod:OutOfRange");
@@ -79,7 +79,7 @@ Value genqammod(const Value &x, const Value &constellation,
             o[i] = constellation.complexData()[k];
         }
     } else {
-        double *o = out.doubleDataMut();
+        keel::f64 *o = out.doubleDataMut();
         for (keel::usize i = 0; i < N; ++i) {
             const keel::usize k = keel::as<keel::usize>(x.elemAsDouble(i));
             o[i] = constellation.elemAsDouble(k);
@@ -100,7 +100,7 @@ Value genqamdemod(const Value &y, const Value &constellation,
     const keel::usize N = H * W;
 
     Value out = Value::matrix(H, W, ValueType::DOUBLE, mr);
-    double *o = out.doubleDataMut();
+    keel::f64 *o = out.doubleDataMut();
     const bool y_complex = y.isComplex();
 
     for (keel::usize i = 0; i < N; ++i) {
@@ -108,18 +108,18 @@ Value genqamdemod(const Value &y, const Value &constellation,
                           ? y.complexData()[i]
                           : keel::c64(y.elemAsDouble(i), 0.0);
         keel::usize best_k = 0;
-        double best_d2 = std::numeric_limits<double>::infinity();
+        keel::f64 best_d2 = std::numeric_limits<keel::f64>::infinity();
         for (keel::usize k = 0; k < M; ++k) {
             const keel::c64 ck = constAt(constellation, k);
-            const double dr = yi.real() - ck.real();
-            const double di = yi.imag() - ck.imag();
-            const double d2 = dr * dr + di * di;
+            const keel::f64 dr = yi.real() - ck.real();
+            const keel::f64 di = yi.imag() - ck.imag();
+            const keel::f64 d2 = dr * dr + di * di;
             if (d2 < best_d2) {
                 best_d2 = d2;
                 best_k  = k;
             }
         }
-        o[i] = keel::as<double>(best_k);
+        o[i] = keel::as<keel::f64>(best_k);
     }
     return out;
 }

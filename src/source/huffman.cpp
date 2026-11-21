@@ -37,7 +37,7 @@ namespace numkit::comm {
 namespace {
 
 struct HeapNode {
-    double prob;
+    keel::f64 prob;
     int    id;        // Node id; leaves are 0..K-1, internals are K..2K-2.
     int    order;     // Insertion order to break ties stably.
     bool operator>(const HeapNode &b) const {
@@ -62,9 +62,9 @@ void huffmandict_argcheck(const Value &symbols, const Value &probs)
                     0, 0, "huffmandict", "", "numkit:huffmandict:LenMismatch");
 
     // Validate probs.
-    double sum = 0.0;
+    keel::f64 sum = 0.0;
     for (keel::usize k = 0; k < K; ++k) {
-        const double p = probs.elemAsDouble(k);
+        const keel::f64 p = probs.elemAsDouble(k);
         if (!(p >= 0.0 && p <= 1.0))
             throw Error("huffmandict: probabilities must lie in [0, 1]",
                         0, 0, "huffmandict", "",
@@ -79,7 +79,7 @@ void huffmandict_argcheck(const Value &symbols, const Value &probs)
 
 } // namespace
 
-std::pair<Value, double>
+std::pair<Value, keel::f64>
 huffmandict(const Value &symbols, const Value &probs,
             keel::Allocator *mr)
 {
@@ -126,13 +126,13 @@ huffmandict(const Value &symbols, const Value &probs,
 
     // Walk leaf -> root, collect bits, reverse. Build dict cell.
     Value dict = Value::cell(K, 2, mr);
-    double avglen = 0.0;
-    keel::Array<double> bits(mr);
+    keel::f64 avglen = 0.0;
+    keel::Array<keel::f64> bits(mr);
     for (keel::usize k = 0; k < K; ++k) {
         bits.clear();
         int cur = keel::as<int>(k);
         while (tree[cur].parent != -1) {
-            bits.push_back(keel::as<double>(tree[cur].bit));
+            bits.push_back(keel::as<keel::f64>(tree[cur].bit));
             cur = tree[cur].parent;
         }
         std::reverse(bits.begin(), bits.end());
@@ -143,7 +143,7 @@ huffmandict(const Value &symbols, const Value &probs,
         if (L > 0)
             std::copy(bits.begin(), bits.end(), code.doubleDataMut());
         dict.cellAt(K + k)       = std::move(code);
-        avglen += probs.elemAsDouble(k) * keel::as<double>(L);
+        avglen += probs.elemAsDouble(k) * keel::as<keel::f64>(L);
     }
     return {std::move(dict), avglen};
 }
@@ -157,7 +157,7 @@ namespace {
 //   syms[k]      = symbol value
 //   codes[k]     = vector<uint8_t> of 0/1
 struct DictView {
-    keel::Array<double>                 syms;
+    keel::Array<keel::f64>                 syms;
     keel::Array<keel::Array<keel::u8>>  codes;
     keel::usize K = 0;
 };
@@ -180,7 +180,7 @@ DictView readDict(const Value &dict)
         const keel::usize L = codeV.numel();
         dv.codes[k].resize(L);
         for (keel::usize b = 0; b < L; ++b) {
-            const double v = codeV.elemAsDouble(b);
+            const keel::f64 v = codeV.elemAsDouble(b);
             if (v != 0.0 && v != 1.0)
                 throw Error("huffman codec: dict codes must contain 0/1",
                             0, 0, "huffman", "", "numkit:huffman:DictBits");
@@ -191,7 +191,7 @@ DictView readDict(const Value &dict)
 }
 
 // Lookup symbol -> code index. Linear scan; K is small (typically <=256).
-int findSymbolIdx(const DictView &dv, double sym)
+int findSymbolIdx(const DictView &dv, keel::f64 sym)
 {
     for (keel::usize k = 0; k < dv.K; ++k) {
         if (dv.syms[k] == sym) return keel::as<int>(k);
@@ -255,7 +255,7 @@ Value huffmanenco(const Value &sig, const Value &dict,
     const keel::usize N = sig.numel();
     keel::usize total_bits = 0;
     for (keel::usize i = 0; i < N; ++i) {
-        const double s = sig.elemAsDouble(i);
+        const keel::f64 s = sig.elemAsDouble(i);
         const int k = findSymbolIdx(dv, s);
         if (k < 0)
             throw Error("huffmanenco: symbol not in dict",
@@ -268,13 +268,13 @@ Value huffmanenco(const Value &sig, const Value &dict,
     Value out = Value::matrix(row ? 1 : total_bits,
                               row ? total_bits : 1,
                               ValueType::DOUBLE, mr);
-    double *o = out.doubleDataMut();
+    keel::f64 *o = out.doubleDataMut();
 
     keel::usize pos = 0;
     for (keel::usize i = 0; i < N; ++i) {
         const int k = findSymbolIdx(dv, sig.elemAsDouble(i));
         for (keel::u8 bit : dv.codes[k])
-            o[pos++] = keel::as<double>(bit);
+            o[pos++] = keel::as<keel::f64>(bit);
     }
     return out;
 }
@@ -291,10 +291,10 @@ Value huffmandeco(const Value &bits, const Value &dict,
 
     // Walk bits, emit symbols.
     const keel::usize N = bits.numel();
-    keel::Array<double> emitted(mr);
+    keel::Array<keel::f64> emitted(mr);
     int cur = 0;
     for (keel::usize i = 0; i < N; ++i) {
-        const double v = bits.elemAsDouble(i);
+        const keel::f64 v = bits.elemAsDouble(i);
         if (v != 0.0 && v != 1.0)
             throw Error("huffmandeco: input bits must be 0 or 1",
                         0, 0, "huffmandeco", "",

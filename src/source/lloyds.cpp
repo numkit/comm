@@ -37,7 +37,7 @@ namespace numkit::comm {
 namespace {
 
 // Fill out_v with double values sourced from the training-set Value.
-void readVector(const Value &v, keel::Array<double> &out)
+void readVector(const Value &v, keel::Array<keel::f64> &out)
 {
     const keel::usize N = v.numel();
     out.resize(N);
@@ -45,7 +45,7 @@ void readVector(const Value &v, keel::Array<double> &out)
 }
 
 // Build a Value(1, n, DOUBLE) from a double array on `mr`.
-Value vecToRow(keel::Allocator *mr, keel::ArrayRef<double> v)
+Value vecToRow(keel::Allocator *mr, keel::ArrayRef<keel::f64> v)
 {
     Value out = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), out.doubleDataMut());
@@ -53,9 +53,9 @@ Value vecToRow(keel::Allocator *mr, keel::ArrayRef<double> v)
 }
 
 void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
-                     keel::Array<double> &training,
-                     keel::Array<double> &codebook,
-                     double &min_train, double &max_train)
+                     keel::Array<keel::f64> &training,
+                     keel::Array<keel::f64> &codebook,
+                     keel::f64 &min_train, keel::f64 &max_train)
 {
     readVector(training_set, training);
     if (training.empty())
@@ -68,17 +68,17 @@ void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
                     0, 0, "lloyds", "", "numkit:lloyds:InvalidTRAINING_SET");
 
     if (ini_codebook.numel() == 1) {
-        const double Kd = ini_codebook.toScalar();
+        const keel::f64 Kd = ini_codebook.toScalar();
         const long K = keel::as<long>(std::floor(Kd));
         if (K < 1)
             throw Error("lloyds: ini_codebook count must be positive",
                         0, 0, "lloyds", "",
                         "numkit:lloyds:NonPositiveINI_CODEBOOK");
-        const double step = (max_train - min_train) / keel::as<double>(K);
+        const keel::f64 step = (max_train - min_train) / keel::as<keel::f64>(K);
         codebook.resize(K);
         for (long i = 0; i < K; ++i) {
             codebook[keel::as<keel::usize>(i)] =
-                min_train + step * 0.5 + step * keel::as<double>(i);
+                min_train + step * 0.5 + step * keel::as<keel::f64>(i);
         }
     } else {
         readVector(ini_codebook, codebook);
@@ -91,14 +91,14 @@ void lloyds_argcheck(const Value &training_set, const Value &ini_codebook,
 
 } // namespace
 
-std::tuple<Value, Value, double, double>
+std::tuple<Value, Value, keel::f64, keel::f64>
 lloyds(const Value &training_set, const Value &ini_codebook,
-       double tol, keel::Allocator *mr)
+       keel::f64 tol, keel::Allocator *mr)
 {
-    keel::Array<double> training(mr);
-    keel::Array<double> codebook(mr);
-    double min_train = 0.0;
-    double max_train = 0.0;
+    keel::Array<keel::f64> training(mr);
+    keel::Array<keel::f64> codebook(mr);
+    keel::f64 min_train = 0.0;
+    keel::f64 max_train = 0.0;
     lloyds_argcheck(training_set, ini_codebook, training, codebook,
                     min_train, max_train);
     const keel::usize K = codebook.size();
@@ -106,8 +106,8 @@ lloyds(const Value &training_set, const Value &ini_codebook,
     if (tol <= 0.0) tol = 1e-7;
 
     // Helper: midpoint partition from codebook.
-    auto midpoint = [&]() -> keel::Array<double> {
-        keel::Array<double> p(K > 0 ? K - 1 : 0, mr);
+    auto midpoint = [&]() -> keel::Array<keel::f64> {
+        keel::Array<keel::f64> p(K > 0 ? K - 1 : 0, mr);
         for (keel::usize i = 0; i + 1 < K; ++i) {
             p[i] = 0.5 * (codebook[i] + codebook[i + 1]);
         }
@@ -117,11 +117,11 @@ lloyds(const Value &training_set, const Value &ini_codebook,
 
     // Helper: classify training samples into bins given partition.
     // bin index = sum(partition < x).
-    auto classify = [&](keel::ArrayRef<double> part,
+    auto classify = [&](keel::ArrayRef<keel::f64> part,
                         keel::Array<keel::usize> &bins) {
         bins.resize(training.size());
         for (keel::usize i = 0; i < training.size(); ++i) {
-            const double x = training[i];
+            const keel::f64 x = training[i];
             keel::usize b = 0;
             while (b < part.size() && part[b] < x) ++b;
             bins[i] = b;
@@ -130,23 +130,23 @@ lloyds(const Value &training_set, const Value &ini_codebook,
 
     // Helper: distortion = mean((x - codebook(bin))^2).
     auto distortion = [&](keel::ArrayRef<keel::usize> bins) {
-        double sse = 0.0;
+        keel::f64 sse = 0.0;
         for (keel::usize i = 0; i < training.size(); ++i) {
-            const double d = training[i] - codebook[bins[i]];
+            const keel::f64 d = training[i] - codebook[bins[i]];
             sse += d * d;
         }
-        return sse / keel::as<double>(training.size());
+        return sse / keel::as<keel::f64>(training.size());
     };
 
-    keel::Array<double> partition = midpoint();
+    keel::Array<keel::f64> partition = midpoint();
     keel::Array<keel::usize> bins(mr);
     classify(partition, bins);
-    double distor      = distortion(bins);
-    double last_distor = 0.0;
+    keel::f64 distor      = distortion(bins);
+    keel::f64 last_distor = 0.0;
 
-    const double ter_cond2 = std::numeric_limits<double>::epsilon()
+    const keel::f64 ter_cond2 = std::numeric_limits<keel::f64>::epsilon()
                              * keel::abs(max_train);
-    double rel_distor = (distor > ter_cond2)
+    keel::f64 rel_distor = (distor > ter_cond2)
                             ? keel::abs(distor - last_distor) / distor
                             : distor;
 
@@ -154,13 +154,13 @@ lloyds(const Value &training_set, const Value &ini_codebook,
     while (rel_distor > tol && rel_distor > ter_cond2) {
         // Centroid update per bin.
         for (keel::usize i = 0; i < K; ++i) {
-            double sum = 0.0;
+            keel::f64 sum = 0.0;
             keel::usize cnt = 0;
             for (keel::usize j = 0; j < training.size(); ++j) {
                 if (bins[j] == i) { sum += training[j]; ++cnt; }
             }
             if (cnt > 0) {
-                codebook[i] = sum / keel::as<double>(cnt);
+                codebook[i] = sum / keel::as<keel::f64>(cnt);
             } else {
                 // Empty bin: per MATLAB lloyds.m, fall back to a midpoint
                 // between adjacent partition boundaries (or training extrema).
@@ -169,21 +169,21 @@ lloyds(const Value &training_set, const Value &ini_codebook,
                         codebook[i] = (max_train + min_train) * 0.5;
                     } else {
                         // Try mean of training_set <= partition[0]
-                        double s = 0.0; keel::usize c = 0;
-                        for (double x : training)
+                        keel::f64 s = 0.0; keel::usize c = 0;
+                        for (keel::f64 x : training)
                             if (x <= partition[0]) { s += x; ++c; }
                         codebook[i] = c ? s / c
                                         : 0.5 * (partition[0] + min_train);
                     }
                 } else if (i == K - 1) {
-                    double s = 0.0; keel::usize c = 0;
-                    for (double x : training)
+                    keel::f64 s = 0.0; keel::usize c = 0;
+                    for (keel::f64 x : training)
                         if (x >= partition[i - 1]) { s += x; ++c; }
                     codebook[i] = c ? s / c
                                     : 0.5 * (max_train + partition[i - 1]);
                 } else {
-                    double s = 0.0; keel::usize c = 0;
-                    for (double x : training)
+                    keel::f64 s = 0.0; keel::usize c = 0;
+                    for (keel::f64 x : training)
                         if (x >= partition[i - 1] && x <= partition[i]) {
                             s += x; ++c;
                         }

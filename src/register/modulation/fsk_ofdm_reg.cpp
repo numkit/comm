@@ -34,9 +34,9 @@ void fskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     // R2025b: fs optional, default 1 (4-arg form probed equal to fs=1).
     argcheck::checkNargin(args.size(), 4, 7, "fskmod");
     const int    M   = (int)args[1].toScalar();
-    const double sep = args[2].toScalar();
+    const keel::f64 sep = args[2].toScalar();
     const int    n   = (int)args[3].toScalar();
-    const double fs  = (args.size() >= 5 && !args[4].isEmpty())
+    const keel::f64 fs  = (args.size() >= 5 && !args[4].isEmpty())
                        ? args[4].toScalar() : 1.0;
     auto cont  = parse_str(args, 5, "cont");
     auto order = parse_str(args, 5, "gray");
@@ -57,9 +57,9 @@ void fskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     // R2025b: fs optional, default 1 (4-arg form probed equal to fs=1).
     argcheck::checkNargin(args.size(), 4, 6, "fskdemod");
     const int    M   = (int)args[1].toScalar();
-    const double sep = args[2].toScalar();
+    const keel::f64 sep = args[2].toScalar();
     const int    n   = (int)args[3].toScalar();
-    const double fs  = (args.size() >= 5 && !args[4].isEmpty())
+    const keel::f64 fs  = (args.size() >= 5 && !args[4].isEmpty())
                        ? args[4].toScalar() : 1.0;
     auto order = parse_str(args, 5, "gray");
     outs[0] = fskdemod(args[0], M, sep, n, fs, order, ctx.engine->allocator());
