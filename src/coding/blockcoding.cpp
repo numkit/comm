@@ -25,7 +25,7 @@ namespace {
 inline keel::String toLower(keel::StringRef sv)
 {
     keel::String s(sv);
-    for (auto &c : s) c = keel::to_ascii_lower(c);
+    s.to_ascii_lower_in_place();
     return s;
 }
 

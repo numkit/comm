@@ -249,7 +249,7 @@ void ssbmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "ssbmod", "", "numkit:ssbmod:InvStr");
         keel::String m = args[4].toString();
         // Match MATLAB behaviour: any string containing 'up' selects USB.
-        for (auto &c : m) c = keel::to_ascii_lower(c);
+        m.to_ascii_lower_in_place();
         upper = m.contains("up");
         if (!upper && !m.empty())
             throw Error("ssbmod: method must be 'upper'",

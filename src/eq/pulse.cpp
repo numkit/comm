@@ -24,9 +24,6 @@
 #include <algorithm>
 #include <cmath>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 namespace numkit::comm {
 
@@ -44,7 +41,7 @@ void rcosdesign_argcheck(keel::f64 beta, keel::i32 span, keel::i32 sps, keel::St
         throw Error("rcosdesign: sps must be a positive integer",
                     0, 0, "rcosdesign", "", "numkit:rcosdesign:sps");
 
-    const bool rrc = (shape == "sqrt" || shape == "Sqrt" || shape == "SQRT");
+    const bool rrc = (shape.equals_ignore_ascii_case("sqrt") || shape == "SQRT");
     if (!rrc && shape != "normal" && shape != "Normal" &&
         shape != "NORMAL" && !shape.empty())
         throw Error("rcosdesign: shape must be 'normal' or 'sqrt'",
@@ -99,7 +96,7 @@ Value rcosdesign(keel::f64 beta, keel::i32 span, keel::i32 sps,
                  keel::Allocator *mr)
 {
     rcosdesign_argcheck(beta, span, sps, shape);
-    const bool rrc = (shape == "sqrt" || shape == "Sqrt" || shape == "SQRT");
+    const bool rrc = (shape.equals_ignore_ascii_case("sqrt") || shape == "SQRT");
     const keel::usize N = keel::as<keel::usize>(span) * keel::as<keel::usize>(sps) + 1;
     Value r = Value::matrix(1, N, ValueType::DOUBLE, mr);
     (void)keel::comm::rcos_design(beta, keel::as<keel::usize>(span),

@@ -30,8 +30,7 @@ namespace {
 
 keel::String toLowerAscii(keel::StringRef sv) {
     keel::String s(sv);
-    for (char &ch : s)
-        ch = keel::to_ascii_lower(ch);
+    s.to_ascii_lower_in_place();
     return s;
 }
 

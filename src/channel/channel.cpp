@@ -23,9 +23,6 @@
 #include <tuple>
 #include <utility>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 namespace numkit::comm {
 
@@ -366,7 +363,7 @@ Value berawgn(const Value &EbNo_dB, keel::StringRef mod, keel::i32 M,
             if (M == 4) return 0.5 * std::erfc(std::sqrt(EbNo));
             // BER approx for M-PSK (high SNR): (2/k) · Q(√(2k·EbNo) sin(π/M))
             const keel::f64 k = std::log2(keel::f64(M));
-            const keel::f64 arg = std::sqrt(2.0 * k * EbNo) * std::sin(M_PI / keel::f64(M));
+            const keel::f64 arg = std::sqrt(2.0 * k * EbNo) * std::sin(keel::kPi / keel::f64(M));
             return (2.0 / k) * 0.5 * std::erfc(arg / std::sqrt(2.0));
         }
         if (mod == "qam") {
@@ -411,7 +408,7 @@ Value noisebw(const Value &num, const Value &den, keel::i32 Nsamp,
     keel::f64 Hmax2 = 0.0;
     keel::f64 sum_H2 = 0.0;
     for (keel::i32 k = 0; k < Nsamp; ++k) {
-        const keel::f64 w = M_PI * keel::f64(k) / keel::f64(Nsamp);
+        const keel::f64 w = keel::kPi * keel::f64(k) / keel::f64(Nsamp);
         const keel::c64 z = keel::polar(1.0, -w);
         keel::c64 np(0.0, 0.0), dp(0.0, 0.0);
         keel::c64 zk(1.0, 0.0);

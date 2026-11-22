@@ -138,7 +138,7 @@ Value vitdec(const Value &code, const Value &trellis, keel::i64 /*tblen*/,
 {
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
-        for (char &c : s) c = keel::to_ascii_lower(c);
+        s.to_ascii_lower_in_place();
         return s;
     };
     const keel::String dt = lower(dectype);
