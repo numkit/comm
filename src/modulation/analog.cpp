@@ -19,7 +19,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/value.hpp>
 
-#include <cstring>
 #include <utility>
 
 namespace numkit::comm {

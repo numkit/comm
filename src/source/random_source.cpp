@@ -19,7 +19,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <mutex>
 #include <numeric>
 
@@ -86,7 +85,7 @@ void parseAlphabet(const Value &a,
             sum  += pk;
             pr[k] = sum;          // cumulative
         }
-        if (keel::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
+        if (keel::abs(sum - 1.0) > keel::sqrt(2.220446049250313e-16))
             throw Error("randsrc: probabilities must sum to 1",
                         0, 0, "randsrc", "",
                         "numkit:randsrc:InvalidProbabilitySum");
@@ -209,7 +208,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
             mr->alloc_bytes(K * sizeof(keel::f64), alignof(keel::f64)));
         for (keel::usize k = 0; k < K; ++k) {
             const keel::f64 v = e.elemAsDouble(k);
-            if (!(v >= 0.0) || std::floor(v) != v)
+            if (!(v >= 0.0) || keel::floor(v) != v)
                 throw Error("randerr: error counts must be non-negative integers",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsElements");
@@ -236,7 +235,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
         for (keel::usize k = 0; k < K; ++k) {
             const keel::f64 v = e.elemAsDouble(k * R + 0);
             const keel::f64 p = e.elemAsDouble(k * R + 1);
-            if (!(v >= 0.0) || std::floor(v) != v)
+            if (!(v >= 0.0) || keel::floor(v) != v)
                 throw Error("randerr: error counts must be non-negative integers",
                             0, 0, "randerr", "",
                             "numkit:randerr:InvalidErrorsElements");
@@ -252,7 +251,7 @@ void parseErrspec(const Value &e, keel::Allocator *mr,
             sum += p;
             pr[k] = sum;
         }
-        if (keel::abs(sum - 1.0) > std::sqrt(2.220446049250313e-16))
+        if (keel::abs(sum - 1.0) > keel::sqrt(2.220446049250313e-16))
             throw Error("randerr: probabilities must sum to 1",
                         0, 0, "randerr", "",
                         "numkit:randerr:InvalidProbabilitySum");

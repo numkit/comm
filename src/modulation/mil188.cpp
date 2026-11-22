@@ -18,7 +18,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <limits>
 
 namespace numkit::comm {
 
@@ -487,7 +486,7 @@ Value mil188qamdemod(const Value &y, keel::i32 M, keel::Allocator *mr)
                           ? y.complexData()[i]
                           : keel::c64(y.elemAsDouble(i), 0.0);
         keel::usize best_k = 0;
-        keel::f64 best_d2 = std::numeric_limits<keel::f64>::infinity();
+        keel::f64 best_d2 = keel::Limits<keel::f64>::infinity();
         for (keel::usize k = 0; k < N; ++k) {
             const keel::f64 dr = yi.real() - C[k].real();
             const keel::f64 di = yi.imag() - C[k].imag();

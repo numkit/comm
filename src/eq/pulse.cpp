@@ -22,7 +22,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cmath>
 
 
 namespace numkit::comm {

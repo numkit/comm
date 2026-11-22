@@ -3,6 +3,7 @@
 // Lloyd-Max scalar quantizer designer delegating to keel::comm.
 
 #include <keel/arena.h>
+#include <keel/algo.h>
 #include <keel/array.h>
 #include <keel/comm.h>
 #include <keel/core.h>
@@ -14,7 +15,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/value.hpp>
 
-#include <cstring>
 
 namespace numkit::comm {
 
@@ -23,7 +23,7 @@ namespace {
 Value vecToRow(keel::Allocator *mr, keel::ArrayRef<keel::f64> v)
 {
     Value out = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
-    if (!v.empty()) std::memcpy(out.doubleDataMut(), v.data(), v.size() * sizeof(keel::f64));
+    if (!v.empty()) keel::copy_n(out.doubleDataMut(), v.data(), v.size());
     return out;
 }
 

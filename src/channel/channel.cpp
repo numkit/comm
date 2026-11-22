@@ -17,8 +17,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cmath>
-#include <limits>
 #include <mutex>
 #include <tuple>
 #include <utility>
@@ -145,11 +143,11 @@ Value awgn(::numkit::ops::RngContext &rng, const Value &x, keel::f64 snr_db, kee
     const bool is_complex = (x.type() == ValueType::COMPLEX);
     keel::f64 sig_pow = (sigpower_db < -1e9)  // -inf sentinel = "measured"
                      ? avg_power(x)
-                     : std::pow(10.0, sigpower_db / 10.0);
+                     : keel::pow(10.0, sigpower_db / 10.0);
     if (sig_pow <= 0.0) sig_pow = 1.0;
-    const keel::f64 snr_lin = std::pow(10.0, snr_db / 10.0);
+    const keel::f64 snr_lin = keel::pow(10.0, snr_db / 10.0);
     const keel::f64 noise_pow = sig_pow / snr_lin;
-    const keel::f64 sigma = std::sqrt(is_complex ? noise_pow / 2.0 : noise_pow);
+    const keel::f64 sigma = keel::sqrt(is_complex ? noise_pow / 2.0 : noise_pow);
 
     const keel::usize N = x.numel();
     Value out;
@@ -181,10 +179,10 @@ Value wgn(::numkit::ops::RngContext &rng, keel::i32 m, keel::i32 n, keel::f64 p,
     wgn_argcheck(m, n, p, type);
     keel::f64 power_lin = 0.0;
     if (type == "linear") power_lin = p;
-    else if (type == "dBm") power_lin = std::pow(10.0, (p - 30.0) / 10.0);
-    else /* dBW */         power_lin = std::pow(10.0, p / 10.0);
+    else if (type == "dBm") power_lin = keel::pow(10.0, (p - 30.0) / 10.0);
+    else /* dBW */         power_lin = keel::pow(10.0, p / 10.0);
     if (power_lin < 0.0) power_lin = 0.0;
-    const keel::f64 sigma = std::sqrt(complex_out ? power_lin / 2.0 : power_lin);
+    const keel::f64 sigma = keel::sqrt(complex_out ? power_lin / 2.0 : power_lin);
 
     if (complex_out) {
         Value out = Value::matrix(m, n, ValueType::COMPLEX, mr);
@@ -224,7 +222,7 @@ Value bsc(::numkit::ops::RngContext &rng, const Value &x, keel::f64 p, keel::All
 Value qfunc(const Value &x, keel::Allocator *mr) {
     qfunc_argcheck(x);
     return elementwise(mr, x, [](keel::f64 v) {
-        return 0.5 * std::erfc(v / std::sqrt(2.0));
+        return 0.5 * keel::erfc(v / keel::sqrt(2.0));
     });
 }
 
@@ -248,7 +246,7 @@ keel::f64 erfcinv_approx(keel::f64 x) {
     const keel::f64 pl = 0.02425, ph = 1.0 - pl;
     keel::f64 q, r, z;
     if (p < pl) {
-        q = std::sqrt(-2.0 * std::log(p));
+        q = keel::sqrt(-2.0 * keel::log(p));
         z = (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
             ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1.0);
     } else if (p <= ph) {
@@ -256,20 +254,20 @@ keel::f64 erfcinv_approx(keel::f64 x) {
         z = (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5]) * q /
             (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1.0);
     } else {
-        q = std::sqrt(-2.0 * std::log(1.0 - p));
+        q = keel::sqrt(-2.0 * keel::log(1.0 - p));
         z = -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
              ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1.0);
     }
-    return z / std::sqrt(2.0);
+    return z / keel::sqrt(2.0);
 }
 } // anonymous
 
 Value qfuncinv(const Value &p, keel::Allocator *mr) {
     qfuncinv_argcheck(p);
     return elementwise(mr, p, [](keel::f64 v) {
-        if (!(v > 0.0 && v < 1.0)) return std::numeric_limits<keel::f64>::quiet_NaN();
+        if (!(v > 0.0 && v < 1.0)) return keel::Limits<keel::f64>::quiet_nan();
         // Q(x) = 0.5·erfc(x/√2). Inverse: x = √2·erfcinv(2v).
-        return std::sqrt(2.0) * erfcinv_approx(2.0 * v);
+        return keel::sqrt(2.0) * erfcinv_approx(2.0 * v);
     });
 }
 
@@ -299,7 +297,7 @@ Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
             // Integrate gamma(m, b²/2) upper incomplete / Γ(m).
             // For small m we can sum directly: Q_m(0, b) = Σ_{k=0..m-1} y^k e^{-y} / k!
             keel::f64 acc = 0.0;
-            keel::f64 term = std::exp(-y);
+            keel::f64 term = keel::exp(-y);
             for (keel::i32 k = 0; k < m; ++k) {
                 acc += term;
                 term *= y / keel::f64(k + 1);
@@ -319,14 +317,14 @@ Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
             const keel::f64 half = z / 2.0;
             keel::f64 term = 1.0;
             for (keel::i32 k = 1; k <= n; ++k) term *= half / keel::f64(k);
-            term *= std::pow(half, n) / std::pow(half, n);
+            term *= keel::pow(half, n) / keel::pow(half, n);
             // Correction: term should be (z/2)^n / n!. The above sequence gives
             // exactly that, but to be safe rebuild explicitly:
             term = 1.0;
             for (keel::i32 k = 1; k <= n; ++k) term *= half / keel::f64(k);
-            term *= std::pow(half, n);
+            term *= keel::pow(half, n);
             // Hmm — replace with simpler explicit form:
-            term = std::pow(half, n);
+            term = keel::pow(half, n);
             keel::f64 fact = 1.0;
             for (keel::i32 k = 1; k <= n; ++k) fact *= keel::f64(k);
             term /= fact;
@@ -334,7 +332,7 @@ Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
             for (keel::i32 k = 1; k < 100; ++k) {
                 term *= half * half / (keel::f64(k) * keel::f64(k + n));
                 acc += term;
-                if (std::fabs(term) < 1e-18 * std::fabs(acc)) break;
+                if (keel::abs(term) < 1e-18 * keel::abs(acc)) break;
             }
             return acc;
         };
@@ -342,8 +340,8 @@ Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
         for (keel::i32 k = 0; k <= N_int; ++k) {
             const keel::f64 xv = b + keel::f64(k) * dx;
             const keel::f64 w = (k == 0 || k == N_int) ? 0.5 : 1.0;
-            const keel::f64 f = xv * std::pow(xv / a, m - 1)
-                           * std::exp(-0.5 * (xv * xv + a * a))
+            const keel::f64 f = xv * keel::pow(xv / a, m - 1)
+                           * keel::exp(-0.5 * (xv * xv + a * a))
                            * besselI(m - 1, a * xv);
             sum += w * f;
         }
@@ -357,36 +355,36 @@ Value berawgn(const Value &EbNo_dB, keel::StringRef mod, keel::i32 M,
 {
     berawgn_argcheck(EbNo_dB, mod, M);
     return elementwise(mr, EbNo_dB, [&](keel::f64 dB) {
-        const keel::f64 EbNo = std::pow(10.0, dB / 10.0);
+        const keel::f64 EbNo = keel::pow(10.0, dB / 10.0);
         if (mod == "psk") {
-            if (M == 2) return 0.5 * std::erfc(std::sqrt(EbNo));
-            if (M == 4) return 0.5 * std::erfc(std::sqrt(EbNo));
+            if (M == 2) return 0.5 * keel::erfc(keel::sqrt(EbNo));
+            if (M == 4) return 0.5 * keel::erfc(keel::sqrt(EbNo));
             // BER approx for M-PSK (high SNR): (2/k) · Q(√(2k·EbNo) sin(π/M))
-            const keel::f64 k = std::log2(keel::f64(M));
-            const keel::f64 arg = std::sqrt(2.0 * k * EbNo) * std::sin(keel::kPi / keel::f64(M));
-            return (2.0 / k) * 0.5 * std::erfc(arg / std::sqrt(2.0));
+            const keel::f64 k = keel::log2(keel::f64(M));
+            const keel::f64 arg = keel::sqrt(2.0 * k * EbNo) * keel::sin(keel::kPi / keel::f64(M));
+            return (2.0 / k) * 0.5 * keel::erfc(arg / keel::sqrt(2.0));
         }
         if (mod == "qam") {
-            const keel::f64 k = std::log2(keel::f64(M));
-            const keel::f64 K = std::sqrt(keel::f64(M));
-            const keel::f64 base = std::erfc(std::sqrt(3.0 * k * EbNo / (2.0 * (M - 1))));
+            const keel::f64 k = keel::log2(keel::f64(M));
+            const keel::f64 K = keel::sqrt(keel::f64(M));
+            const keel::f64 base = keel::erfc(keel::sqrt(3.0 * k * EbNo / (2.0 * (M - 1))));
             const keel::f64 sym_err = (1.0 - 1.0 / K) * base;
             return sym_err / k;  // approximate Gray-coded BER
         }
         if (mod == "pam") {
-            const keel::f64 k = std::log2(keel::f64(M));
-            const keel::f64 base = std::erfc(std::sqrt(3.0 * k * EbNo / (M * M - 1)));
+            const keel::f64 k = keel::log2(keel::f64(M));
+            const keel::f64 base = keel::erfc(keel::sqrt(3.0 * k * EbNo / (M * M - 1)));
             return (M - 1) / (M * k) * base;
         }
         if (mod == "fsk") {
             // Coherent orthogonal FSK: BER = 0.5·erfc(√(EbNo/2)) for M=2.
-            return 0.5 * std::erfc(std::sqrt(EbNo / 2.0));
+            return 0.5 * keel::erfc(keel::sqrt(EbNo / 2.0));
         }
         if (mod == "dpsk") {
             // BER for DPSK (M=2): 0.5·exp(-EbNo).
-            return 0.5 * std::exp(-EbNo);
+            return 0.5 * keel::exp(-EbNo);
         }
-        return std::numeric_limits<keel::f64>::quiet_NaN();
+        return keel::Limits<keel::f64>::quiet_nan();
     });
 }
 
@@ -430,7 +428,7 @@ Value noisebw(const Value &num, const Value &den, keel::i32 Nsamp,
 static keel::f64 betaincinv_scalar(keel::Allocator *mr,
                                 keel::f64 p, keel::f64 a, keel::f64 b)
 {
-    if (a <= 0.0 || b <= 0.0) return std::numeric_limits<keel::f64>::quiet_NaN();
+    if (a <= 0.0 || b <= 0.0) return keel::Limits<keel::f64>::quiet_nan();
     if (p <= 0.0) return 0.0;
     if (p >= 1.0) return 1.0;
     Value pV = Value::scalar(p, mr);
@@ -475,10 +473,10 @@ Value convertSNR(const Value &snr_in,
     return elementwise(mr, snr_in, [&](keel::f64 dB) {
         // Convert via Es/No as the pivot.
         keel::f64 EsNo;
-        if      (in_type == "ebno") EsNo = dB + 10.0 * std::log10(keel::f64(bits_per_symbol));
+        if      (in_type == "ebno") EsNo = dB + 10.0 * keel::log10(keel::f64(bits_per_symbol));
         else if (in_type == "esno") EsNo = dB;
         else /*snr*/                 EsNo = dB;  // assume Es/No = SNR (1 sample/symbol)
-        if      (out_type == "ebno") return EsNo - 10.0 * std::log10(keel::f64(bits_per_symbol));
+        if      (out_type == "ebno") return EsNo - 10.0 * keel::log10(keel::f64(bits_per_symbol));
         else if (out_type == "esno") return EsNo;
         else                          return EsNo;
     });

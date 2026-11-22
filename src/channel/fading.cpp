@@ -6,6 +6,7 @@
 // modulation primitives.
 
 #include <keel/array.h>
+#include <keel/math.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
@@ -18,7 +19,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <cmath>
 #include <mutex>
 
 namespace numkit::comm {
@@ -30,7 +30,7 @@ namespace {
 keel::Array<keel::c64> sampleCN01(::numkit::ops::RngContext &rng, keel::usize N, keel::Allocator *mr) {
     keel::Array<keel::c64> h(N, mr);
     if (N == 0) return h;
-    const keel::f64 s = std::sqrt(0.5);
+    const keel::f64 s = keel::sqrt(0.5);
     keel::Array<keel::f64> re(N, mr), im(N, mr);
     for (keel::usize i = 0; i < N; ++i) re[i] = s * rng.nextNormal();
     for (keel::usize i = 0; i < N; ++i) im[i] = s * rng.nextNormal();
@@ -80,8 +80,8 @@ Value ricianchan(::numkit::ops::RngContext &rng, const Value &x, keel::f64 K, ke
                             ValueType::COMPLEX, mr);
     if (N == 0) return y;
     auto g = sampleCN01(rng, N, mr);
-    const keel::f64 losAmp = std::sqrt(K / (K + 1.0));
-    const keel::f64 sctAmp = std::sqrt(1.0 / (K + 1.0));
+    const keel::f64 losAmp = keel::sqrt(K / (K + 1.0));
+    const keel::f64 sctAmp = keel::sqrt(1.0 / (K + 1.0));
     keel::c64 *yd = y.complexDataMut();
     for (keel::usize i = 0; i < N; ++i) {
         const keel::c64 h = keel::c64(losAmp, 0.0) + sctAmp * g[i];

@@ -8,6 +8,7 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/math.h>
 #include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
@@ -21,7 +22,6 @@
 #include <numkit/value/argcheck.hpp>
 
 #include <algorithm>
-#include <cmath>
 
 namespace numkit::comm {
 namespace detail {
@@ -50,7 +50,7 @@ Value scaleConstellationUnitPower(const Value &c, keel::Allocator *mr) {
     }
     const keel::f64 avgP = sumP / keel::as<keel::f64>(M);
     if (!(avgP > 0.0)) return c;
-    const keel::f64 scale = 1.0 / std::sqrt(avgP);
+    const keel::f64 scale = 1.0 / keel::sqrt(avgP);
     if (c.isComplex()) {
         Value out = Value::matrix(c.dims().rows(), c.dims().cols(), ValueType::COMPLEX, mr);
         const auto *src = c.complexData();
