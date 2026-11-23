@@ -17,7 +17,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <mutex>
 #include <tuple>
 #include <utility>
 
