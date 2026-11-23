@@ -23,7 +23,6 @@
 #include <numkit/value/argcheck.hpp>
 
 #include <algorithm>
-#include <cstddef>
 
 namespace numkit::comm {
 namespace detail {
