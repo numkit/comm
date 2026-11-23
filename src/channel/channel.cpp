@@ -16,7 +16,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
 #include <keel/tuple.h>
 
 
@@ -280,7 +279,7 @@ Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
     // numerical integration of the integral form.
     if (m < 1) m = 1;
     const keel::usize Na = a_v.numel(), Nb = b_v.numel();
-    const keel::usize N = std::max(Na, Nb);
+    const keel::usize N = keel::max(Na, Nb);
     Value out = Value::matrix((Na > Nb) ? Na : Nb, 1, ValueType::DOUBLE, mr);
     if (N == 0) return out;
     keel::f64 *od = out.doubleDataMut();
@@ -306,7 +305,7 @@ Value marcumq(const Value &a_v, const Value &b_v, keel::i32 m,
         // Numerical integration of the integral definition:
         //   Q_m(a, b) = ∫_b^∞ x · (x/a)^(m-1) · exp(-(x²+a²)/2) · I_{m-1}(a·x) dx
         // Adaptive trapezoidal up to a sensible upper limit.
-        const keel::f64 upper = std::max(b + 20.0, a + 20.0);
+        const keel::f64 upper = keel::max(b + 20.0, a + 20.0);
         const keel::i32 N_int = 4096;
         const keel::f64 dx = (upper - b) / keel::f64(N_int);
         // Modified Bessel I_{m-1}(z) via series: I_n(z) = Σ_{k=0..} (z/2)^(2k+n)/(k!(k+n)!).
