@@ -118,7 +118,7 @@ Value nondiffEncodeBits(const Value &x, keel::Allocator *mr)
     keel::usize H = d.rows();
     keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
-    if (was_row) std::swap(H, W);
+    if (was_row) keel::swap(H, W);
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
@@ -146,7 +146,7 @@ Value nondiffDecodeBits(const Value &diffBits, keel::Allocator *mr)
     keel::usize H = d.rows();
     keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
-    if (was_row) std::swap(H, W);
+    if (was_row) keel::swap(H, W);
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
@@ -228,7 +228,7 @@ void mskdemod_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                           nargout >= 2 ? &phaseOut : nullptr, mr);
     if (nondiff)
         bits = nondiffDecodeBits(bits, mr);
-    outs[0] = std::move(bits);
+    outs[0] = keel::move(bits);
     if (outs.size() >= 2)
         outs[1] = Value::scalar(phaseOut, mr);
 }

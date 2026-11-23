@@ -19,7 +19,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -45,8 +44,8 @@ void hammgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const keel::i64 m = keel::as<keel::i64>(args[0].toScalar());
     const Value &prim = (args.size() >= 2) ? args[1] : Value::Empty;
     HammgenResult res = hammgen(m, prim, ctx.engine->allocator());
-    outs[0] = std::move(res.h);
-    if (nargout >= 2) outs[1] = std::move(res.g);
+    outs[0] = keel::move(res.h);
+    if (nargout >= 2) outs[1] = keel::move(res.g);
     if (nargout >= 3) outs[2] = Value::scalar(keel::as<keel::f64>(res.n),
                                               ctx.engine->allocator());
     if (nargout >= 4) outs[3] = Value::scalar(keel::as<keel::f64>(res.k),
@@ -74,8 +73,8 @@ void cyclgen_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         (args.size() >= 3 && (args[2].isChar() || args[2].isString()))
             ? args[2].toString() : keel::String("system");
     CyclgenResult res = cyclgen(n, args[1], opt, ctx.engine->allocator());
-    outs[0] = std::move(res.h);
-    if (nargout >= 2) outs[1] = std::move(res.g);
+    outs[0] = keel::move(res.h);
+    if (nargout >= 2) outs[1] = keel::move(res.g);
     if (nargout >= 3) outs[2] = Value::scalar(keel::as<keel::f64>(res.k),
                                               ctx.engine->allocator());
 }
@@ -91,7 +90,7 @@ void encode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
             ? args[3].toString() : keel::String("hamming/binary");
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     EncodeResult res = encode(args[0], n, k, method, opt, ctx.engine->allocator());
-    outs[0] = std::move(res.code);
+    outs[0] = keel::move(res.code);
     if (nargout >= 2) outs[1] = Value::scalar(keel::as<keel::f64>(res.added),
                                               ctx.engine->allocator());
 }
@@ -107,8 +106,8 @@ void decode_reg(keel::ArrayRef<Value> args, keel::usize nargout,
             ? args[3].toString() : keel::String("hamming/binary");
     const Value &opt = (args.size() >= 5) ? args[4] : Value::Empty;
     DecodeResult res = decode(args[0], n, k, method, opt, ctx.engine->allocator());
-    outs[0] = std::move(res.msg);
-    if (nargout >= 2) outs[1] = std::move(res.err);
+    outs[0] = keel::move(res.msg);
+    if (nargout >= 2) outs[1] = keel::move(res.err);
 }
 
 } // namespace detail

@@ -16,7 +16,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -36,9 +35,9 @@ void dpcmopt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                     0, 0, "dpcmopt", "", "numkit:dpcmopt:NeedIniCodebook");
 
     auto res = dpcmopt(args[0], ord, ini, mr);
-    outs[0] = std::move(res.predictor);
-    if (nargout > 1) outs[1] = std::move(res.codebook);
-    if (nargout > 2) outs[2] = std::move(res.partition);
+    outs[0] = keel::move(res.predictor);
+    if (nargout > 1) outs[1] = keel::move(res.codebook);
+    if (nargout > 2) outs[2] = keel::move(res.partition);
 }
 
 } // namespace detail

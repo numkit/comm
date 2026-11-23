@@ -8,7 +8,6 @@
 
 #include <keel/memory.h>
 #include <keel/ref.h>
-#include <utility>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -31,7 +30,7 @@ namespace numkit::comm {
 /// @return     Pair `{ number, ratio }` (total bit errors and error rate).
 /// @throws Error on numel mismatch, or negative inputs on the auto-`k` path.
 /// @see symerr
-std::pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k = 0,
+keel::Pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k = 0,
                                keel::Allocator *mr = nullptr);
 
 /// @brief Symbol-error count and rate (`[number, ratio] = symerr(x, y)`).
@@ -44,10 +43,10 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k = 0,
 /// @return     Pair `{ count, ratio }`.
 /// @throws Error on numel mismatch.
 /// @see biterr
-std::pair<Value, Value> symerr(const Value &x, const Value &y,
+keel::Pair<Value, Value> symerr(const Value &x, const Value &y,
                                keel::Allocator *mr = nullptr);
 
-std::pair<Value, Value> symerr(const Value &x, const Value &y,
+keel::Pair<Value, Value> symerr(const Value &x, const Value &y,
                                keel::StringRef flg,
                                keel::Allocator *mr = nullptr);
 

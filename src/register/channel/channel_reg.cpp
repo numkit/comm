@@ -19,7 +19,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -127,8 +126,8 @@ void berconfint_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const keel::f64 level = (args.size() >= 3 && !args[2].isEmpty())
                          ? args[2].toScalar() : 0.95;
     auto [ber, ci] = berconfint(k, n, level, ctx.engine->allocator());
-    outs[0] = std::move(ber);
-    if (nargout > 1) outs[1] = std::move(ci);
+    outs[0] = keel::move(ber);
+    if (nargout > 1) outs[1] = keel::move(ci);
 }
 
 void convertSNR_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,

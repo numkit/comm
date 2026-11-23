@@ -70,7 +70,7 @@ quantiz(const Value &sig, const Value &partition, const Value &codebook, keel::A
 
     keel::f64 *oi = indx.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) oi[i] = keel::as<keel::f64>(idx[i]);
-    return {std::move(indx), std::move(quantv), distor};
+    return {keel::move(indx), keel::move(quantv), distor};
 }
 
 } // namespace numkit::comm

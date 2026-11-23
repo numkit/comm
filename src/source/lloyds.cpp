@@ -3,6 +3,7 @@
 // Lloyd-Max scalar quantizer designer delegating to keel::comm.
 
 #include <keel/arena.h>
+#include <keel/tuple.h>
 #include <keel/algo.h>
 #include <keel/array.h>
 #include <keel/comm.h>
@@ -29,7 +30,7 @@ Value vecToRow(keel::Allocator *mr, keel::ArrayRef<keel::f64> v)
 
 } // namespace
 
-std::tuple<Value, Value, keel::f64, keel::f64>
+keel::Tuple<Value, Value, keel::f64, keel::f64>
 lloyds(const Value &training_set, const Value &ini_codebook, keel::f64 tol, keel::Allocator *mr)
 {
     const keel::usize N = training_set.numel();

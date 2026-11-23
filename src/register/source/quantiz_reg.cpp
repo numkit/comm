@@ -15,7 +15,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -35,8 +34,8 @@ void quantiz_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         throw Error("quantiz: codebook required for quantv/distor outputs",
                     0, 0, "quantiz", "", "numkit:quantiz:fewInputs");
     auto r = quantiz(args[0], args[1], args[2], mr);
-    outs[0] = std::move(r.indx);
-    if (nargout > 1) outs[1] = std::move(r.quantv);
+    outs[0] = keel::move(r.indx);
+    if (nargout > 1) outs[1] = keel::move(r.quantv);
     if (nargout > 2) outs[2] = Value::scalar(r.distor, mr);
 }
 

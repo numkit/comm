@@ -176,7 +176,7 @@ Value de2bi(const Value &d, keel::i32 n_user, keel::i32 base, bool msbfirst,
 // Reshape vector into N-column matrix with row-major fill, padding the
 // last row to width N with `padval` (default 0). Returns the matrix and
 // the count of pad entries added.
-std::pair<Value, keel::i32>
+keel::Pair<Value, keel::i32>
 vec2mat(const Value &v, keel::i32 n, keel::f64 padval, keel::Allocator *mr)
 {
     if (n <= 0)

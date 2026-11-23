@@ -9,7 +9,6 @@
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <numkit/value/value.hpp>
-#include <utility>
 
 namespace numkit::comm {
 
@@ -33,7 +32,7 @@ namespace numkit::comm {
 /// @return         Pair `(dict, avglen)`.
 /// @throws Error   On length mismatch or non-normalised `probs`.
 /// @see huffmanenco, huffmandeco
-std::pair<Value, keel::f64>
+keel::Pair<Value, keel::f64>
 huffmandict(const Value &symbols, const Value &probs,
             keel::Allocator *mr = nullptr);
 

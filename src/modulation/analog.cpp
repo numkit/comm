@@ -19,7 +19,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/value.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 
@@ -45,7 +44,7 @@ Value runRealCols(const Value &x, keel::Allocator *mr, Fn &&fn)
     keel::usize H = d.rows();
     keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
-    if (was_row) std::swap(H, W);
+    if (was_row) keel::swap(H, W);
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
@@ -146,7 +145,7 @@ Value mskmod(const Value &x, keel::i32 nSamp, keel::f64 ini_phase, keel::Allocat
     const auto &d = x.dims();
     keel::usize H = d.rows(), W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
-    if (was_row) std::swap(H, W);
+    if (was_row) keel::swap(H, W);
 
     const keel::usize Nout = H * keel::as<keel::usize>(nSamp);
     Value out = was_row ? Value::matrix(1, Nout, ValueType::COMPLEX, mr)
@@ -176,7 +175,7 @@ Value mskdemod(const Value &y, keel::i32 nSamp, keel::f64 ini_phase,
     const auto &d = y.dims();
     keel::usize H = d.rows(), W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
-    if (was_row) std::swap(H, W);
+    if (was_row) keel::swap(H, W);
     if (H == 0 || H % keel::as<keel::usize>(nSamp) != 0)
         throw Error("mskdemod: signal length must be a positive multiple of nSamp",
                     0, 0, "mskdemod", "", "numkit:mskdemod:length");

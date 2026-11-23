@@ -16,7 +16,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -27,7 +26,7 @@ void huffmandict_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 2, 4, "huffmandict");
     auto *mr = ctx.engine->allocator();
     auto [dict, avglen] = huffmandict(args[0], args[1], mr);
-    outs[0] = std::move(dict);
+    outs[0] = keel::move(dict);
     if (nargout > 1)
         outs[1] = Value::scalar(avglen, mr);
 }

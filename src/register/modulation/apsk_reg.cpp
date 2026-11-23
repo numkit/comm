@@ -258,7 +258,7 @@ void apskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         const keel::usize bps = apskBitsPerSymbol(Mspan, "apskdemod");
         syms = unpackApskBits(syms, bps, mr);
     }
-    outs[0] = std::move(syms);
+    outs[0] = keel::move(syms);
 }
 
 } // namespace detail

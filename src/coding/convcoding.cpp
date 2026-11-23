@@ -106,8 +106,8 @@ Value poly2trellis(const Value &constraintLength, const Value &codeGenerator, ke
     el.put(keel::String::from("numInputSymbols"),  Value::scalar(keel::as<keel::f64>(tr.num_input_symbols),  mr));
     el.put(keel::String::from("numOutputSymbols"), Value::scalar(keel::as<keel::f64>(tr.num_output_symbols), mr));
     el.put(keel::String::from("numStates"),        Value::scalar(keel::as<keel::f64>(tr.num_states),         mr));
-    el.put(keel::String::from("nextStates"), std::move(ns));
-    el.put(keel::String::from("outputs"),    std::move(ou));
+    el.put(keel::String::from("nextStates"), keel::move(ns));
+    el.put(keel::String::from("outputs"),    keel::move(ou));
     return t;
 }
 

@@ -12,7 +12,7 @@
 #include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
-#include <tuple>
+#include <keel/tuple.h>
 
 namespace numkit {
 
@@ -129,7 +129,7 @@ Value noisebw(const Value &num, const Value &den, keel::i32 Nsamp,
 /// @param mr       Memory resource (nullptr → process default).
 /// @return         Tuple `(ber, ci)` where `ber = numErrs / numBits`
 ///                 and `ci = [lo, hi]`.
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
            keel::Allocator *mr = nullptr);
 

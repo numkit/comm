@@ -16,7 +16,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 
@@ -64,7 +63,7 @@ keel::String symerr_argcheck(const Value &x, const Value &y, keel::StringRef flg
 
 } // anonymous namespace
 
-std::pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k,
+keel::Pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k,
                                keel::Allocator *mr)
 {
     biterr_argcheck(x, y, k);
@@ -84,7 +83,7 @@ std::pair<Value, Value> biterr(const Value &x, const Value &y, keel::i32 k,
             Value::scalar(stats.ratio, mr)};
 }
 
-std::pair<Value, Value> symerr(const Value &x, const Value &y,
+keel::Pair<Value, Value> symerr(const Value &x, const Value &y,
                                keel::StringRef flg, keel::Allocator *mr)
 {
     const keel::String mode = symerr_argcheck(x, y, flg);
@@ -110,7 +109,7 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
             cd[j] = keel::as<keel::f64>(stats.count);
             rd[j] = stats.ratio;
         }
-        return {std::move(counts), std::move(ratios)};
+        return {keel::move(counts), keel::move(ratios)};
     }
 
     const keel::usize r = x.dims().rows();
@@ -129,10 +128,10 @@ std::pair<Value, Value> symerr(const Value &x, const Value &y,
         cd[i] = keel::as<keel::f64>(cnt);
         rd[i] = (c > 0) ? keel::as<keel::f64>(cnt) / keel::as<keel::f64>(c) : 0.0;
     }
-    return {std::move(counts), std::move(ratios)};
+    return {keel::move(counts), keel::move(ratios)};
 }
 
-std::pair<Value, Value> symerr(const Value &x, const Value &y, keel::Allocator *mr)
+keel::Pair<Value, Value> symerr(const Value &x, const Value &y, keel::Allocator *mr)
 {
     return symerr(x, y, "overall", mr);
 }

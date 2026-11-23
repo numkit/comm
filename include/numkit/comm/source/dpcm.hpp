@@ -8,7 +8,6 @@
 
 #include <keel/memory.h>
 #include <numkit/value/value.hpp>
-#include <utility>
 
 namespace numkit::comm {
 
@@ -31,7 +30,7 @@ namespace numkit::comm {
 /// @return           Tuple `(indx, quanterr)` — index sequence and
 ///                   quantisation error per sample.
 /// @see dpcmdeco, dpcmopt
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
          keel::Allocator *mr = nullptr);
@@ -48,7 +47,7 @@ dpcmenco(const Value &sig, const Value &codebook,
 /// @param mr         Memory resource (nullptr → process default).
 /// @return           Tuple `(sig, quanterr)`.
 /// @see dpcmenco
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dpcmdeco(const Value &indx, const Value &codebook,
          const Value &predictor,
          keel::Allocator *mr = nullptr);

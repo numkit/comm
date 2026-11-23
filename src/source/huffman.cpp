@@ -83,7 +83,7 @@ bool isRowOriented(const Value &v)
 
 } // namespace
 
-std::pair<Value, keel::f64>
+keel::Pair<Value, keel::f64>
 huffmandict(const Value &symbols, const Value &probs, keel::Allocator *mr)
 {
     huffmandict_argcheck(symbols, probs);
@@ -106,9 +106,9 @@ huffmandict(const Value &symbols, const Value &probs, keel::Allocator *mr)
         keel::f64 *cd = code.doubleDataMut();
         for (keel::usize i = 0; i < L; ++i)
             cd[i] = keel::as<keel::f64>(hd.bits[keel::as<keel::usize>(beg) + i]);
-        dict.cellAt(K + k) = std::move(code);
+        dict.cellAt(K + k) = keel::move(code);
     }
-    return {std::move(dict), hd.avg_len};
+    return {keel::move(dict), hd.avg_len};
 }
 
 Value huffmanenco(const Value &sig, const Value &dict, keel::Allocator *mr)

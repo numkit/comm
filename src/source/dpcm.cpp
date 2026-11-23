@@ -31,7 +31,7 @@ keel::Array<keel::f64> readVec(const Value &v, keel::Allocator *alloc)
 
 } // namespace
 
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dpcmenco(const Value &sig, const Value &codebook,
          const Value &partition, const Value &predictor,
          keel::Allocator *mr)
@@ -61,10 +61,10 @@ dpcmenco(const Value &sig, const Value &codebook,
 
     keel::f64 *oi = indx_v.doubleDataMut();
     for (keel::usize i = 0; i < N; ++i) oi[i] = keel::as<keel::f64>(idx[i]);
-    return {std::move(indx_v), std::move(quanterr_v)};
+    return {keel::move(indx_v), keel::move(quanterr_v)};
 }
 
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dpcmdeco(const Value &indx, const Value &codebook,
          const Value &predictor, keel::Allocator *mr)
 {
@@ -94,7 +94,7 @@ dpcmdeco(const Value &indx, const Value &codebook,
                                   keel::MutArrayRef<keel::f64>(sig_v.doubleDataMut(), N),
                                   keel::MutArrayRef<keel::f64>(quanterr_v.doubleDataMut(), N),
                                   scratch.allocator());
-    return {std::move(sig_v), std::move(quanterr_v)};
+    return {keel::move(sig_v), keel::move(quanterr_v)};
 }
 
 } // namespace numkit::comm

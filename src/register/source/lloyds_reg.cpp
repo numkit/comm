@@ -16,8 +16,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <tuple>
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -32,8 +30,8 @@ void lloyds_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         tol = args[2].toScalar();
     auto [partition, codebook, distor, rel] =
         lloyds(args[0], args[1], tol, mr);
-    outs[0] = std::move(partition);
-    if (nargout > 1) outs[1] = std::move(codebook);
+    outs[0] = keel::move(partition);
+    if (nargout > 1) outs[1] = keel::move(codebook);
     if (nargout > 2) outs[2] = Value::scalar(distor, mr);
     if (nargout > 3) outs[3] = Value::scalar(rel, mr);
 }

@@ -17,8 +17,7 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <tuple>
-#include <utility>
+#include <keel/tuple.h>
 
 
 namespace numkit::comm {
@@ -436,7 +435,7 @@ static keel::f64 betaincinv_scalar(keel::Allocator *mr,
     return ::numkit::builtin::betaincinv(pV, aV, bV, mr).toScalar();
 }
 
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
            keel::Allocator *mr)
 {
@@ -458,7 +457,7 @@ berconfint(keel::f64 numErrs, keel::f64 numBits, keel::f64 level,
     keel::f64 *cd = ciV.doubleDataMut();
     cd[0] = lo;
     cd[1] = hi;
-    return {std::move(berV), std::move(ciV)};
+    return {keel::move(berV), keel::move(ciV)};
 }
 
 Value convertSNR(const Value &snr_in,

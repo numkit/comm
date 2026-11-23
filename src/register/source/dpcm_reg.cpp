@@ -16,7 +16,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -27,8 +26,8 @@ void dpcmenco_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 4, 4, "dpcmenco");
     auto *mr = ctx.engine->allocator();
     auto [indx, quanterr] = dpcmenco(args[0], args[1], args[2], args[3], mr);
-    outs[0] = std::move(indx);
-    if (nargout > 1) outs[1] = std::move(quanterr);
+    outs[0] = keel::move(indx);
+    if (nargout > 1) outs[1] = keel::move(quanterr);
 }
 
 void dpcmdeco_reg(keel::ArrayRef<Value> args, keel::usize nargout,
@@ -37,8 +36,8 @@ void dpcmdeco_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 3, 3, "dpcmdeco");
     auto *mr = ctx.engine->allocator();
     auto [sig, quanterr] = dpcmdeco(args[0], args[1], args[2], mr);
-    outs[0] = std::move(sig);
-    if (nargout > 1) outs[1] = std::move(quanterr);
+    outs[0] = keel::move(sig);
+    if (nargout > 1) outs[1] = keel::move(quanterr);
 }
 
 } // namespace detail

@@ -17,7 +17,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <utility>
 
 namespace numkit::comm {
 namespace detail {
@@ -33,8 +32,8 @@ void biterr_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         argcheck::expectedReal(args[2], 3, "k", "biterr"), 3, "k", "biterr");
     }
     auto [number, ratio] = biterr(args[0], args[1], k, ctx.engine->allocator());
-    outs[0] = std::move(number);
-    if (nargout > 1) outs[1] = std::move(ratio);
+    outs[0] = keel::move(number);
+    if (nargout > 1) outs[1] = keel::move(ratio);
 }
 
 // symerr(x, y[, flg]): out[0] = symbol error count, out[1] = ratio.
@@ -50,8 +49,8 @@ void symerr_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         flg = args[2].toString();
     }
     auto [count, ratio] = symerr(args[0], args[1], flg, ctx.engine->allocator());
-    outs[0] = std::move(count);
-    if (nargout > 1) outs[1] = std::move(ratio);
+    outs[0] = keel::move(count);
+    if (nargout > 1) outs[1] = keel::move(ratio);
 }
 
 } // namespace detail

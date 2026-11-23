@@ -10,7 +10,6 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
-#include <utility>
 #include <numkit/value/value.hpp>
 
 namespace numkit::comm {
@@ -103,7 +102,7 @@ Value de2bi(const Value &d, keel::i32 n = -1, keel::i32 base = 2, bool msbfirst 
 /// @return        `{ matrix, padCount }` — the reshaped matrix and the
 ///                number of pad entries added to fill the final row.
 /// @throws Error if `n <= 0`.
-std::pair<Value, keel::i32>
+keel::Pair<Value, keel::i32>
 vec2mat(const Value &v, keel::i32 n, keel::f64 padval = 0.0,
         keel::Allocator *mr = nullptr);
 

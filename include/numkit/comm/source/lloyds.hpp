@@ -9,7 +9,7 @@
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <numkit/value/value.hpp>
-#include <tuple>
+#include <keel/tuple.h>
 
 namespace numkit::comm {
 
@@ -39,7 +39,7 @@ namespace numkit::comm {
 /// @throws Error        On empty training set or invalid
 ///                      `ini_codebook`.
 /// @see quantiz, dpcmopt
-std::tuple<Value, Value, keel::f64, keel::f64>
+keel::Tuple<Value, Value, keel::f64, keel::f64>
 lloyds(const Value &training_set, const Value &ini_codebook,
        keel::f64 tol = 1e-7,
        keel::Allocator *mr = nullptr);

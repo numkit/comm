@@ -6,7 +6,6 @@
 #include <numkit/comm/library.hpp>
 
 #include <numkit/sys/plugin.hpp>
-#include <utility>
 
 namespace numkit::comm::detail {
 // modulation/psk.cpp
@@ -139,7 +138,7 @@ namespace numkit {
 void CommLibrary::install(PluginContext &engine)
 {
     auto reg = [&](const char *sub, const char *name, ExternalFunc fn) {
-        engine.registerFunction(keel::format("comm.{}", sub), name, std::move(fn));
+        engine.registerFunction(keel::format("comm.{}", sub), name, keel::move(fn));
         // compat.* registration removed — bare-name resolver replaces it
     };
 
