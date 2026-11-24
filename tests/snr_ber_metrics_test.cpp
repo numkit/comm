@@ -24,7 +24,7 @@ TEST_P(SnrBerMetricsTest, QfuncMarcumq)
     EXPECT_NEAR(evalScalar("qfuncinv(0.5)"), 0.0, 1e-9);
     EXPECT_NEAR(evalScalar("qfuncinv(qfunc(1))"), 1.0, 1e-7);   // round-trip
     EXPECT_NEAR(evalScalar("marcumq(0, 1)"), 0.6065306597, 1e-9);  // exp(-1/2)
-    EXPECT_NEAR(evalScalar("marcumq(1, 2)"), 0.2690126565, 1e-9);
+    EXPECT_NEAR(evalScalar("marcumq(1, 2)"), 0.26901206003591, 1e-10);
 }
 
 // ── berawgn: BPSK BER at Eb/N0=10 dB = qfunc(sqrt(2*10)) ─────────────────
