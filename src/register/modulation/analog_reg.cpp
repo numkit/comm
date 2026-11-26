@@ -114,11 +114,17 @@ namespace {
 
 Value nondiffEncodeBits(const Value &x, keel::Allocator *mr)
 {
+    if ((!x.isNumeric() && !x.isLogical()) || x.isComplex())
+        throw Error("mskmod: input must be real numeric or logical",
+                    0, 0, "mskmod", "", "numkit:mskmod:inputType");
     const auto &d = x.dims();
     keel::usize H = d.rows();
     keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) keel::swap(H, W);
+    if (x.numel() != H * W)
+        throw Error("mskmod: input must be a 2-D matrix or vector",
+                    0, 0, "mskmod", "", "numkit:mskmod:inputShape");
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);
@@ -142,11 +148,17 @@ Value nondiffEncodeBits(const Value &x, keel::Allocator *mr)
 
 Value nondiffDecodeBits(const Value &diffBits, keel::Allocator *mr)
 {
+    if ((!diffBits.isNumeric() && !diffBits.isLogical()) || diffBits.isComplex())
+        throw Error("mskdemod: decoded bits must be real numeric or logical",
+                    0, 0, "mskdemod", "", "numkit:mskdemod:inputType");
     const auto &d = diffBits.dims();
     keel::usize H = d.rows();
     keel::usize W = d.cols();
     const bool was_row = (H == 1 && W >= 1);
     if (was_row) keel::swap(H, W);
+    if (diffBits.numel() != H * W)
+        throw Error("mskdemod: decoded bits must be a 2-D matrix or vector",
+                    0, 0, "mskdemod", "", "numkit:mskdemod:inputShape");
 
     Value out = was_row ? Value::matrix(1, H, ValueType::DOUBLE, mr)
                         : Value::matrix(H, W, ValueType::DOUBLE, mr);

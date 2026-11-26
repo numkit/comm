@@ -109,3 +109,12 @@ TEST_F(ApskTest, GrayMappingAndBitMode)
          "z = apskdemod(y, [4 4], [1 2], 'SymbolMapping', 'gray', 'OutputType', 'bit');");
     EXPECT_EQ(static_cast<int>(evalScalar("sum(z == bits)")), 12);
 }
+
+TEST_F(ApskTest, HardenedInvalidModulationInputs)
+{
+    EXPECT_THROW(eval("apskmod(0:3, [-4], [1]);"), numkit::Error);
+    EXPECT_THROW(eval("apskmod(0:3, [NaN], [1]);"), numkit::Error);
+    EXPECT_THROW(eval("apskmod(0:3, [4], [Inf]);"), numkit::Error);
+    EXPECT_THROW(eval("genqammod(0:3, zeros(1, 2, 2), 'UnitAveragePower', true);"), numkit::Error);
+    EXPECT_THROW(eval("mskmod(zeros(2, 2, 0), 4, 'nondiff');"), numkit::Error);
+}

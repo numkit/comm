@@ -33,9 +33,15 @@ keel::String toLowerAscii(keel::StringRef sv) {
     return s;
 }
 
-Value scaleConstellationUnitPower(const Value &c, keel::Allocator *mr) {
+Value scaleConstellationUnitPower(const Value &c, const char *fn, keel::Allocator *mr) {
+    if (!c.isNumeric())
+        throw Error(keel::format("{}: constellation must be numeric", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BadConstellation", fn));
     const keel::usize M = c.numel();
     if (M == 0) return c;
+    if (c.dims().rows() * c.dims().cols() != M)
+        throw Error(keel::format("{}: constellation must be a 1-D or 2-D numeric array", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BadConstellation", fn));
     keel::f64 sumP = 0.0;
     if (c.isComplex()) {
         const auto *cd = c.complexData();
@@ -74,8 +80,14 @@ keel::usize checkBitsPerSymbol(keel::usize M, const char *fn) {
 }
 
 Value packBitsToSymbols(const Value &x, keel::usize bps, const char *fn, keel::Allocator *mr) {
+    if ((!x.isNumeric() && !x.isLogical()) || x.isComplex())
+        throw Error(keel::format("{}: bit input must be real numeric or logical", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
     const keel::usize H = x.dims().rows();
     const keel::usize W = x.dims().cols();
+    if (x.numel() != H * W)
+        throw Error(keel::format("{}: bit input must be a 2-D matrix or vector", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BitLength", fn));
     const bool rowVec = (H == 1 && W >= bps && (H % bps != 0));
     const keel::usize bitLen = rowVec ? W : H;
     if (bitLen == 0 || (bitLen % bps) != 0)
@@ -104,8 +116,14 @@ Value packBitsToSymbols(const Value &x, keel::usize bps, const char *fn, keel::A
 }
 
 Value unpackSymbolsToBits(const Value &syms, keel::usize bps, keel::Allocator *mr) {
+    if ((!syms.isNumeric() && !syms.isLogical()) || syms.isComplex())
+        throw Error("genqamdemod: demodulated symbols must be real numeric",
+                    0, 0, "genqamdemod", "", "numkit:genqamdemod:InvalidSymbol");
     const keel::usize H = syms.dims().rows();
     const keel::usize W = syms.dims().cols();
+    if (syms.numel() != H * W)
+        throw Error("genqamdemod: symbol array must be 2-D",
+                    0, 0, "genqamdemod", "", "numkit:genqamdemod:InvalidSymbol");
     const bool rowVec = (H == 1 && W > 1);
     const keel::usize nSyms = rowVec ? W : H;
     const keel::usize nCols = rowVec ? 1 : W;
@@ -114,7 +132,8 @@ Value unpackSymbolsToBits(const Value &syms, keel::usize bps, keel::Allocator *m
     keel::f64 *bd = bits.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
-            const keel::usize val = keel::as<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
+            const keel::f64 sv = syms.elemAsDouble(rowVec ? s : (c * H + s));
+            const keel::usize val = (keel::is_finite(sv) && sv >= 0.0) ? keel::as<keel::usize>(sv) : 0u;
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
                 const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
@@ -156,7 +175,7 @@ void genqammod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "genqammod", "", "numkit:genqammod:BadOption");
         }
     }
-    Value c = unitAvgPow ? scaleConstellationUnitPower(args[1], mr) : args[1];
+    Value c = unitAvgPow ? scaleConstellationUnitPower(args[1], "genqammod", mr) : args[1];
     Value x = args[0];
     if (bitInput) {
         const keel::usize bps = checkBitsPerSymbol(c.numel(), "genqammod");
@@ -194,7 +213,7 @@ void genqamdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "genqamdemod", "", "numkit:genqamdemod:BadOption");
         }
     }
-    Value c = unitAvgPow ? scaleConstellationUnitPower(args[1], mr) : args[1];
+    Value c = unitAvgPow ? scaleConstellationUnitPower(args[1], "genqamdemod", mr) : args[1];
     Value syms = genqamdemod(args[0], c, mr);
     if (bitOutput) {
         const keel::usize bps = checkBitsPerSymbol(c.numel(), "genqamdemod");

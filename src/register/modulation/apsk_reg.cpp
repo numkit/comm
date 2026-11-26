@@ -35,23 +35,39 @@ keel::String toLowerApsk(keel::StringRef sv) {
 }
 
 // Build a ScratchVec<size_t> from a Value's elements via elemAsDouble.
-keel::Array<keel::usize> valueToScratchSizes(const Value &v, keel::Allocator *mr)
+keel::Array<keel::usize> valueToScratchSizes(const Value &v, const char *fn, keel::Allocator *mr)
 {
+    if (!v.isNumeric() || v.isComplex())
+        throw Error(keel::format("{}: M must be a real numeric vector of positive integers", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BadM", fn));
     keel::Array<keel::usize> out(mr);
     const keel::usize n = v.numel();
     out.reserve(n);
-    for (keel::usize i = 0; i < n; ++i)
-        out.push_back(keel::as<keel::usize>(v.elemAsDouble(i)));
+    for (keel::usize i = 0; i < n; ++i) {
+        const keel::f64 m = v.elemAsDouble(i);
+        if (!keel::is_finite(m) || !keel::is_integer(m) || m < 1.0 || m > 1048576.0)
+            throw Error(keel::format("{}: M elements must be positive integers", fn),
+                        0, 0, fn, "", keel::format("numkit:{}:BadM", fn));
+        out.push_back(keel::as<keel::usize>(m));
+    }
     return out;
 }
 
-keel::Array<keel::f64> valueToScratchDoubles(const Value &v, keel::Allocator *mr)
+keel::Array<keel::f64> valueToScratchDoubles(const Value &v, const char *fn, keel::Allocator *mr)
 {
+    if (!v.isNumeric() || v.isComplex())
+        throw Error(keel::format("{}: radii must be a real numeric vector", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BadRadii", fn));
     keel::Array<keel::f64> out(mr);
     const keel::usize n = v.numel();
     out.reserve(n);
-    for (keel::usize i = 0; i < n; ++i)
-        out.push_back(v.elemAsDouble(i));
+    for (keel::usize i = 0; i < n; ++i) {
+        const keel::f64 r = v.elemAsDouble(i);
+        if (!keel::is_finite(r))
+            throw Error(keel::format("{}: radii must be finite", fn),
+                        0, 0, fn, "", keel::format("numkit:{}:BadRadii", fn));
+        out.push_back(r);
+    }
     return out;
 }
 
@@ -103,8 +119,14 @@ keel::usize apskBitsPerSymbol(keel::ArrayRef<keel::usize> M, const char *fn)
 
 Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Allocator *mr)
 {
+    if ((!x.isNumeric() && !x.isLogical()) || x.isComplex())
+        throw Error(keel::format("{}: bit input must be real numeric or logical", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:InvalidBit", fn));
     const keel::usize H = x.dims().rows();
     const keel::usize W = x.dims().cols();
+    if (x.numel() != H * W)
+        throw Error(keel::format("{}: bit input must be a 2-D matrix or vector", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:BitLength", fn));
     const bool rowVec = (H == 1 && W >= bps && (H % bps != 0));
     const keel::usize bitLen = rowVec ? W : H;
     if (bitLen == 0 || (bitLen % bps) != 0)
@@ -134,8 +156,14 @@ Value packApskBits(const Value &x, keel::usize bps, const char *fn, keel::Alloca
 
 Value unpackApskBits(const Value &syms, keel::usize bps, keel::Allocator *mr)
 {
+    if ((!syms.isNumeric() && !syms.isLogical()) || syms.isComplex())
+        throw Error("apskdemod: demodulated symbols must be real numeric",
+                    0, 0, "apskdemod", "", "numkit:apskdemod:InvalidSymbol");
     const keel::usize H = syms.dims().rows();
     const keel::usize W = syms.dims().cols();
+    if (syms.numel() != H * W)
+        throw Error("apskdemod: symbol array must be 2-D",
+                    0, 0, "apskdemod", "", "numkit:apskdemod:InvalidSymbol");
     const bool rowVec = (H == 1 && W > 1);
     const keel::usize nSyms = rowVec ? W : H;
     const keel::usize nCols = rowVec ? 1 : W;
@@ -144,7 +172,8 @@ Value unpackApskBits(const Value &syms, keel::usize bps, keel::Allocator *mr)
     keel::f64 *bd = bits.doubleDataMut();
     for (keel::usize c = 0; c < nCols; ++c) {
         for (keel::usize s = 0; s < nSyms; ++s) {
-            const keel::usize val = keel::as<keel::usize>(syms.elemAsDouble(rowVec ? s : (c * H + s)));
+            const keel::f64 sv = syms.elemAsDouble(rowVec ? s : (c * H + s));
+            const keel::usize val = (keel::is_finite(sv) && sv >= 0.0) ? keel::as<keel::usize>(sv) : 0u;
             for (keel::usize b = 0; b < bps; ++b) {
                 const keel::usize bit = (val >> (bps - 1 - b)) & 1u;
                 const keel::usize outIdx = rowVec ? (s * bps + b) : (c * (nSyms * bps) + s * bps + b);
@@ -226,8 +255,8 @@ void apskmod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 3, "apskmod");
     auto *mr = ctx.engine->allocator();
     keel::ArenaTemp scratch = keel::get_scratch(mr);
-    auto Mv = valueToScratchSizes(args[1], scratch.allocator());
-    auto Rv = valueToScratchDoubles(args[2], scratch.allocator());
+    auto Mv = valueToScratchSizes(args[1], "apskmod", scratch.allocator());
+    auto Rv = valueToScratchDoubles(args[2], "apskmod", scratch.allocator());
     keel::ArrayRef<keel::usize> Mspan(Mv.data(), Mv.size());
     Value po, mp;
     bool bitMode = false;
@@ -246,8 +275,8 @@ void apskdemod_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 3, "apskdemod");
     auto *mr = ctx.engine->allocator();
     keel::ArenaTemp scratch = keel::get_scratch(mr);
-    auto Mv = valueToScratchSizes(args[1], scratch.allocator());
-    auto Rv = valueToScratchDoubles(args[2], scratch.allocator());
+    auto Mv = valueToScratchSizes(args[1], "apskdemod", scratch.allocator());
+    auto Rv = valueToScratchDoubles(args[2], "apskdemod", scratch.allocator());
     keel::ArrayRef<keel::usize> Mspan(Mv.data(), Mv.size());
     Value po, mp;
     bool bitMode = false;
