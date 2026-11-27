@@ -1426,6 +1426,381 @@ void scatterplot_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     outs[0] = (nargout >= 1) ? figOut[0] : Value();
 }
 
+// ── 8. comm.ConstellationDiagram ────────────────────────────────────────
+struct ConstellationPayload final : public NativePayload {
+    Value refConstellation;
+    keel::String symSource;
+    keel::i32 symToDisplay = 1000;
+    keel::String name;
+    keel::String title;
+    bool showGrid = true;
+    keel::Array<keel::f64> position;
+    keel::Array<keel::f64> xLimits;
+    keel::Array<keel::f64> yLimits;
+
+    explicit ConstellationPayload(keel::Allocator *mr = nullptr)
+        : symSource(keel::String::from("Auto"))
+        , name(keel::String::from("Constellation Diagram"))
+        , title(keel::String::from(""))
+        , position(mr)
+        , xLimits(mr)
+        , yLimits(mr)
+    {
+        position.push_back(100.0);
+        position.push_back(100.0);
+        position.push_back(460.0);
+        position.push_back(460.0);
+        xLimits.push_back(-1.5);
+        xLimits.push_back(1.5);
+        yLimits.push_back(-1.5);
+        yLimits.push_back(1.5);
+    }
+
+    keel::Arc<NativePayload> clone(keel::Allocator *alloc = nullptr) const override
+    {
+        auto *a = alloc ? alloc : keel::default_allocator();
+        auto p = keel::make_arc_in<ConstellationPayload>(a, a);
+        p->refConstellation = refConstellation;
+        p->symSource = symSource.clone();
+        p->symToDisplay = symToDisplay;
+        p->name = name.clone();
+        p->title = title.clone();
+        p->showGrid = showGrid;
+        p->position = position.clone(a);
+        p->xLimits = xLimits.clone(a);
+        p->yLimits = yLimits.clone(a);
+        return p;
+    }
+};
+
+void constDiagApplyNV(ConstellationPayload &p, keel::ArrayRef<Value> args, keel::Allocator *mr)
+{
+    auto readVec = [&](const Value &v) {
+        keel::Array<keel::f64> out(mr);
+        out.reserve(v.numel());
+        for (keel::usize k = 0; k < v.numel(); ++k) out.push_back(v.elemAsDouble(k));
+        return out;
+    };
+    for (keel::usize i = 0; i + 1 < args.size(); i += 2) {
+        if (!args[i].isChar() && !args[i].isString()) continue;
+        const keel::String k = args[i].toString();
+        if (k.equals_ignore_ascii_case("ReferenceConstellation")) p.refConstellation = args[i + 1];
+        else if (k.equals_ignore_ascii_case("SymbolsToDisplaySource")) p.symSource = args[i + 1].toString();
+        else if (k.equals_ignore_ascii_case("SymbolsToDisplay")) p.symToDisplay = keel::max(1, roundI32(args[i + 1].toScalar()));
+        else if (k.equals_ignore_ascii_case("Name")) p.name = args[i + 1].toString();
+        else if (k.equals_ignore_ascii_case("Title")) p.title = args[i + 1].toString();
+        else if (k.equals_ignore_ascii_case("ShowGrid")) p.showGrid = args[i + 1].toBool();
+        else if (k.equals_ignore_ascii_case("Position")) p.position = readVec(args[i + 1]);
+        else if (k.equals_ignore_ascii_case("XLimits")) p.xLimits = readVec(args[i + 1]);
+        else if (k.equals_ignore_ascii_case("YLimits")) p.yLimits = readVec(args[i + 1]);
+    }
+}
+
+void constDiagStepImpl(Value & /*self*/, keel::ArrayRef<Value> args, keel::usize,
+                       keel::MutArrayRef<Value> outs, CallContext &)
+{
+    argcheck::checkNargin(args.size(), 1, 8, "comm.ConstellationDiagram.step");
+    if (!outs.empty()) outs[0] = Value();
+}
+
+BuiltinClass makeConstellationDiagramClass()
+{
+    BuiltinClass cls;
+    cls.name = keel::String::from("comm.ConstellationDiagram");
+    cls.isHandle = true;
+    cls.construct = [](keel::ArrayRef<Value> args, CallContext &ctx) -> Value {
+        auto *mr = allocOf(ctx);
+        auto payload = keel::make_arc_in<ConstellationPayload>(mr, mr);
+        constDiagApplyNV(*payload, args, mr);
+        auto st = keel::make_arc_in<ObjectState>(mr, mr);
+        st->native = keel::move(payload);
+        return Value::object("comm.ConstellationDiagram", keel::move(st), mr);
+    };
+    cls.subsref = &constDiagStepImpl;
+    cls.methods.put(keel::String::from("step"), &constDiagStepImpl);
+    auto noop = [](Value &, keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value> outs, CallContext &) {
+        if (!outs.empty()) outs[0] = Value();
+    };
+    cls.methods.put(keel::String::from("reset"), noop);
+    cls.methods.put(keel::String::from("release"), noop);
+    cls.methods.put(keel::String::from("show"), noop);
+    cls.methods.put(keel::String::from("hide"), noop);
+    cls.propGet = [](const Value &self, keel::StringRef name, Value &out, CallContext &ctx) -> bool {
+        auto *mr = allocOf(ctx);
+        const auto &p = *static_cast<const ConstellationPayload *>(self.objectStateConst()->native.get());
+        auto makeRow = [&](const keel::Array<keel::f64> &a) {
+            Value v = Value::matrix(1, a.size(), ValueType::DOUBLE, mr);
+            for (keel::usize k = 0; k < a.size(); ++k) v.doubleDataMut()[k] = a[k];
+            return v;
+        };
+        if (name.equals_ignore_ascii_case("ReferenceConstellation")) { out = p.refConstellation; return true; }
+        if (name.equals_ignore_ascii_case("SymbolsToDisplaySource")) { out = Value::fromString(p.symSource, mr); return true; }
+        if (name.equals_ignore_ascii_case("SymbolsToDisplay")) { out = Value::scalar(keel::as<keel::f64>(p.symToDisplay), mr); return true; }
+        if (name.equals_ignore_ascii_case("Name")) { out = Value::fromString(p.name, mr); return true; }
+        if (name.equals_ignore_ascii_case("Title")) { out = Value::fromString(p.title, mr); return true; }
+        if (name.equals_ignore_ascii_case("ShowGrid")) { out = Value::logicalScalar(p.showGrid, mr); return true; }
+        if (name.equals_ignore_ascii_case("Position")) { out = makeRow(p.position); return true; }
+        if (name.equals_ignore_ascii_case("XLimits")) { out = makeRow(p.xLimits); return true; }
+        if (name.equals_ignore_ascii_case("YLimits")) { out = makeRow(p.yLimits); return true; }
+        return false;
+    };
+    cls.propSet = [](Value &self, keel::StringRef name, const Value &val, CallContext &ctx) -> bool {
+        auto *mr = allocOf(ctx);
+        auto &p = *static_cast<ConstellationPayload *>(self.objectStateMut()->native.get());
+        auto readVec = [&](const Value &v) {
+            keel::Array<keel::f64> out(mr);
+            out.reserve(v.numel());
+            for (keel::usize k = 0; k < v.numel(); ++k) out.push_back(v.elemAsDouble(k));
+            return out;
+        };
+        if (name.equals_ignore_ascii_case("ReferenceConstellation")) { p.refConstellation = val; return true; }
+        if (name.equals_ignore_ascii_case("SymbolsToDisplaySource")) { p.symSource = val.toString(); return true; }
+        if (name.equals_ignore_ascii_case("SymbolsToDisplay")) { p.symToDisplay = keel::max(1, roundI32(val.toScalar())); return true; }
+        if (name.equals_ignore_ascii_case("Name")) { p.name = val.toString(); return true; }
+        if (name.equals_ignore_ascii_case("Title")) { p.title = val.toString(); return true; }
+        if (name.equals_ignore_ascii_case("ShowGrid")) { p.showGrid = val.toBool(); return true; }
+        if (name.equals_ignore_ascii_case("Position")) { p.position = readVec(val); return true; }
+        if (name.equals_ignore_ascii_case("XLimits")) { p.xLimits = readVec(val); return true; }
+        if (name.equals_ignore_ascii_case("YLimits")) { p.yLimits = readVec(val); return true; }
+        return true;
+    };
+    return cls;
+}
+
+void commConstDiag_ctor_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
+{
+    auto *mr = allocOf(ctx);
+    auto payload = keel::make_arc_in<ConstellationPayload>(mr, mr);
+    constDiagApplyNV(*payload, args, mr);
+    auto st = keel::make_arc_in<ObjectState>(mr, mr);
+    st->native = keel::move(payload);
+    outs[0] = Value::object("comm.ConstellationDiagram", keel::move(st), mr);
+}
+
+// ── 9. comm.SymbolSynchronizer ──────────────────────────────────────────
+struct SymbolSyncPayload final : public NativePayload {
+    keel::String tedMethod;
+    keel::i32 sps = 2;
+    keel::f64 dampingFactor = 1.0;
+    keel::f64 normLoopBw = 0.01;
+    keel::f64 detectorGain = 2.7;
+
+    // Loop states (Rice 2009 piecewise parabolic interpolator + PI loop filter + mod-1 NCO)
+    keel::c64 interpBuf[3] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
+    keel::c64 tedBuf[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
+    keel::f64 loopFiltState = 0.0;
+    keel::f64 loopPrevIn = 0.0;
+    keel::f64 ncoCounter = 0.0;
+    keel::f64 mu = 0.0;
+    bool prevStrobe = false;
+    keel::i32 strobeHistory = 0;
+
+    SymbolSyncPayload()
+        : tedMethod(keel::String::from("Zero-Crossing (decision-directed)"))
+    {}
+
+    void resetStates()
+    {
+        for (keel::usize i = 0; i < 3; ++i) interpBuf[i] = {0.0, 0.0};
+        for (keel::usize i = 0; i < 4; ++i) tedBuf[i] = {0.0, 0.0};
+        loopFiltState = 0.0;
+        loopPrevIn = 0.0;
+        ncoCounter = 0.0;
+        mu = 0.0;
+        prevStrobe = false;
+        strobeHistory = 0;
+    }
+
+    keel::Arc<NativePayload> clone(keel::Allocator *alloc = nullptr) const override
+    {
+        auto *a = alloc ? alloc : keel::default_allocator();
+        auto p = keel::make_arc_in<SymbolSyncPayload>(a);
+        p->tedMethod = tedMethod.clone();
+        p->sps = sps;
+        p->dampingFactor = dampingFactor;
+        p->normLoopBw = normLoopBw;
+        p->detectorGain = detectorGain;
+        for (keel::usize i = 0; i < 3; ++i) p->interpBuf[i] = interpBuf[i];
+        for (keel::usize i = 0; i < 4; ++i) p->tedBuf[i] = tedBuf[i];
+        p->loopFiltState = loopFiltState;
+        p->loopPrevIn = loopPrevIn;
+        p->ncoCounter = ncoCounter;
+        p->mu = mu;
+        p->prevStrobe = prevStrobe;
+        p->strobeHistory = strobeHistory;
+        return p;
+    }
+};
+
+void symSyncApplyNV(SymbolSyncPayload &p, keel::ArrayRef<Value> args)
+{
+    for (keel::usize i = 0; i + 1 < args.size(); i += 2) {
+        if (!args[i].isChar() && !args[i].isString()) continue;
+        const keel::String k = args[i].toString();
+        if (k.equals_ignore_ascii_case("TimingErrorDetector")) p.tedMethod = args[i + 1].toString();
+        else if (k.equals_ignore_ascii_case("SamplesPerSymbol")) { p.sps = keel::max(2, roundI32(args[i + 1].toScalar())); p.resetStates(); }
+        else if (k.equals_ignore_ascii_case("DampingFactor")) p.dampingFactor = args[i + 1].toScalar();
+        else if (k.equals_ignore_ascii_case("NormalizedLoopBandwidth")) p.normLoopBw = args[i + 1].toScalar();
+        else if (k.equals_ignore_ascii_case("DetectorGain")) p.detectorGain = args[i + 1].toScalar();
+    }
+}
+
+void symSyncStepImpl(Value &self, keel::ArrayRef<Value> args, keel::usize nargout,
+                     keel::MutArrayRef<Value> outs, CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 1, 1, "comm.SymbolSynchronizer.step");
+    auto *mr = allocOf(ctx);
+    auto &p = *static_cast<SymbolSyncPayload *>(self.objectStateMut()->native.get());
+
+    const Value &x = args[0];
+    const keel::usize N = x.numel();
+    const keel::f64 spsF = keel::as<keel::f64>(keel::max(2, p.sps));
+    const keel::f64 zeta = (p.dampingFactor > 0.0) ? p.dampingFactor : 1.0;
+    const keel::f64 bn = (p.normLoopBw > 0.0) ? p.normLoopBw : 0.01;
+    const keel::f64 kp = (p.detectorGain != 0.0) ? p.detectorGain : 2.7;
+    const keel::f64 theta = bn / (spsF * (zeta + 0.25 / zeta));
+    const keel::f64 d = (1.0 + 2.0 * zeta * theta + theta * theta) * kp;
+    const keel::f64 k1 = (4.0 * zeta * theta) / d;
+    const keel::f64 k2 = (4.0 * theta * theta) / d;
+    const bool isGardner = p.tedMethod.as_ref().find('G') != keel::kInvalidIndex
+                        || p.tedMethod.as_ref().find('g') != keel::kInvalidIndex;
+
+    keel::Array<keel::c64> syms(mr);
+    syms.reserve(N / keel::as<keel::usize>(keel::max(1, p.sps)) + 4);
+    keel::Array<keel::f64> tErrOut(mr);
+    if (nargout >= 2) tErrOut.reserve(N);
+
+    for (keel::usize i = 0; i < N; ++i) {
+        const keel::c64 xin = x.isComplex()
+            ? x.complexData()[i]
+            : keel::c64{x.elemAsDouble(i), 0.0};
+
+        // Piecewise parabolic Farrow interpolator (alpha = 0.5)
+        const keel::c64 x0 = xin;
+        const keel::c64 x1 = p.interpBuf[0];
+        const keel::c64 x2 = p.interpBuf[1];
+        const keel::c64 x3 = p.interpBuf[2];
+        const keel::c64 v2{0.5 * (x0.re - x1.re - x2.re + x3.re),
+                           0.5 * (x0.im - x1.im - x2.im + x3.im)};
+        const keel::c64 v1{-0.5 * x0.re + 1.5 * x1.re - 0.5 * x2.re - 0.5 * x3.re,
+                           -0.5 * x0.im + 1.5 * x1.im - 0.5 * x2.im - 0.5 * x3.im};
+        const keel::c64 v0 = x2;
+        const keel::c64 intOut{(v2.re * p.mu + v1.re) * p.mu + v0.re,
+                               (v2.im * p.mu + v1.im) * p.mu + v0.im};
+
+        p.interpBuf[2] = p.interpBuf[1];
+        p.interpBuf[1] = p.interpBuf[0];
+        p.interpBuf[0] = xin;
+
+        keel::f64 e = 0.0;
+        if (p.prevStrobe) {
+            syms.push_back(intOut);
+            const keel::c64 yPrev = p.tedBuf[1];
+            const keel::c64 yMid = p.tedBuf[0];
+            if (isGardner) {
+                e = yMid.re * (yPrev.re - intOut.re) + yMid.im * (yPrev.im - intOut.im);
+            } else {
+                auto sgn = [](keel::f64 v) -> keel::f64 { return (v > 0.0) ? 1.0 : ((v < 0.0) ? -1.0 : 0.0); };
+                e = yMid.re * (sgn(yPrev.re) - sgn(intOut.re))
+                  + yMid.im * (sgn(yPrev.im) - sgn(intOut.im));
+            }
+        }
+        if (nargout >= 2) tErrOut.push_back(p.mu);
+
+        // Update TED shift register
+        p.tedBuf[1] = p.tedBuf[0];
+        p.tedBuf[0] = intOut;
+
+        // PI loop filter
+        const keel::f64 loopOut = p.loopFiltState + k1 * e;
+        p.loopFiltState += k2 * e;
+
+        // Modulo-1 NCO
+        const keel::f64 w = (1.0 / spsF) + loopOut;
+        const keel::f64 nextCounter = p.ncoCounter - w;
+        if (nextCounter < 0.0) {
+            p.prevStrobe = true;
+            p.mu = (w > 1e-12) ? (p.ncoCounter / w) : 0.0;
+            p.mu = keel::clamp(p.mu, 0.0, 1.0);
+            p.ncoCounter = nextCounter + 1.0;
+        } else {
+            p.prevStrobe = false;
+            p.ncoCounter = nextCounter;
+        }
+    }
+
+    Value y = Value::matrix(syms.size(), 1, x.isComplex() ? ValueType::COMPLEX : ValueType::DOUBLE, mr);
+    for (keel::usize i = 0; i < syms.size(); ++i) {
+        if (x.isComplex()) y.complexDataMut()[i] = syms[i];
+        else y.doubleDataMut()[i] = syms[i].re;
+    }
+    outs[0] = keel::move(y);
+    if (nargout >= 2 && outs.size() > 1) {
+        Value te = Value::matrix(tErrOut.size(), 1, ValueType::DOUBLE, mr);
+        for (keel::usize i = 0; i < tErrOut.size(); ++i) te.doubleDataMut()[i] = tErrOut[i];
+        outs[1] = keel::move(te);
+    }
+}
+
+BuiltinClass makeSymbolSyncClass()
+{
+    BuiltinClass cls;
+    cls.name = keel::String::from("comm.SymbolSynchronizer");
+    cls.isHandle = true;
+    cls.construct = [](keel::ArrayRef<Value> args, CallContext &ctx) -> Value {
+        auto *mr = allocOf(ctx);
+        auto payload = keel::make_arc_in<SymbolSyncPayload>(mr);
+        symSyncApplyNV(*payload, args);
+        auto st = keel::make_arc_in<ObjectState>(mr, mr);
+        st->native = keel::move(payload);
+        return Value::object("comm.SymbolSynchronizer", keel::move(st), mr);
+    };
+    cls.subsref = &symSyncStepImpl;
+    cls.methods.put(keel::String::from("step"), &symSyncStepImpl);
+    cls.methods.put(keel::String::from("reset"),
+                    [](Value &self, keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value> outs, CallContext &) {
+                        if (ObjectState *os = self.objectStateMut(); os && os->native)
+                            static_cast<SymbolSyncPayload *>(os->native.get())->resetStates();
+                        if (!outs.empty()) outs[0] = Value();
+                    });
+    cls.methods.put(keel::String::from("release"),
+                    [](Value &self, keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value> outs, CallContext &) {
+                        if (ObjectState *os = self.objectStateMut(); os && os->native)
+                            static_cast<SymbolSyncPayload *>(os->native.get())->resetStates();
+                        if (!outs.empty()) outs[0] = Value();
+                    });
+    cls.propGet = [](const Value &self, keel::StringRef name, Value &out, CallContext &ctx) -> bool {
+        auto *mr = allocOf(ctx);
+        const auto &p = *static_cast<const SymbolSyncPayload *>(self.objectStateConst()->native.get());
+        if (name.equals_ignore_ascii_case("TimingErrorDetector")) { out = Value::fromString(p.tedMethod, mr); return true; }
+        if (name.equals_ignore_ascii_case("SamplesPerSymbol")) { out = Value::scalar(keel::as<keel::f64>(p.sps), mr); return true; }
+        if (name.equals_ignore_ascii_case("DampingFactor")) { out = Value::scalar(p.dampingFactor, mr); return true; }
+        if (name.equals_ignore_ascii_case("NormalizedLoopBandwidth")) { out = Value::scalar(p.normLoopBw, mr); return true; }
+        if (name.equals_ignore_ascii_case("DetectorGain")) { out = Value::scalar(p.detectorGain, mr); return true; }
+        return false;
+    };
+    cls.propSet = [](Value &self, keel::StringRef name, const Value &val, CallContext &) -> bool {
+        auto &p = *static_cast<SymbolSyncPayload *>(self.objectStateMut()->native.get());
+        if (name.equals_ignore_ascii_case("TimingErrorDetector")) { p.tedMethod = val.toString(); return true; }
+        if (name.equals_ignore_ascii_case("SamplesPerSymbol")) { p.sps = keel::max(2, roundI32(val.toScalar())); p.resetStates(); return true; }
+        if (name.equals_ignore_ascii_case("DampingFactor")) { p.dampingFactor = val.toScalar(); return true; }
+        if (name.equals_ignore_ascii_case("NormalizedLoopBandwidth")) { p.normLoopBw = val.toScalar(); return true; }
+        if (name.equals_ignore_ascii_case("DetectorGain")) { p.detectorGain = val.toScalar(); return true; }
+        return false;
+    };
+    return cls;
+}
+
+void commSymbolSync_ctor_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
+{
+    auto *mr = allocOf(ctx);
+    auto payload = keel::make_arc_in<SymbolSyncPayload>(mr);
+    symSyncApplyNV(*payload, args);
+    auto st = keel::make_arc_in<ObjectState>(mr, mr);
+    st->native = keel::move(payload);
+    outs[0] = Value::object("comm.SymbolSynchronizer", keel::move(st), mr);
+}
+
 } // anonymous namespace
 
 void installCommSystemObjects(PluginContext &engine)
@@ -1465,6 +1840,11 @@ void installCommSystemObjects(PluginContext &engine)
     engine.registerFunction("comm", "OFDMModulator", &commOfdmMod_ctor_reg);
     regCls(makeOfdmClass("comm.OFDMDemodulator", true));
     engine.registerFunction("comm", "OFDMDemodulator", &commOfdmDemod_ctor_reg);
+
+    regCls(makeConstellationDiagramClass());
+    engine.registerFunction("comm", "ConstellationDiagram", &commConstDiag_ctor_reg);
+    regCls(makeSymbolSyncClass());
+    engine.registerFunction("comm", "SymbolSynchronizer", &commSymbolSync_ctor_reg);
 
     engine.registerFunction("comm.rf", "iqimbal", &iqimbal_reg);
     engine.registerFunction("comm.vis", "eyediagram", &eyediagram_reg);

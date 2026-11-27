@@ -122,6 +122,21 @@ TEST_P(CommModulationTest, CommSystemObjectsAndIqImbal)
     eval("zi = iqimbal(1 + 1i, 2, 25);");
     EXPECT_NEAR(evalScalar("real(zi)"), 0.9025096608, 1e-4);
     EXPECT_NEAR(evalScalar("imag(zi)"), 0.6273026273, 1e-4);
+
+    // comm.ConstellationDiagram + comm.SymbolSynchronizer
+    eval("cdi = comm.ConstellationDiagram('ReferenceConstellation', [-1 1], 'Name', 'BPSK');"
+         "cdi.Position(1) = 50;"
+         "step(cdi, [1+0.1i; -1-0.1i]);");
+    EXPECT_DOUBLE_EQ(evalScalar("cdi.Position(1)"), 50.0);
+
+    eval("ss = comm.SymbolSynchronizer('SamplesPerSymbol', 2, 'DampingFactor', sqrt(2)/2, 'NormalizedLoopBandwidth', 0.01);"
+         "qmod_s = comm.QPSKModulator;"
+         "tx_s = comm.RaisedCosineTransmitFilter('OutputSamplesPerSymbol', 2);"
+         "rx_s = comm.RaisedCosineReceiveFilter('InputSamplesPerSymbol', 2, 'DecimationFactor', 1);"
+         "syms_in = qmod_s(mod((0:99)', 4));"
+         "sync_out = ss(rx_s(tx_s(syms_in)));");
+    EXPECT_GT(evalScalar("numel(sync_out)"), 90.0);
+    EXPECT_LT(evalScalar("numel(sync_out)"), 110.0);
 }
 
 INSTANTIATE_DUAL(CommModulationTest);

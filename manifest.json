@@ -26,7 +26,8 @@
     "comm.QPSKModulator", "comm.QPSKDemodulator",
     "comm.RaisedCosineTransmitFilter", "comm.RaisedCosineReceiveFilter",
     "comm.AWGNChannel", "comm.CRCGenerator", "comm.CRCDetector",
-    "comm.OFDMModulator", "comm.OFDMDemodulator"
+    "comm.OFDMModulator", "comm.OFDMDemodulator",
+    "comm.ConstellationDiagram", "comm.SymbolSynchronizer"
   ],
   "functions": [
     "pskmod", "pskdemod", "dpskmod", "dpskdemod",
@@ -49,6 +50,7 @@
     "comm.QPSKModulator", "comm.QPSKDemodulator",
     "comm.RaisedCosineTransmitFilter", "comm.RaisedCosineReceiveFilter",
     "comm.AWGNChannel", "comm.CRCGenerator", "comm.CRCDetector",
-    "comm.OFDMModulator", "comm.OFDMDemodulator"
+    "comm.OFDMModulator", "comm.OFDMDemodulator",
+    "comm.ConstellationDiagram", "comm.SymbolSynchronizer"
   ]
 }
