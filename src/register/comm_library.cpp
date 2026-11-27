@@ -131,6 +131,7 @@ void cyclpoly_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Val
 void cyclgen_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 void encode_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 void decode_reg       (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void installCommSystemObjects(PluginContext &engine);
 } // namespace numkit::comm::detail
 
 namespace numkit {
@@ -237,6 +238,8 @@ void CommLibrary::install(PluginContext &engine)
     reg("coding", "cyclgen",      &comm::detail::cyclgen_reg);
     reg("coding", "encode",       &comm::detail::encode_reg);
     reg("coding", "decode",       &comm::detail::decode_reg);
+
+    comm::detail::installCommSystemObjects(engine);
 }
 
 } // namespace numkit

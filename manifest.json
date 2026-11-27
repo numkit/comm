@@ -20,7 +20,13 @@
     "arithenco", "arithdeco",
     "bit2int", "int2bit", "bi2de", "de2bi", "vec2mat",
     "poly2trellis", "convenc", "vitdec", "istrellis",
-    "gen2par", "syndtable", "hammgen", "cyclpoly", "cyclgen", "encode", "decode"
+    "gen2par", "syndtable", "hammgen", "cyclpoly", "cyclgen", "encode", "decode",
+    "iqimbal", "eyediagram", "scatterplot",
+    "comm.BarkerCode", "comm.DBPSKModulator", "comm.DBPSKDemodulator",
+    "comm.QPSKModulator", "comm.QPSKDemodulator",
+    "comm.RaisedCosineTransmitFilter", "comm.RaisedCosineReceiveFilter",
+    "comm.AWGNChannel", "comm.CRCGenerator", "comm.CRCDetector",
+    "comm.OFDMModulator", "comm.OFDMDemodulator"
   ],
   "functions": [
     "pskmod", "pskdemod", "dpskmod", "dpskdemod",
@@ -37,6 +43,12 @@
     "arithenco", "arithdeco",
     "bit2int", "int2bit", "bi2de", "de2bi", "vec2mat",
     "poly2trellis", "convenc", "vitdec", "istrellis",
-    "gen2par", "syndtable", "hammgen", "cyclpoly", "cyclgen", "encode", "decode"
+    "gen2par", "syndtable", "hammgen", "cyclpoly", "cyclgen", "encode", "decode",
+    "iqimbal", "eyediagram", "scatterplot",
+    "comm.BarkerCode", "comm.DBPSKModulator", "comm.DBPSKDemodulator",
+    "comm.QPSKModulator", "comm.QPSKDemodulator",
+    "comm.RaisedCosineTransmitFilter", "comm.RaisedCosineReceiveFilter",
+    "comm.AWGNChannel", "comm.CRCGenerator", "comm.CRCDetector",
+    "comm.OFDMModulator", "comm.OFDMDemodulator"
   ]
 }
